@@ -15,7 +15,7 @@ buildings offered to the community.
 
 ## Run it (VS Code terminal)
 
-You need **Python 3.11+**, **Node.js 24 LTS** and **git** (check with `python3 --version`, `node --version`; on Windows use
+You need **Python 3.11+**, **Node.js 20+** (24 LTS recommended; Photon bridge requires 22.9+) and **git** (check with `python3 --version`, `node --version`; on Windows use
 `py --version`). No Node? macOS: `brew install node`, or download the LTS installer from nodejs.org.
 
 ### Step 0 - get the code and open it in VS Code (once)
