@@ -1,3 +1,4 @@
+import { cityPhoto } from "../../shared/city-photos";
 import HelpSites from "./views/community/HelpSites";
 import Reports from "./views/community/Reports";
 import Messages from "./views/community/Messages";
@@ -45,6 +46,8 @@ export default function Panel({ onClose }: { onClose?: () => void }) {
     toggleLayer,
     setAllLayers,
   } = useUIStore();
+  const [loadedPhoto, setLoadedPhoto] = useState("");
+  const [failedPhoto, setFailedPhoto] = useState("");
   const state = useDemoState();
   const timeline = useTimeline();
   const scenarios = useScenarios();
@@ -53,6 +56,10 @@ export default function Panel({ onClose }: { onClose?: () => void }) {
   const [search, setSearch] = useState("");
   const scenario = scenarios.data?.find(
     (s) => s.id === state.data?.scenario_id,
+  );
+  const photo = cityPhoto(scenario?.city);
+  const photoVisible = Boolean(
+    photo && loadedPhoto === photo.src && failedPhoto !== photo.src,
   );
   useEffect(() => {
     setSearch("");
@@ -66,7 +73,19 @@ export default function Panel({ onClose }: { onClose?: () => void }) {
   };
   return (
     <>
-      <div className="scenario-hero panel-hero">
+      <div
+        className={`scenario-hero panel-hero ${photoVisible ? "photo-present" : ""}`}
+      >
+        {photo && failedPhoto !== photo.src && (
+          <img
+            className="panel-city-photo"
+            src={photo.src}
+            alt=""
+            aria-hidden="true"
+            onLoad={() => setLoadedPhoto(photo.src)}
+            onError={() => setFailedPhoto(photo.src)}
+          />
+        )}
         <div className="hero-skyline" aria-hidden="true" />
         <div className="hero-copy">
           <form
@@ -145,6 +164,9 @@ export default function Panel({ onClose }: { onClose?: () => void }) {
               </strong>
             </div>
           </div>
+          {photoVisible && photo && (
+            <small className="hero-photo-credit">{photo.credit}</small>
+          )}
           <small className="hero-disclaimer">
             Footprints approximate · Portfolio and amounts synthetic
           </small>
