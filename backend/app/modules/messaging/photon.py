@@ -13,7 +13,9 @@ import hmac
 import json
 import re
 import time
-from typing import Any
+from typing import Any, Literal
+
+from pydantic import Field, SecretStr
 
 import httpx
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -25,7 +27,14 @@ REPLAY_SECONDS = 300
 
 class PhotonSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=BACKEND_DIR / ".env", extra="ignore")
-    spectrum_webhook_secret: str = ""
+    spectrum_webhook_secret: str = Field(default="", repr=False)
+    photon_api_key: SecretStr = SecretStr("")
+    photon_project_id: str = ""
+    photon_webhook_secret: SecretStr = SecretStr("")
+    photon_sender_id: str = ""
+    photon_platform: Literal["imessage", "sms"] = "imessage"
+    demo_phones: str = ""
+    photon_claims_alert_phone: str = ""
     photon_bridge_url: str = "http://127.0.0.1:8787"
 
 
@@ -72,6 +81,9 @@ class PhotonChannel:
     def send_text(self, to: str, body: str, media_urls: list[str]) -> str:
         if media_urls:
             raise PhotonError("Photon photo send is not supported yet (the bridge rejects media)")
+        if self.config.photon_api_key.get_secret_value():
+            from .current_api import CurrentPhoton
+            return CurrentPhoton(self.config, self.client).send(to, body)
         url = self.config.photon_bridge_url.rstrip("/") + "/send"
         try:
             if self.client is not None:
@@ -97,6 +109,9 @@ class PhotonChannel:
 
     def parse_inbound(self, raw: bytes, headers: dict[str, str]) -> tuple[str, str, list[str]] | None:
         """Verified native envelope -> (sender phone, text, media urls). Raises PermissionError on a bad signature."""
+        if self.config.photon_api_key.get_secret_value():
+            from .current_api import parse
+            return parse(raw, headers, self.config)
         if not verify(raw, headers, self.config.spectrum_webhook_secret):
             raise PermissionError("invalid Spectrum signature or timestamp")
         payload = json.loads(raw)

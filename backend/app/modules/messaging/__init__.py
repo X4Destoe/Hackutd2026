@@ -203,7 +203,25 @@ def _on_resident(party_id: str, text: str, media_urls: list[str]) -> None:
         from app.modules import resources
     except ImportError:
         return
-    resources.route(party_id, text)
+    referral = resources.route(party_id, text)
+    if referral and "claim" in referral.needs:
+        _notify_claims_contact(referral)
+
+
+def _notify_claims_contact(referral: schemas.Referral) -> None:
+    """Optional configured test/claims contact; no private resident prose is forwarded."""
+    from .photon import settings as photon_settings
+    config = photon_settings()
+    phone = config.photon_claims_alert_phone
+    if not phone:
+        return
+    # The destination must be explicitly mapped, even when delivery is simulated.
+    if phone not in settings.demo_phone_map().values():
+        _remember_error("Claims alert destination is not listed in DEMO_PHONES")
+        return
+    party = party_for_phone(phone)
+    body = f"Operation Storm: new claims-assistance request {referral.id}. Placement: {referral.status}. Review Help Sites and resident referrals in the dashboard. This notification does not file an insurance claim."
+    send(party.id, body, MessageKind.other, referral_id=referral.id)
 
 
 def _on_manager(party_id: str, text: str, media_urls: list[str]) -> None:
@@ -285,11 +303,16 @@ def accept_photon_webhook(raw: bytes, headers: dict) -> dict:
     from .photon import PhotonChannel
     lower = {k.lower(): v for k, v in (headers or {}).items()}
     parsed = PhotonChannel().parse_inbound(raw, lower)  # raises PermissionError before anything is trusted
+    if parsed is None:
+        return {"ok": True, "ignored": True}
     try:
-        message_id = str((json.loads(raw).get("message") or {}).get("id") or "")
+        payload = json.loads(raw)
+        modern = payload.get("data") if isinstance(payload.get("data"), dict) else {}
+        message = modern.get("object") if isinstance(modern.get("object"), dict) else payload.get("message")
+        message_id = str(message.get("id") or "") if isinstance(message, dict) else ""
     except ValueError:
         message_id = ""
-    delivery_id = lower.get("x-spectrum-webhook-id", "")
+    delivery_id = lower.get("webhook-id") or lower.get("x-spectrum-webhook-id", "")
     keys = ([f"delivery:{delivery_id}"] if delivery_id else []) + (
         [f"message:{message_id}"] if message_id else ["body:" + hashlib.sha256(raw).hexdigest()])
     with _lock:
