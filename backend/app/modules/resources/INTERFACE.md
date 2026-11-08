@@ -22,3 +22,4 @@ Runs on `scenario.loaded` (seed) and `timeline.changed` (refresh_safety).
   shelter-in-place guidance in their language (`SHELTER`), not a generic coordinator line; history says why.
 - `refresh_safety()` (every timeline step) routes `unrouted` referrals as soon as a matching open, safe site has room,
   reserves the spots and texts the redirect. Medical-only requests have no site type and stay with the coordinator.
+- Every reply also texts the nearest open, safe State Farm claim site as the emergency claims adjuster (name, address, desk phone, policy-number line, map). A claim request is sent straight there. The adjuster visit does not reserve a spot. An unsafe or closed claim site is never named.

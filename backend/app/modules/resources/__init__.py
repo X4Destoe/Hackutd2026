@@ -9,6 +9,7 @@ import hashlib
 import json
 import logging
 import math
+import re
 import threading
 
 from app.modules import impact, scenarios
@@ -70,6 +71,7 @@ REPLY = {  # local, deterministic copy: replies never wait on an LLM (they run i
 }
 CLAIM_EXTRA = {"en": "Bring your policy number if you have it.", "es": "Traiga su número de póliza si lo tiene.",
                "vi": "Mang theo số hợp đồng bảo hiểm nếu có."}
+CALL = {"en": "Call {phone}. ", "es": "Llame al {phone}. ", "vi": "Gọi {phone}. "}
 
 
 def _v(x) -> str:
@@ -183,6 +185,42 @@ def _maps(r: schemas.Resource) -> str:
     return f"https://www.google.com/maps/dir/?api=1&destination={r.lat:.4f},{r.lon:.4f}"
 
 
+def _nearest_adjuster(at: tuple[float, float], exclude: set[str]) -> tuple[float, schemas.Resource] | None:
+    """Nearest open, safe State Farm claim site. Directing someone there does not take a spot."""
+    options = _candidates(["claim"], 1, at, exclude)
+    return options[0] if options else None
+
+
+def _adjuster_message(site: schemas.Resource, dist: float, lang: str) -> str:
+    lang = lang if lang in CLAIM_EXTRA else "en"
+    call = CALL[lang].format(phone=site.phone) if site.phone else ""
+    body = {
+        "en": f"State Farm emergency claims adjuster: {site.name}, {site.address}. {call}{dist:.1f} mi. {CLAIM_EXTRA[lang]} Map: {_maps(site)}",
+        "es": f"Ajustador de reclamos de emergencia de State Farm: {site.name}, {site.address}. {call}{dist:.1f} mi. {CLAIM_EXTRA[lang]} Mapa: {_maps(site)}",
+        "vi": f"Điều chỉnh viên bồi thường khẩn cấp State Farm: {site.name}, {site.address}. {call}{dist:.1f} dặm. {CLAIM_EXTRA[lang]} Bản đồ: {_maps(site)}",
+    }[lang]
+    if len(body) > 320:  # SMS limit: drop the policy line, then the distance, but never the address or the map link
+        body = body.replace(" " + CLAIM_EXTRA[lang], "")
+    if len(body) > 320:
+        body = re.sub(r" [\d.]+ (mi|dặm)\.", "", body)
+    return body
+
+
+def _with_adjuster(outbox: Outbox, history: list[str], party_id: str, ref_id: str, at: tuple[float, float],
+                   chosen: schemas.Resource | None, dist: float, lang: str) -> None:
+    """Point the resident at an emergency claims adjuster, in addition to shelter or instead of a dead end."""
+    if chosen is not None and _v(chosen.type) == "claim_site":
+        outbox.append((party_id, _adjuster_message(chosen, dist, lang), ref_id))
+        history.append(f"claims adjuster: {chosen.name}")
+        return
+    found = _nearest_adjuster(at, exclude={chosen.id} if chosen else set())
+    if not found:
+        return
+    away, site = found
+    history.append(f"claims adjuster: {site.name}")
+    outbox.append((party_id, _adjuster_message(site, away, lang), ref_id))
+
+
 Outbox = list[tuple[str, str, str]]  # (party_id, body, referral_id): sent after the lock is released
 
 
@@ -239,17 +277,20 @@ def route(party_id: str, text: str) -> schemas.Referral:
             site = _reserve(site, people)
             changed.append(site.id)
             history.append(f"{hour}h: routed to {site.name} ({dist:.1f} mi), {people} spot(s) reserved")
+            if _v(site.type) != "claim_site":
+                outbox.append((party_id, _site_text(site, dist, lang, "redirect"), ref_id))
+            _with_adjuster(outbox, history, party_id, ref_id, at, site, dist, lang)
             ref = schemas.Referral(id=ref_id, party_id=party_id, needs=needs, people=people, summary=need.get("summary", ""),
                                    resource_id=site.id, distance_mi=round(dist, 1), status="routed", history=history)
-            outbox.append((party_id, _site_text(site, dist, lang, "redirect"), ref_id))
         else:
             windy = _hurricane_force(at)
             history.append(f"{hour}h: no open, safe site with room for {people}"
                            + ("; hurricane-force wind: told to shelter in place, will be routed when a site opens" if windy else ""))
-            ref = schemas.Referral(id=ref_id, party_id=party_id, needs=needs, people=people, summary=need.get("summary", ""),
-                                   status="unrouted", history=history)
             if not (urgent and needs == ["medical"]):
                 outbox.append((party_id, (SHELTER if windy else FINDING)[lang], ref_id))
+            _with_adjuster(outbox, history, party_id, ref_id, at, None, 0.0, lang)
+            ref = schemas.Referral(id=ref_id, party_id=party_id, needs=needs, people=people, summary=need.get("summary", ""),
+                                   status="unrouted", history=history)
         store.referrals.put(ref)
     _flush(outbox)
     if changed:
@@ -268,9 +309,11 @@ def _reroute(ref: schemas.Referral, old: schemas.Resource, outbox: Outbox) -> tu
     if options:
         dist, site = options[0]
         site = _reserve(site, ref.people)
-        ref = ref.model_copy(update={"resource_id": site.id, "distance_mi": round(dist, 1), "status": "rerouted",
-                                     "history": ref.history + [f"{hour}h: {old.name} became unsafe; rerouted to {site.name}"]})
-        outbox.append((ref.party_id, _site_text(site, dist, lang, "reroute", old=old.name), ref.id))
+        history = ref.history + [f"{hour}h: {old.name} became unsafe; rerouted to {site.name}"]
+        if _v(site.type) != "claim_site":
+            outbox.append((ref.party_id, _site_text(site, dist, lang, "reroute", old=old.name), ref.id))
+        _with_adjuster(outbox, history, ref.party_id, ref.id, _locate(ref.party_id, "", scenarios.scenario().city), site, dist, lang)
+        ref = ref.model_copy(update={"resource_id": site.id, "distance_mi": round(dist, 1), "status": "rerouted", "history": history})
         changed = [old.id, site.id]
     else:
         ref = ref.model_copy(update={"resource_id": None, "distance_mi": None, "status": "unrouted",
