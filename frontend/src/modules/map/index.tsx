@@ -29,6 +29,7 @@ import {
 import TimelineControl from "./TimelineControl";
 import Legend from "./Legend";
 import ResponseCard from "./ResponseCard";
+import ActivityLayers from "./ActivityLayers";
 import "./map.css";
 
 type FC = { type: "FeatureCollection"; features: unknown[] };
@@ -446,6 +447,7 @@ export default function MapView() {
         role="region"
       />
       <TimelineControl />
+      <ActivityLayers map={ready ? mapRef.current : null} city={city} />
       <div className="storm-scenario-strip">
         <span
           className={`scenario-phase phase-${state.data?.phase ?? "forecast"}`}
@@ -528,7 +530,7 @@ function tooltip(p: Record<string, string>): HTMLElement {
     root.append(d);
   };
   if (p.kind === "building") {
-    line(`${p.risk} risk · net ${p.net}`);
+    line(`${p.risk} risk · estimated loss ${p.net}`);
     if (p.driver) line(p.driver);
   } else {
     line(`Substation · ${p.driver}`);

@@ -32,7 +32,7 @@ const navigation = [
   ["reports", "Reports", FileText],
 ] as const;
 export default function App() {
-  const { panelView, setPanelView, selectBuilding } = useUIStore();
+  const { panelView, setPanelView, selectBuilding, selectedBuildingId } = useUIStore();
   const scenarios = useScenarios();
   const state = useDemoState();
   const summary = useSummary();
@@ -42,6 +42,9 @@ export default function App() {
     setPanelView("overview");
   }, [state.data?.scenario_id]);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  useEffect(() => {
+    if (selectedBuildingId || panelView !== "overview") setDrawerOpen(true);
+  }, [selectedBuildingId, panelView]);
   const openView = (view: PanelView) => {
     setPanelView(view);
     setDrawerOpen(true);
@@ -98,7 +101,7 @@ export default function App() {
         </nav>
         <div className="portfolio-totals" aria-label="Portfolio totals">
           <div>
-            <small>Net exposure</small>
+            <small title="Estimated financial loss after insurance and approved actions">Estimated loss</small>
             <strong>
               {summary.data ? money(summary.data.net_exposure_cents) : "—"}
             </strong>
@@ -139,7 +142,9 @@ export default function App() {
         >
           <Panel onClose={() => setDrawerOpen(false)} />
         </aside>
-        <main className="map-slot" aria-label="Map workspace">
+        <main className="map-slot" aria-label="Map workspace" onClickCapture={event => {
+          if (event.target instanceof Element && event.target.closest("[data-open-panel], [data-building-id], .response-details")) setDrawerOpen(true);
+        }}>
           <MapView />
           <div className="map-note">
             Illustrative hazards · Synthetic buildings and dollar figures

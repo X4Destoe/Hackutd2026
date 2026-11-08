@@ -46,7 +46,7 @@ export default function Buildings({
       <label className="sort-row">
         Sort by{" "}
         <select value={sort} onChange={(e) => setSort(e.target.value)}>
-          <option value="exposure">Net exposure</option>
+          <option value="exposure">Estimated loss</option>
           <option value="name">Name</option>
           <option value="risk">Risk</option>
         </select>

@@ -34,7 +34,7 @@ export default function BuildingDetail() {
         ["Tenant SLA", i.money.sla_penalty_cents, false],
         ["Operations", i.money.operations_cents, false],
         ["Insurance recovery", i.money.insurance_recovery_cents, true],
-        ["Net exposure", i.money.net_exposure_cents, false],
+        ["Estimated loss", i.money.net_exposure_cents, false],
       ]
     : [];
   const max = Math.max(1, ...waterfall.map(([, v]) => Math.abs(v)));
