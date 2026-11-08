@@ -50,7 +50,7 @@ const BASE = process.env.STORM_URL || 'http://127.0.0.1:5173';
     await card.getByRole('button', { name: 'Close building response card' }).click();
     await card.waitFor({ state: 'hidden' });
     assert.equal((await api('/workorders')).length, orders.length);
-    assert.equal(await panel.evaluate(el => el.classList.contains('drawer-open')), false, 'Closing card must not reopen mobile drawer over the map');
+    assert.equal(await page.locator('#portfolio-panel').evaluate(el => el.classList.contains('drawer-open')), false, 'Closing card must not reopen mobile drawer over the map');
     assert.deepEqual(errors, []);
     console.log('PASS response card minimizes/restores with draft intact, closes/Escape and reopens; approved work retained on desktop/mobile');
   } finally {
