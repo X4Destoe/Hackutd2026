@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { api, type Model, type PlanFilter, type SimulatedMessage } from './api';
 // Prefix keys intentionally group all hours, filters and selected-building queries.
-export const scenarioKeys = ['demoState', 'overlays', 'impact', 'summary', 'plans', 'fixFirst', 'resources', 'utilities', 'buildings', 'workOrders', 'referrals', 'messages', 'messagingStatus', 'reports'];
+export const scenarioKeys = ['demoState', 'timeline', 'overlays', 'impact', 'summary', 'plans', 'fixFirst', 'resources', 'utilities', 'buildings', 'workOrders', 'referrals', 'messages', 'messagingStatus', 'reports'];
 export function invalidateKeys(client: QueryClient, keys: readonly string[]) { return Promise.all(keys.map(key => client.invalidateQueries({ queryKey: [key] }))); }
 export const useScenarios = () => useQuery({ queryKey: ['scenarios'], queryFn: ({ signal }) => api.scenarios(signal) });
 export const useDemoState = () => useQuery({ queryKey: ['demoState'], queryFn: ({ signal }) => api.demoState(signal) });
@@ -28,3 +28,5 @@ export function useRejectPlan() { const c = useQueryClient(); return useMutation
 export function useUpdateWorkOrder() { const c = useQueryClient(); return useMutation({ mutationFn: ({ id, status, note }: { id: string; status: Model<'WorkOrderStatus'>; note?: string }) => api.updateWorkOrder(id, status, note), onSuccess: () => invalidateKeys(c, ['workOrders', 'plans', 'impact', 'summary']) }); }
 export function useGenerateReport() { const c = useQueryClient(); return useMutation({ mutationFn: ({ kind, building_id }: { kind: Model<'ReportKind'>; building_id?: string }) => api.generateReport(kind, building_id), onSuccess: () => invalidateKeys(c, ['reports']) }); }
 export function useSimulateMessage() { const c = useQueryClient(); return useMutation({ mutationFn: (payload: SimulatedMessage) => api.simulateMessage(payload), onSuccess: () => invalidateKeys(c, ['messages', 'messagingStatus', 'workOrders', 'plans', 'resources', 'referrals', 'impact', 'summary']) }); }
+
+export const useTimeline = () => useQuery({ queryKey: ['timeline'], queryFn: ({ signal }) => api.timeline(signal) });

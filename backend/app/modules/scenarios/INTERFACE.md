@@ -26,7 +26,7 @@ Values come from the analytic model over `data/anchors/<id>.json` (see `hazard.p
 
 ## Routes (under /api)
 `GET /scenarios` · `POST /scenarios/{id}/load` · `POST /demo/reset {scenario_id?}` · `GET /demo/state` ·
-`POST /timeline {hour}` · `GET /overlays?hour=` · `GET /buildings` · `GET /utilities` (each with `down` at the current step)
+`GET /timeline` (steps: hour, phase, label, narrative, utility_outages; no geometry) · `POST /timeline {hour}` · `GET /overlays?hour=` · `GET /buildings` · `GET /utilities` (each with `down` at the current step)
 
 ## Events
 `scenario.loaded` and `timeline.changed`, payload `DemoState`. `store.reset()` on load clears plans, work orders, messages,
