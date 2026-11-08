@@ -43,14 +43,18 @@ def test_family_routed_to_nearest_safe_shelter_with_spots_reserved(c):
     ref = next(r for r in store.referrals.list() if r.party_id == pid)
     assert ref.status == "routed" and ref.people == 3 and ref.resource_id == "RES-HOU-01"  # George R. Brown
     assert store.resources.require("RES-HOU-01").used == before + 3
-    reply = texts_to(pid)[-1]
-    assert "1001 Avenida de las Americas" in reply and "google.com/maps" in reply and len(reply) <= 320
+    shelter = next(t for t in texts_to(pid) if t.startswith("Go to"))
+    assert "1001 Avenida de las Americas" in shelter and "google.com/maps" in shelter and len(shelter) <= 320
+    adjuster = next(t for t in texts_to(pid) if "emergency claims adjuster" in t)
+    assert "Galleria" in adjuster and "+17135550104" in adjuster and len(adjuster) <= 320
+    assert store.resources.require("RES-HOU-04").used == 60  # pointing them at the adjuster does not take a spot
 
 
 def test_spanish_text_gets_a_spanish_reply(c):
     step(c, 0)
     pid = text(c, "+17135550112", "se inundó mi casa, necesito refugio, 4 personas")
-    assert texts_to(pid)[-1].startswith("Vaya a")
+    assert any(t.startswith("Vaya a") for t in texts_to(pid))
+    assert any(t.startswith("Ajustador de reclamos de emergencia de State Farm") for t in texts_to(pid))
 
 
 def test_urgent_medical_gets_911_guidance_and_is_flagged(c):
@@ -89,7 +93,7 @@ def test_unrouted_when_nothing_fits(c):
     step(c, 0)
     pid = text(c, "+17135550116", "we need a dry place for 50000 people")
     ref = next(r for r in store.referrals.list() if r.party_id == pid)
-    assert ref.status == "unrouted" and "flagged for coordinator follow-up" in texts_to(pid)[-1]
+    assert ref.status == "unrouted" and any("flagged for coordinator follow-up" in t for t in texts_to(pid))
 
 
 def test_routes(c):
@@ -118,4 +122,86 @@ def test_replies_never_call_the_llm(c, monkeypatch):
     monkeypatch.setattr(ai, "compose", lambda *a, **k: (_ for _ in ()).throw(AssertionError("compose called")))
     step(c, 0)
     pid = text(c, "+17135550118", "flooded, need shelter for 2")
-    assert texts_to(pid)[-1].startswith("Go to")
+    assert any(t.startswith("Go to") for t in texts_to(pid))  # the adjuster text follows the shelter text
+
+
+def test_hurricane_force_wind_means_shelter_in_place_then_automatic_routing(c):
+    c.post("/api/scenarios/ian_fort_myers/load")
+    step(c, 0)  # Ian landfall: every site is in hurricane-force wind
+    pid = text(c, "+12395550100", "we need shelter, 2 people")
+    ref = next(r for r in store.referrals.list() if r.party_id == pid)
+    assert ref.status == "unrouted" and "shelter in place" in ref.history[-1]
+    assert texts_to(pid)[-1].startswith("Hurricane-force winds now: stay where you are")
+    step(c, 48)  # winds drop: the waiting resident is routed and told where to go, without texting again
+    ref = store.referrals.require(ref.id)
+    site = store.resources.require(ref.resource_id)
+    assert ref.status == "routed" and "a safe site opened" in ref.history[-1]
+    assert texts_to(pid)[-1].startswith(f"Go to {site.name}")
+
+
+def test_shelter_in_place_texts_fit_one_sms():
+    assert all(len(t) <= 320 for t in resources.SHELTER.values())
+
+
+def test_a_claim_request_is_sent_straight_to_the_adjuster(c):
+    step(c, 0)
+    pid = text(c, "+17135550119", "I need to file a claim")
+    ref = next(r for r in store.referrals.list() if r.party_id == pid)
+    assert ref.resource_id == "RES-HOU-04"
+    reply = texts_to(pid)[-1]
+    assert reply.startswith("State Farm emergency claims adjuster") and "policy number" in reply and len(reply) <= 320
+
+
+def test_an_unsafe_claims_site_is_not_named(c):
+    bayou = store.resources.require("RES-HOU-03")
+    desk = store.resources.require("RES-HOU-04")
+    store.resources.put(desk.model_copy(update={"lat": bayou.lat, "lon": bayou.lon}))
+    step(c, 0)
+    assert store.resources.require("RES-HOU-04").status == "unsafe"
+    pid = text(c, "+17135550120", "our apartment flooded, 2 kids, need a dry place")
+    assert all("Galleria" not in t and "claims adjuster" not in t.lower() for t in texts_to(pid))
+
+
+def test_a_long_adjuster_text_keeps_its_address_and_map_link():
+    site = schemas.Resource(id="X", type="claim_site", name="State Farm Catastrophe Claims Site " + "Galleria " * 12,
+                            address="5100 Post Oak Blvd, Houston", city="Houston", lat=29.74, lon=-95.46, capacity=10,
+                            status="open", hours="24 hours", source="statefarm", phone="+17135550104")
+    for lang in ("en", "es", "vi"):
+        body = resources._adjuster_message(site, 3.2, lang)
+        assert len(body) <= 320 or "google.com/maps" in body
+        assert "5100 Post Oak Blvd" in body and body.rstrip().endswith("29.7400,-95.4600")
+
+
+def test_live_forecast_wind_never_claims_hurricane_winds_now(c, monkeypatch):
+    from app.modules import scenarios
+    c.post("/api/scenarios/ian_fort_myers/load")
+    step(c, 0)
+    monkeypatch.setattr(scenarios, "data_quality", lambda: "live_proxy")  # a forecast proxy is not an observation
+    pid = text(c, "+12395550103", "we need shelter, 2 people")
+    assert not any(t.startswith("Hurricane-force winds now") for t in texts_to(pid))
+
+
+def test_a_waiting_resident_keeps_their_neighborhood_when_routed_later(c):
+    c.post("/api/scenarios/ian_fort_myers/load")
+    step(c, 0)
+    downtown = text(c, "+12395550104", "we need shelter, 2 people, downtown")
+    default = text(c, "+12395550105", "we need shelter, 2 people")
+    step(c, 48)
+    a = next(r for r in store.referrals.list() if r.party_id == downtown)
+    b = next(r for r in store.referrals.list() if r.party_id == default)
+    assert a.status == b.status == "routed" and a.resource_id != b.resource_id  # downtown is not moved to the beach default
+    site = store.resources.require(a.resource_id)
+    assert a.distance_mi == pytest.approx(resources.miles(resources.PLACES["Fort Myers"]["downtown"], (site.lat, site.lon)), abs=0.6)
+
+
+def test_waiting_medical_cases_get_the_first_spot_that_opens(c):
+    c.post("/api/scenarios/ian_fort_myers/load")
+    step(c, 0)
+    first = text(c, "+12395550106", "we need shelter, 2 people")
+    medical = text(c, "+12395550107", "need shelter, my dad is on oxygen, 2 people")
+    for r in store.resources.list(city="Fort Myers"):  # after landfall exactly one site has room for one family
+        store.resources.put(r.model_copy(update={"used": r.capacity - (2 if r.id == "RES-FMY-01" else 0)}))
+    step(c, 48)
+    by_party = {r.party_id: r for r in store.referrals.list()}
+    assert "medical" in by_party[medical].needs
+    assert by_party[medical].status == "routed" and by_party[first].status == "unrouted"
