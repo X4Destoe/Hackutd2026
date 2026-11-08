@@ -48,8 +48,8 @@ function BuildingResponse({ id }: { id: string }) {
         {committed && <CheckCircle2 size={15} />}
       </div>
       <h2>{building.name}</h2>
-      <p className="response-exposure">
-        Net exposure{" "}
+      <p className="response-exposure" title="After insurance and approved actions">
+        Estimated loss{" "}
         <strong>
           {impact.data
             ? money(impact.data.money.net_exposure_cents)
