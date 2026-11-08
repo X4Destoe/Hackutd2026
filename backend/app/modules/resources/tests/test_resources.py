@@ -170,3 +170,38 @@ def test_a_long_adjuster_text_keeps_its_address_and_map_link():
         body = resources._adjuster_message(site, 3.2, lang)
         assert len(body) <= 320 or "google.com/maps" in body
         assert "5100 Post Oak Blvd" in body and body.rstrip().endswith("29.7400,-95.4600")
+
+
+def test_live_forecast_wind_never_claims_hurricane_winds_now(c, monkeypatch):
+    from app.modules import scenarios
+    c.post("/api/scenarios/ian_fort_myers/load")
+    step(c, 0)
+    monkeypatch.setattr(scenarios, "data_quality", lambda: "live_proxy")  # a forecast proxy is not an observation
+    pid = text(c, "+12395550103", "we need shelter, 2 people")
+    assert not any(t.startswith("Hurricane-force winds now") for t in texts_to(pid))
+
+
+def test_a_waiting_resident_keeps_their_neighborhood_when_routed_later(c):
+    c.post("/api/scenarios/ian_fort_myers/load")
+    step(c, 0)
+    downtown = text(c, "+12395550104", "we need shelter, 2 people, downtown")
+    default = text(c, "+12395550105", "we need shelter, 2 people")
+    step(c, 48)
+    a = next(r for r in store.referrals.list() if r.party_id == downtown)
+    b = next(r for r in store.referrals.list() if r.party_id == default)
+    assert a.status == b.status == "routed" and a.resource_id != b.resource_id  # downtown is not moved to the beach default
+    site = store.resources.require(a.resource_id)
+    assert a.distance_mi == pytest.approx(resources.miles(resources.PLACES["Fort Myers"]["downtown"], (site.lat, site.lon)), abs=0.6)
+
+
+def test_waiting_medical_cases_get_the_first_spot_that_opens(c):
+    c.post("/api/scenarios/ian_fort_myers/load")
+    step(c, 0)
+    first = text(c, "+12395550106", "we need shelter, 2 people")
+    medical = text(c, "+12395550107", "need shelter, my dad is on oxygen, 2 people")
+    for r in store.resources.list(city="Fort Myers"):  # after landfall exactly one site has room for one family
+        store.resources.put(r.model_copy(update={"used": r.capacity - (2 if r.id == "RES-FMY-01" else 0)}))
+    step(c, 48)
+    by_party = {r.party_id: r for r in store.referrals.list()}
+    assert "medical" in by_party[medical].needs
+    assert by_party[medical].status == "routed" and by_party[first].status == "unrouted"

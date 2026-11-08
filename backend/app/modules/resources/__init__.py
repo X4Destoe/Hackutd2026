@@ -20,6 +20,7 @@ from app.shared.store import store
 
 log = logging.getLogger(__name__)
 _lock = threading.RLock()
+_origins: dict[str, tuple[float, float]] = {}  # referral id -> where the resident said they are (kept for later re-routing)
 
 NEED_TYPES = {  # PRD 03 §5, in order of preference
     "shelter": ["shelter", "cbre_help_site", "hotel"],
@@ -88,6 +89,7 @@ def miles(a: tuple[float, float], b: tuple[float, float]) -> float:
 def seed() -> None:
     """(Re)load the help sites after a scenario load (store.reset() clears them)."""
     with _lock:
+        _origins.clear()
         if not store.resources.count():
             store.resources.put_all(schemas.Resource.model_validate(r) for r in json.loads((DATA_DIR / "resources.json").read_text()))
     refresh_safety()
@@ -118,8 +120,10 @@ def refresh_safety() -> list[str]:
                 moved.append(ref)
                 changed += [i for i in ids_ if i not in changed]
         # Residents still waiting (no safe site, no room, or hurricane-force wind): route them as soon as a site opens.
-        for ref in sorted(store.referrals.list(status="unrouted"), key=lambda r: r.id):
-            options = _candidates(ref.needs, ref.people, _locate(ref.party_id, "", city), exclude=set())
+        # Medical cases first: they get the first spots that open.
+        waiting = sorted(store.referrals.list(status="unrouted"), key=lambda r: ("medical" not in r.needs, r.id))
+        for ref in waiting:
+            options = _candidates(ref.needs, ref.people, _origin(ref, city), exclude=set())
             if not options:
                 continue
             dist, site = options[0]
@@ -165,6 +169,11 @@ def _locate(party_id: str, text: str, city: str) -> tuple[float, float]:
     return base[0] + (h[0] - 128) / 128 * 0.006, base[1] + (h[1] - 128) / 128 * 0.006
 
 
+def _origin(ref: schemas.Referral, city: str) -> tuple[float, float]:
+    """Where the resident was when they texted (their neighborhood), not a default point."""
+    return _origins.get(ref.id) or _locate(ref.party_id, "", city)
+
+
 def _candidates(needs: list[str], people: int, at: tuple[float, float], exclude: set[str]) -> list[tuple[float, schemas.Resource]]:
     wanted = [t for n in needs for t in NEED_TYPES.get(n, [])]
     city = scenarios.scenario().city
@@ -174,8 +183,11 @@ def _candidates(needs: list[str], people: int, at: tuple[float, float], exclude:
 
 
 def _hurricane_force(at: tuple[float, float]) -> bool:
-    """Wind physically at the resident's location right now (present reading), not the forecast peak."""
+    """Wind physically at the resident's location right now (present reading), not the forecast peak.
+    Modeled scenarios only: a live forecast proxy is not an observation, so it never triggers "winds now" copy."""
     try:
+        if scenarios.data_quality() != "modeled":
+            return False
         return scenarios.hazard_at(at[0], at[1], present=True).get("wind_mph", 0) > HURRICANE_FORCE_MPH
     except Exception:  # noqa: BLE001 - guidance must never break routing
         return False
@@ -271,6 +283,7 @@ def route(party_id: str, text: str) -> schemas.Referral:
     with _lock:
         hour = scenarios.current().step_hour
         at = _locate(party_id, text, scenarios.scenario().city)
+        _origins[ref_id] = at
         options = _candidates(needs, people, at, exclude=set())
         if options:
             dist, site = options[0]
@@ -304,7 +317,8 @@ def _reroute(ref: schemas.Referral, old: schemas.Resource, outbox: Outbox) -> tu
     old = store.resources.put(old.model_copy(update={"used": max(0, old.used - ref.people)}))
     party = store.parties.get(ref.party_id)
     lang = party.language if party and party.language in EMERGENCY else "en"
-    options = _candidates(ref.needs, ref.people, _locate(ref.party_id, "", scenarios.scenario().city), exclude={old.id})
+    at = _origin(ref, scenarios.scenario().city)
+    options = _candidates(ref.needs, ref.people, at, exclude={old.id})
     hour = scenarios.current().step_hour
     if options:
         dist, site = options[0]
@@ -312,7 +326,7 @@ def _reroute(ref: schemas.Referral, old: schemas.Resource, outbox: Outbox) -> tu
         history = ref.history + [f"{hour}h: {old.name} became unsafe; rerouted to {site.name}"]
         if _v(site.type) != "claim_site":
             outbox.append((ref.party_id, _site_text(site, dist, lang, "reroute", old=old.name), ref.id))
-        _with_adjuster(outbox, history, ref.party_id, ref.id, _locate(ref.party_id, "", scenarios.scenario().city), site, dist, lang)
+        _with_adjuster(outbox, history, ref.party_id, ref.id, at, site, dist, lang)
         ref = ref.model_copy(update={"resource_id": site.id, "distance_mi": round(dist, 1), "status": "rerouted", "history": history})
         changed = [old.id, site.id]
     else:
