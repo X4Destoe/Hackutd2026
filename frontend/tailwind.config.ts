@@ -1,0 +1,1 @@
+export default { content: ['./index.html', './src/**/*.{ts,tsx}'], theme: { extend: { colors: { primary: 'var(--accent)', surface: 'var(--surface)' }, borderRadius: { DEFAULT: '0' } } }, plugins: [] };
