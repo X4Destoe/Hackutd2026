@@ -9,7 +9,9 @@ from __future__ import annotations
 import json
 import hashlib
 import logging
+import os
 import re
+import sys
 import threading
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -244,7 +246,7 @@ def status() -> schemas.MessagingStatus:
         live_parties=[party.id for party in store.parties.list() if party.demo_live],
         sent=sum(1 for message in messages if message.direction == Direction.outbound and message.status == "sent"),
         received=sum(1 for message in messages if message.status == "received"),
-        last_error=_last_error,
+        last_error=(_receiver.error if _receiver is not None and _receiver.error else None) or _last_error,
     )
 
 
@@ -330,8 +332,39 @@ def accept_photon_webhook(raw: bytes, headers: dict) -> dict:
     return {"ok": True}
 
 
+# ---------- real Photon texting on a normal `uvicorn app.main:app` start ----------
+_receiver = None  # the reply poller started at startup (PhotonPoller), or None
+_AUTOSTART = "pytest" not in sys.modules  # tests opt in explicitly; a test run never polls the real provider
+
+
+def _autostart_replies(_payload=None) -> None:
+    """MESSAGING_MODE=photon + PHOTON_API_KEY: start ONE reply poller once the scenario is loaded (so parties exist).
+    Sending already goes through Photon in this mode; this makes replies (DONE/YES/resident texts) arrive too.
+    `python -m app.modules.messaging.live` runs its own receiver and sets PHOTON_RECEIVER=external to skip this."""
+    global _receiver
+    if not _AUTOSTART or _mode() != "photon" or os.environ.get("PHOTON_RECEIVER") == "external":
+        return
+    from .photon import PhotonError, settings as photon_settings
+    config = photon_settings()
+    if not config.photon_api_key.get_secret_value():
+        return  # legacy Spectrum bridge setups receive replies by webhook
+    with _lock:
+        if _receiver is not None and _receiver._thread is not None and _receiver._thread.is_alive():
+            return
+        try:
+            from .polling import PhotonPoller, allowed_phones
+            _receiver = PhotonPoller(config).start()
+        except PhotonError as exc:
+            _remember_error(f"Photon replies are off: {exc}")
+            log.warning("Photon replies are off: %s", exc)
+            return
+    log.warning("LIVE PHOTON MODE: real texts to %d phone(s) in DEMO_PHONES; replies checked every 2 seconds.",
+                len(allowed_phones(config)))
+
+
 def register() -> None:
     global _defaults
+    bus.on("scenario.loaded", _autostart_replies)  # bus handlers are reset per app, so subscribe every time
     if not _defaults:
         on_inbound(PartyType.technician, _on_technician)
         on_inbound(PartyType.tenant, _on_tenant)

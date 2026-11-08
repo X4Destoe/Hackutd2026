@@ -123,25 +123,32 @@ Terminal 2 `cd $HOME\Hackutd2026\frontend; npm install; npm run dev`.
 | Page opens but numbers say "unavailable" | The backend is not running or crashed: look at Terminal 1 |
 | Map is empty or looks old | Run the "Next time" commands (pull, restart both terminals), then reload the page |
 
-### Real Photon messaging locally
+### Real text messages (Photon)
 
-Keep your Photon key, project ID, and authorized `DEMO_PHONES` mappings in private `backend/.env`. Settings prepared in a cloud workspace must also exist on your laptop; Git deliberately does not transfer them. Each test phone must be assigned in Photon and must first text its Photon agent number (required for shared iMessage lines).
+Turn this on once and every normal start (Terminal 1 above) sends **real iMessages** and picks up replies. No extra
+command, tunnel or Node bridge.
 
-With the backend Python environment active, stop the ordinary API and run from `Hackutd2026/backend`:
+1. In [app.beta.photon.codes](https://app.beta.photon.codes): assign an iMessage line to each phone that should get texts,
+   then **text the agent number once from each phone** (a shared line cannot send the first message). Create an API key
+   with `project:read` and `project:write`.
+2. Put these lines in `backend/.env` (this file is never committed; Git does not copy it between computers):
+   ```
+   MESSAGING_MODE=photon
+   PHOTON_API_KEY=pho_sk_...
+   PHOTON_PROJECT_ID=pho_prj_...
+   DEMO_PHONES=+1YOURPHONE:TECH-HOU-01
+   ```
+   `DEMO_PHONES` maps each real phone to who it plays in the app (`TECH-HOU-01` = Bayou Plaza technician, `MGR-01` =
+   manager; separate several with commas). Only these phones ever get real texts or can control the app.
+3. Start the backend as usual. Terminal 1 should print
+   `LIVE PHOTON MODE: real texts to 1 phone(s) in DEMO_PHONES; replies checked every 2 seconds.`
+4. Try it: Harvey → timeline **−24h** → **Bayou Plaza** → **Approve plan**. Your phone gets the task; reply
+   `DONE WO-…` (the number in the text) and the work order closes within a few seconds.
 
-```sh
-python -m app.modules.messaging.live
-```
-
-This verifies Photon access, enables real messages, and starts the API plus reply polling. **No tunnel or separate Node bridge is needed.** The frontend can be open or closed. A failed check stops with an error rather than silently simulating texts.
-
-To send one test in another terminal (same backend folder/environment):
-
-```sh
-python -m app.modules.messaging.live --test-party MGR-01
-```
-
-That sends once to the mapped manager and exits. Other configured party IDs can be tested the same way. A provider acknowledgement is not a delivery receipt; check the actual phone. See the [current Photon runbook](backend/app/modules/messaging/HTTP_API.md) for role mappings, claims alerts, troubleshooting and optional signed HTTPS webhooks (`--webhook`). No paid sending resource is provisioned automatically.
+**Test one text without the app:** `python -m app.modules.messaging.live --test-party TECH-HOU-01` (backend folder,
+environment active). **Something wrong?** http://localhost:8000/api/messaging/status shows `mode` and `last_error`:
+`401` = wrong key, `403` = key lacks permissions or is for another project. Back to simulated texts: set
+`MESSAGING_MODE=sim`. More detail: [Photon runbook](backend/app/modules/messaging/HTTP_API.md).
 
 ### Optional
 - **Just want to look?** Open `demo/operation-storm-demo.html` in a browser. No install needed.
