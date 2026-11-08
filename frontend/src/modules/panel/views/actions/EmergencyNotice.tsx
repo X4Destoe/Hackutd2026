@@ -28,7 +28,7 @@ export default function EmergencyNotice() {
   const edit = () => { setPreview(false); setRequestId(''); send.reset(); };
   const eligible = !!building && tenants.length > 0 && !!text.trim() && !!state.data && !!status.data && !state.isFetching;
   return <Card className="response-card"><h3>Customer emergency notice</h3>
-    <p>Notify selected tenant contacts about closures, response instructions or service disruptions.</p>
+    <p>Text the tenants in one building.</p>
     <p className="panel-caption">{status.data?.mode === 'photon' ? 'Photon enabled. Only configured live contacts receive real texts; other contacts use the simulator.' : 'Simulator: no real texts will be sent.'}</p>
     <form className="phone-simulator" onSubmit={e => { e.preventDefault(); if (!eligible) return; setRequestId(crypto.randomUUID()); setContext({ scenario_id: state.data!.scenario_id, step_hour: state.data!.step_hour, mode: status.data!.mode }); setPreview(true); }}>
       <label>Notice building<select aria-label="Notice building" value={buildingId} disabled={send.isPending || preview} onChange={e => { edit(); setBuildingId(e.target.value); setTenants([]); }} required>

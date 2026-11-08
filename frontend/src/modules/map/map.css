@@ -209,6 +209,41 @@
   outline: 3px dashed #16834a;
   outline-offset: 3px;
 }
+.storm-building-button.is-affected .storm-building-label {
+  background: #173024;
+  color: #fff;
+  border-color: #173024;
+  font-size: 12px;
+}
+.storm-building-button.is-quiet {
+  opacity: 0.38;
+}
+.storm-building-button.is-quiet .storm-building-label {
+  display: none;
+}
+.storm-building-button.is-quiet.is-selected {
+  opacity: 1;
+}
+.storm-building-button.is-quiet.is-selected .storm-building-label {
+  display: block;
+}
+.storm-people-button {
+  border: 0;
+  background: #173024;
+  color: #fff;
+  font-size: 11px;
+  line-height: 1.2;
+  padding: 3px 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.storm-people-button.is-affected {
+  background: #9f1239;
+}
+.storm-people-button:focus-visible {
+  outline: 3px solid #257bc0;
+  outline-offset: 2px;
+}
 .storm-building-button:focus-visible {
   outline: 3px solid #257bc0;
   outline-offset: 5px;

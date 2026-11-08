@@ -10,6 +10,7 @@ import {
 } from "../../shared/queries";
 import { useUIStore } from "../../shared/ui-store";
 import { hours, money } from "../../shared/format";
+import { crewVerb, jobLine, taskName, whatsWrong, CREW_STATUS } from "../../shared/plain";
 import { Button } from "../../shared/ui";
 export default function ResponseCard() {
   const { selectedBuildingId } = useUIStore();
@@ -43,32 +44,28 @@ function BuildingResponse({ id }: { id: string }) {
     >
       <div className="response-eyebrow">
         <ListChecks size={14} />
-        <span>Decision → response</span>
+        <span>{building.tenants?.length ? `${building.tenants.length} tenants` : "This building"}</span>
         {committed && <CheckCircle2 size={15} />}
       </div>
       <h2>{building.name}</h2>
       <p className="response-exposure">
-        Net exposure{" "}
+        {impact.data ? whatsWrong(impact.data.exposure) : "Checking damage…"}{" "}
         <strong>
           {impact.data
             ? money(impact.data.money.net_exposure_cents)
-            : "Unavailable"}
+            : ""}
         </strong>
       </p>
       {plan ? (
         <>
-          <h3>
-            {plan.actions?.map((a) => a.title).join(" + ") || "Response plan"}
-          </h3>
+          <h3>{jobLine(plan)}</h3>
           <div className="response-economics">
             <div>
-              <span>Investment</span>
+              <span>Cost</span>
               <strong>{money(plan.cost_cents)}</strong>
             </div>
             <div>
-              <span>
-                {committed ? "Modeled avoided loss" : "Savings potential"}
-              </span>
+              <span>Saves</span>
               <strong>{money(plan.avoided_cents)}</strong>
             </div>
             <div>
@@ -87,27 +84,19 @@ function BuildingResponse({ id }: { id: string }) {
           {committed ? (
             <div className="response-progress">
               <strong>
-                {plan.status === "done"
-                  ? "Response completed"
-                  : plan.status === "executing"
-                    ? "Execution in progress"
-                    : "Plan approved"}
+                {plan.status === "done" ? "Crew finished" : "Crew is on the way"}
               </strong>
               {orders.data?.length ? (
                 <ul>
                   {orders.data.map((order) => (
                     <li key={order.id}>
-                      <span>{order.action_code.replaceAll("_", " ")}</span>
-                      <b>{order.status}</b>
+                      <span>{taskName(order.action_code)}</span>
+                      <b>{CREW_STATUS[order.status] ?? order.status}</b>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p>
-                  {orders.isError
-                    ? "Dispatch status unavailable. Approval is recorded; task delivery is not confirmed."
-                    : "Waiting for execution records. Approval is recorded; task delivery is not confirmed."}
-                </p>
+                <p>{orders.isError ? "Tasks are unavailable." : "Tasks are on the way."}</p>
               )}
             </div>
           ) : (
@@ -117,17 +106,13 @@ function BuildingResponse({ id }: { id: string }) {
                 approve.mutate(
                   { id: plan.id, by: "MGR-01" },
                   {
-                    onSuccess: () =>
-                      setNotice("Plan approved. Checking execution status…"),
-                    onError: () =>
-                      setNotice(
-                        "Approval failed. No success is assumed; please retry.",
-                      ),
+                    onSuccess: () => setNotice("Crew is on the way."),
+                    onError: () => setNotice("Could not send the crew. Try again."),
                   },
                 )
               }
             >
-              {approve.isPending ? "Approving…" : "Approve response plan"}
+              {approve.isPending ? "Sending…" : crewVerb(impact.data?.exposure)}
               <ArrowRight size={15} />
             </Button>
           )}
@@ -135,10 +120,10 @@ function BuildingResponse({ id }: { id: string }) {
       ) : (
         <p className="response-unavailable">
           {plans.isPending
-            ? "Finding response options…"
+            ? "Looking for a job…"
             : plans.isError
-              ? "Response planning is unavailable. Review building exposure while the service reconnects."
-              : "No proposed response plan for this step."}
+              ? "Jobs are unavailable right now."
+              : "Nothing to send for this building right now."}
         </p>
       )}
       {notice && (
@@ -150,7 +135,7 @@ function BuildingResponse({ id }: { id: string }) {
         className="response-details"
         onClick={() => setPanelView("building")}
       >
-        Inspect drivers and financial breakdown <ArrowRight size={13} />
+        Who's here and the damage <ArrowRight size={13} />
       </button>
     </section>
   );

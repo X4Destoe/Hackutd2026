@@ -17,6 +17,7 @@ import {
 } from "../../shared/queries";
 import { useUIStore } from "../../shared/ui-store";
 import { money, riskColor, type RiskLevel } from "../../shared/format";
+import { whatsWrong } from "../../shared/plain";
 import { offlineStyle } from "./offline";
 import {
   BASEMAP_URL,
@@ -203,6 +204,9 @@ export default function MapView() {
         const i = byId.get(b.id);
         const risk = i?.risk as RiskLevel | undefined;
         const net = i?.money.net_exposure_cents;
+        const inCity = !city || b.city === city;
+        const affected = inCity && !!risk && risk !== "none";
+        const people = b.tenants?.length ?? 0;
         return {
           type: "Feature",
           geometry: { type: "Point", coordinates: [b.lon, b.lat] },
@@ -211,18 +215,23 @@ export default function MapView() {
             name: b.name,
             risk: risk ?? "unknown",
             color: riskColor(risk ?? "none"),
-            r: 8 + (hi > lo ? (14 * (roots[k] - lo)) / (hi - lo) : 7),
-            label: `${b.name} · ${net == null ? "impact unavailable" : money(net)}`,
-            net: net == null ? "impact unavailable" : money(net),
-            driver: i?.drivers?.[0] ?? "",
+            r: affected ? 16 + (hi > lo ? (10 * (roots[k] - lo)) / (hi - lo) : 6) : 8,
+            label: affected
+              ? `${b.name} · ${net == null ? "damage unknown" : money(net)}`
+              : b.name,
+            net: net == null ? "damage unknown" : money(net),
+            driver: i ? whatsWrong(i.exposure) : "",
             selected: b.id === selectedBuildingId,
             approved: Boolean(i?.with_approved_actions),
+            inCity,
+            affected,
+            people,
             kind: "building",
           },
         };
       }),
     };
-  }, [buildings.data, impacts.data, selectedBuildingId]);
+  }, [buildings.data, impacts.data, selectedBuildingId, city]);
 
   const powerFC = useMemo<FC>(
     () => ({
@@ -324,28 +333,57 @@ export default function MapView() {
       const button = marker.getElement() as HTMLButtonElement;
       button.setAttribute(
         "aria-label",
-        `${p.name} · ${p.net} · ${p.risk} risk`,
+        `${p.name}. ${p.driver || p.risk}. Damage left ${p.net}.`,
       );
       button.setAttribute("aria-pressed", String(p.selected));
       button.dataset.buildingId = p.id;
       button.dataset.risk = p.risk;
       button.dataset.approved = String(p.approved);
+      button.dataset.affected = String(p.affected);
       button.style.display = layers.buildings === false ? "none" : "";
       button.classList.toggle("is-selected", p.selected);
       button.classList.toggle("is-approved", p.approved);
+      button.classList.toggle("is-affected", p.affected);
+      button.classList.toggle("is-quiet", !p.inCity || !p.affected);
       button.replaceChildren();
       const square = document.createElement("span");
       square.className = "storm-building-square";
       square.style.backgroundColor = p.color;
-      square.style.width =
-        square.style.height = `${Math.max(8, Math.min(22, p.r))}px`;
-      square.style.flex = `0 0 ${Math.max(8, Math.min(22, p.r))}px`;
+      const size = Math.max(p.affected ? 16 : 8, Math.min(28, p.r));
+      square.style.width = square.style.height = `${size}px`;
+      square.style.flex = `0 0 ${size}px`;
+      if (p.affected) square.style.boxShadow = `0 0 0 7px ${p.color}66`;
       if (p.approved) square.textContent = "✓";
       const label = document.createElement("span");
       label.className = "storm-building-label";
       label.textContent = p.label;
       button.title = p.driver || p.label;
       button.append(square, label);
+      const peopleId = `people:${p.id}`;
+      if (p.inCity && p.people > 0 && layers.buildings !== false) {
+        active.add(peopleId);
+        let people = markers.current.get(peopleId);
+        if (!people) {
+          const chip = document.createElement("button");
+          chip.type = "button";
+          chip.className = "storm-people-button";
+          chip.addEventListener("click", () => selectRef.current(p.id));
+          people = new maplibregl.Marker({ element: chip, anchor: "top", offset: [0, 8] })
+            .setLngLat(feature.geometry.coordinates)
+            .addTo(map);
+          markers.current.set(peopleId, people);
+        }
+        const chip = people.getElement() as HTMLButtonElement;
+        chip.textContent = `${p.people} here`;
+        chip.dataset.residents = p.id;
+        chip.dataset.affected = String(p.affected);
+        chip.classList.toggle("is-affected", p.affected);
+        chip.setAttribute(
+          "aria-label",
+          `${p.people} tenants at ${p.name}. ${p.driver || "See their damage."}`,
+        );
+        people.setLngLat(feature.geometry.coordinates);
+      }
     }
     for (const [id, marker] of markers.current)
       if (!active.has(id)) {

@@ -17,8 +17,8 @@ export default function PlanCard({ plan }: { plan: Model<"Plan"> }) {
         onSuccess: () =>
           setNotice(
             accepted
-              ? "Plan approved. Response tasks are being prepared."
-              : "Plan rejected.",
+              ? "Crew is on the way."
+              : "Skipped.",
           ),
         onError: () => setNotice("Could not update this plan. Please retry."),
       },
@@ -62,14 +62,14 @@ export default function PlanCard({ plan }: { plan: Model<"Plan"> }) {
             disabled={pending || approve.isSuccess || reject.isSuccess}
             onClick={() => act(true)}
           >
-            Approve plan
+            Send the crew
           </Button>
           <Button
             variant="outline"
             disabled={pending || approve.isSuccess || reject.isSuccess}
             onClick={() => act(false)}
           >
-            Reject
+            Skip
           </Button>
         </div>
       )}

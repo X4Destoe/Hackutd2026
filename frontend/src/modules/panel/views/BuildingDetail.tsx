@@ -1,4 +1,6 @@
+import { useState } from "react";
 import {
+  useApprovePlan,
   useBuildings,
   useGenerateReport,
   useImpactFor,
@@ -7,6 +9,7 @@ import {
 } from "../../../shared/queries";
 import { useUIStore } from "../../../shared/ui-store";
 import { money, riskColor } from "../../../shared/format";
+import { crewVerb, jobLine, taskName, whatsWrong, CREW_STATUS } from "../../../shared/plain";
 import { Badge, Button } from "../../../shared/ui";
 import PlanCard from "./PlanCard";
 export default function BuildingDetail() {
@@ -17,6 +20,8 @@ export default function BuildingDetail() {
   const plans = usePlans({ building_id: id });
   const orders = useWorkOrders(id);
   const report = useGenerateReport();
+  const approve = useApprovePlan();
+  const [sent, setSent] = useState("");
   const b = buildings.data?.find((b) => b.id === id);
   const i = impact.data;
   if (!id)
@@ -38,27 +43,94 @@ export default function BuildingDetail() {
       ]
     : [];
   const max = Math.max(1, ...waterfall.map(([, v]) => Math.abs(v)));
+  const proposed = plans.data?.find((plan) => plan.status === "proposed");
+  const people = b.tenants ?? [];
   return (
     <>
       <Button variant="ghost" onClick={() => setPanelView("buildings")}>
-        ← All buildings
+        All buildings
       </Button>
       <h2>{b.name}</h2>
       <p className="panel-caption">
-        {b.type.replaceAll("_", " ")} · {b.city}
+        {b.city} · {b.address}
       </p>
-      <p className="panel-caption">{b.address}</p>
       {i && (
         <Badge
           style={{
             background: riskColor(i.risk),
-            color: i.risk === "moderate" ? "#20342b" : "#fff",
+            color: i.risk === "moderate" || i.risk === "low" ? "#20342b" : "#fff",
           }}
         >
-          {i.risk} risk
+          {i.risk === "none" ? "No damage" : `${i.risk} damage`}
         </Badge>
       )}
-      <h3 className="section-title">Fragmented data → one record</h3>
+      <h3 className="section-title">Who's here</h3>
+      {people.length ? (
+        <ul className="people-list">
+          {people.map((tenant) => (
+            <li key={tenant.id}>
+              {tenant.name}
+              {tenant.critical_ops ? " · needs the lights on" : ""}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="panel-empty">No tenants on file.</p>
+      )}
+      <h3 className="section-title">Damage</h3>
+      {impact.isPending ? (
+        <p role="status">Checking damage…</p>
+      ) : impact.isError ? (
+        <p className="panel-empty">Damage figures are unavailable.</p>
+      ) : (
+        i && (
+          <>
+            <p className="damage-lead">{whatsWrong(i.exposure)}</p>
+            <p className="damage-money">
+              Left after insurance <strong>{money(i.money.net_exposure_cents)}</strong>
+            </p>
+          </>
+        )
+      )}
+      <h3 className="section-title">Crew</h3>
+      {proposed ? (
+        <>
+          <p>{jobLine(proposed)}. Cost {money(proposed.cost_cents)}. Avoids about {money(proposed.avoided_cents)}.</p>
+          <Button
+            disabled={approve.isPending || approve.isSuccess}
+            onClick={() =>
+              approve.mutate(
+                { id: proposed.id, by: "MGR-01" },
+                {
+                  onSuccess: () => setSent("Crew is on the way. Their tasks are in Work orders."),
+                  onError: () => setSent("Could not send the crew. Try again."),
+                },
+              )
+            }
+          >
+            {approve.isPending ? "Sending…" : crewVerb(i?.exposure)}
+          </Button>
+        </>
+      ) : plans.isPending ? (
+        <p role="status">Looking for a job to send…</p>
+      ) : orders.data?.length ? (
+        <p>The crew already has this building.</p>
+      ) : (
+        <p className="panel-empty">Nothing to send for this building right now.</p>
+      )}
+      {sent && <p role="status">{sent}</p>}
+      {!!orders.data?.length && (
+        <ul className="people-list">
+          {orders.data.map((order) => (
+            <li key={order.id}>
+              {CREW_STATUS[order.status] ?? order.status} · {taskName(order.action_code)}
+            </li>
+          ))}
+        </ul>
+      )}
+      <details className="more-detail">
+        <summary>More detail</summary>
+      <h3 className="section-title">Where the numbers come from</h3>
       <div className="source-chips">
         {(b.data_sources ?? []).map((source) => (
           <Badge key={source}>{source.replaceAll("_", " ")}</Badge>
@@ -207,12 +279,13 @@ export default function BuildingDetail() {
           report.mutate({ kind: "tenant_notice", building_id: b.id })
         }
       >
-        Generate tenant notice
+        Text the tenants
       </Button>
       {report.isSuccess && (
-        <p role="status">Tenant notice generated. Open Reports to review it.</p>
+        <p role="status">Notice is ready. Open Reports to read it.</p>
       )}
-      {report.isError && <p role="alert">Could not generate tenant notice.</p>}
+      {report.isError && <p role="alert">Could not write the notice.</p>}
+      </details>
     </>
   );
 }
