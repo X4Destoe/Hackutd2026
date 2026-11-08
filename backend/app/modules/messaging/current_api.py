@@ -22,7 +22,9 @@ SHARED_SETUP = "Text the Photon agent number from this phone first, and add this
 class PhotonAPIError(PhotonError):
     def __init__(self, status: int):
         self.status = status
-        super().__init__(f"Photon API refused the request ({status}); no automatic retry")
+        message = ("Photon rejected authentication (401). Check the complete active PHOTON_API_KEY in backend/.env and any exported shell override; a project ID or webhook secret is not an API key. No automatic retry."
+                   if status == 401 else f"Photon API refused the request ({status}); no automatic retry")
+        super().__init__(message)
 
 ORIGIN = "https://api.photon.codes"
 API_VERSION = "2026-07-01"
