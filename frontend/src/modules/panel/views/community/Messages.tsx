@@ -4,7 +4,9 @@ import {
   useMessages,
   useMessagingStatus,
   useSimulateMessage,
+  useWorkOrders,
 } from "../../../../shared/queries";
+import { useUIStore } from "../../../../shared/ui-store";
 import { Badge, Button } from "../../../../shared/ui";
 function mediaLink(value: string): string | null {
   try {
@@ -18,12 +20,20 @@ export default function Messages() {
   const messages = useMessages();
   const status = useMessagingStatus();
   const buildings = useBuildings();
+  const orders = useWorkOrders();
+  const { selectBuilding, setPanelView } = useUIStore();
   const simulate = useSimulateMessage();
   const [party, setParty] = useState("resident");
   const [phone, setPhone] = useState("");
   const [text, setText] = useState("");
   const [media, setMedia] = useState("");
   const [error, setError] = useState("");
+  const [attentionOnly, setAttentionOnly] = useState(false);
+  const [conversation, setConversation] = useState("");
+  const needsAttention = (messages.data ?? []).filter(message => message.direction === "outbound" && ["failed", "queued"].includes(message.status));
+  const conversations = [...new Set((messages.data ?? []).map(message => message.party_id))].sort();
+  const visible = (messages.data ?? []).filter(message => (!conversation || message.party_id === conversation) &&
+    (!attentionOnly || (message.direction === "outbound" && ["failed", "queued"].includes(message.status))));
   const parties = useMemo(() => {
     const options = new Map<string, string>([["MGR-01", "Portfolio manager"]]);
     for (const b of buildings.data ?? []) {
@@ -140,24 +150,32 @@ export default function Messages() {
         )}
       </form>
       <h3 className="section-title">Message feed</h3>
+      {!!needsAttention.length && <p className="attention-label" role="status">
+        {needsAttention.length} outbound message(s) need follow-up. Failed or queued messages do not confirm delivery.
+      </p>}
+      <label className="panel-check"><input type="checkbox" checked={attentionOnly} onChange={event => setAttentionOnly(event.target.checked)} />Show messages needing follow-up</label>
+      <label className="sort-row">Conversation<select aria-label="Filter messages by conversation" value={conversation} onChange={event => setConversation(event.target.value)}>
+        <option value="">All conversations</option>{conversations.map(id => <option key={id} value={id}>{parties.find(([partyId]) => partyId === id)?.[1] ?? id}</option>)}
+      </select></label>
       {messages.isPending ? (
         <p role="status">Loading messages…</p>
       ) : messages.isError ? (
-        <p className="panel-empty">Message history is unavailable.</p>
+        <div role="alert"><p className="panel-empty">Message history is unavailable.</p><Button variant="outline" onClick={() => void messages.refetch()}>Retry message history</Button></div>
       ) : messages.data.length === 0 ? (
         <p className="panel-empty">No messages yet.</p>
-      ) : (
+      ) : visible.length === 0 ? <p className="panel-empty">No messages match these filters.</p> : (
         <ol className="community-list">
-          {[...messages.data].reverse().map((message) => (
+          {[...visible].reverse().map((message) => (
             <li
               key={message.id}
-              className={`community-card message-${message.direction}`}
+              className={`community-card message-${message.direction} ${message.status === "failed" ? "needs-attention" : ""}`}
+              aria-label={`Message ${message.id}`}
             >
               <div className="community-card-heading">
                 <strong>
                   {message.direction === "inbound"
                     ? "Received from"
-                    : "Sent to"}{" "}
+                    : message.status === "failed" ? "Failed to send to" : message.status === "queued" ? "Queued for" : "Sent to"}{" "}
                   {message.party_id}
                 </strong>
                 <Badge>{message.status}</Badge>
@@ -170,6 +188,15 @@ export default function Messages() {
               {message.error && (
                 <p className="attention-label">{message.error}</p>
               )}
+              {message.work_order_id && <>
+                <p className="community-meta">Linked work order: {message.work_order_id}</p>
+                <Button variant="outline" onClick={() => {
+                  const order = orders.data?.find(order => order.id === message.work_order_id);
+                  if (order) selectBuilding(order.building_id);
+                  setPanelView("workorders");
+                }}>Review work order</Button>
+              </>}
+              {message.referral_id && <Button variant="outline" onClick={() => setPanelView("help")}>Review resident request</Button>}
               {message.media_urls?.map((url, i) => {
                 const safe = mediaLink(url);
                 return safe ? (
