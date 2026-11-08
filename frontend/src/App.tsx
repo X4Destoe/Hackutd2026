@@ -1,4 +1,5 @@
 import MapView from "./modules/map";
+import SimulationBuilder from "./modules/simulation";
 import { useEffect, useState } from "react";
 import {
   Building2,
@@ -87,6 +88,7 @@ export default function App() {
             ))}
           </select>
         </label>
+        <SimulationBuilder />
         <nav aria-label="Portfolio tools">
           {navigation.map(([view, label, Icon]) => (
             <Button
