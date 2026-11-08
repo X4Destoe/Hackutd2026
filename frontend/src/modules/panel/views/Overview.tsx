@@ -1,3 +1,4 @@
+import TermHelp from "../../../shared/TermHelp";
 import { useFixFirst, usePlans, useSummary } from "../../../shared/queries";
 import { useUIStore } from "../../../shared/ui-store";
 import { money, hours } from "../../../shared/format";
@@ -35,7 +36,7 @@ export default function Overview() {
             ],
           ].map(([label, value]) => (
             <div key={label}>
-              <dt>{label}</dt>
+              <dt><TermHelp term={label} /></dt>
               <dd>{value}</dd>
             </div>
           ))}

@@ -1,0 +1,7 @@
+.term-label { display: inline-flex; align-items: center; gap: 3px; max-width: 100%; }
+.term-info { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 24px; height: 24px; padding: 3px; border: 0; background: transparent; color: inherit; opacity: .85; cursor: help; vertical-align: middle; }
+.term-info:hover, .term-info[aria-expanded=true] { opacity: 1; background: #789c8420; }
+.term-info:focus-visible { outline: 2px solid currentColor; outline-offset: 1px; opacity: 1; }
+.term-explanation { z-index: 110; width: max-content; max-width: min(310px, calc(100vw - 24px)); padding: 12px 14px; background: #153c28; color: white; font-size: 12px; line-height: 1.6; font-weight: 400; letter-spacing: normal; text-transform: none; white-space: normal; box-shadow: 0 4px 16px #10261b33; }
+.term-explanation-arrow { fill: #153c28; }
+.hero-metrics .term-label { display: inline-flex; color: inherit; }

@@ -1,3 +1,4 @@
+import TermHelp from "../../shared/TermHelp";
 import VisualGuide from "../../shared/VisualGuide";
 import { cityPhoto } from "../../shared/city-photos";
 import HelpSites from "./views/community/HelpSites";
@@ -157,13 +158,13 @@ export default function Panel({ onClose }: { onClose?: () => void }) {
           </p>
           <div className="hero-metrics" aria-live="polite">
             <div>
-              <span title="After insurance and approved actions">Estimated loss</span>
+              <span><TermHelp term="Estimated loss" /></span>
               <strong key={`net-${summary.data?.net_exposure_cents}`}>
                 {summary.data?.data_quality === "unknown" ? "Unknown" : summary.data ? money(summary.data.net_exposure_cents) : "—"}
               </strong>
             </div>
             <div>
-              <span>Avoided</span>
+              <span><TermHelp term="Avoided" /></span>
               <strong key={`avoided-${summary.data?.avoided_cents}`}>
                 {summary.data?.data_quality === "unknown" ? "Unknown" : summary.data ? money(summary.data.avoided_cents) : "—"}
               </strong>

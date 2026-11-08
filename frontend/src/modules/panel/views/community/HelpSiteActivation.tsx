@@ -1,3 +1,4 @@
+import TermHelp from "../../../../shared/TermHelp";
 import { useState } from "react";
 import type { Model } from "../../../../shared/api";
 import { useApprovePlan, useBuildings, useDemoState, usePlans, useResources, useWorkOrders } from "../../../../shared/queries";
@@ -21,7 +22,7 @@ function Activation({ building, plan, site, orders, unavailable, live, hour }: {
     <dl className="panel-facts">
       <div><dt>{site ? "Places available" : "Proposed capacity"}</dt><dd>{site ? Math.max(0, site.capacity - site.used) : building.host_capacity} people</dd></div>
       <div><dt>Setup cost</dt><dd>{money(plan.cost_cents)}</dd></div>
-      <div><dt>Act by</dt><dd>{hours(plan.act_by_hour)} relative to impact</dd></div>
+      <div><dt><TermHelp term="Act by" /></dt><dd>{hours(plan.act_by_hour)} relative to impact</dd></div>
     </dl>
     {proposed && !site && <>
       <p>Approval registers this building with the help-routing service and sends a setup task to the on-site engineer.</p>

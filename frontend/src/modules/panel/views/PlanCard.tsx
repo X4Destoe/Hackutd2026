@@ -1,3 +1,4 @@
+import TermHelp from "../../../shared/TermHelp";
 import { useState } from "react";
 import type { Model } from "../../../shared/api";
 import { useApprovePlan, useRejectPlan } from "../../../shared/queries";
@@ -40,18 +41,16 @@ export default function PlanCard({ plan }: { plan: Model<"Plan"> }) {
         </div>
         <div>
           <dt>
-            {plan.status === "missed"
-              ? "Would have saved"
-              : "Potential savings"}
+            <TermHelp term={plan.status === "missed" ? "Would have saved" : "Potential savings"} />
           </dt>
           <dd>{money(plan.avoided_cents)}</dd>
         </div>
         <div>
-          <dt>ROI</dt>
+          <dt><TermHelp term="ROI" /></dt>
           <dd>{plan.roi.toFixed(1)}×</dd>
         </div>
         <div>
-          <dt>Act by</dt>
+          <dt><TermHelp term="Act by" /></dt>
           <dd>{hours(plan.act_by_hour)}</dd>
         </div>
       </dl>

@@ -1,3 +1,4 @@
+import TermHelp from "../../../shared/TermHelp";
 import {
   useBuildings,
   useGenerateReport,
@@ -77,7 +78,7 @@ export default function BuildingDetail() {
             {i.data_quality === "live_proxy" && <p className="panel-caption">Alert-based proxy estimates, not measured flood depths. Utility conditions are unverified.</p>}
             <dl className="panel-facts">
               <div>
-                <dt>Flood / surge depth</dt>
+                <dt><TermHelp term="Flood / surge depth" /></dt>
                 <dd>{i.exposure.flood_depth_ft.toFixed(1)} ft</dd>
               </div>
               <div>
@@ -97,15 +98,15 @@ export default function BuildingDetail() {
                 </dd>
               </div>
               <div>
-                <dt>Grid</dt>
+                <dt><TermHelp term="Grid" /></dt>
                 <dd>{i.data_quality === "live_proxy" ? "Unverified" : i.exposure.grid_down ? "Down" : "Available"}</dd>
               </div>
               <div>
-                <dt>Outage duration</dt>
+                <dt><TermHelp term="Outage duration" /></dt>
                 <dd>{i.data_quality === "live_proxy" ? "Unverified" : `${i.exposure.power_out_hours} h`}</dd>
               </div>
               <div>
-                <dt>Generator remaining</dt>
+                <dt><TermHelp term="Generator remaining" /></dt>
                 <dd>
                   {i.data_quality === "live_proxy" ? "Unverified" : i.exposure.generator_hours_left == null
                     ? "Not running"
@@ -124,12 +125,12 @@ export default function BuildingDetail() {
                 <li key={n}>{driver}</li>
               ))}
             </ul>
-            <h3 className="section-title">Money waterfall</h3>
+            <h3 className="section-title" aria-label="Money waterfall"><TermHelp term="Money waterfall" /></h3>
             <div className="waterfall">
               {waterfall.map(([label, value, credit]) => (
                 <div key={label} className={credit ? "waterfall-credit" : ""}>
                   <div>
-                    <span>{label}</span>
+                    <span><TermHelp term={label} /></span>
                     <strong>
                       {credit ? "−" : ""}
                       {money(value)}
@@ -174,7 +175,7 @@ export default function BuildingDetail() {
               <tr key={t.id}>
                 <td>
                   {t.name}
-                  {t.critical_ops && <small>Critical operations</small>}
+                  {t.critical_ops && <small><TermHelp term="Critical operations" /></small>}
                 </td>
                 <td>{t.sqft.toLocaleString()} sq ft</td>
                 <td>{money(t.rent_per_day_cents)}</td>
