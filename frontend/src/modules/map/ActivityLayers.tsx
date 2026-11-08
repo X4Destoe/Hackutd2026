@@ -24,11 +24,12 @@ export default function ActivityLayers({ map, city }: { map: MLMap | null; city?
       button.dataset.activityKind = kind;
       button.dataset.activityId = id;
       button.dataset.openPanel = "true";
-      button.setAttribute("aria-label", label);
       button.title = label;
       button.textContent = text;
       button.addEventListener("click", event => { event.stopPropagation(); click(); });
       markers.push(new maplibregl.Marker({ element: button, offset }).setLngLat([lon, lat]).addTo(map));
+      // MapLibre supplies its generic label during construction; restore the useful record label afterward.
+      button.setAttribute("aria-label", label);
     };
     if (layers.help) for (const site of sites.data ?? []) {
       if (site.city !== city) continue;
