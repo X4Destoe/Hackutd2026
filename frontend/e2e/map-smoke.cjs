@@ -26,8 +26,10 @@ async function main() {
     assert(response.ok(), `${method} ${route}: HTTP ${response.status()}`);
     return response.json();
   };
+  let resetAllowed = false;
   try {
     assert.equal((await api("/messaging/status")).mode, "sim");
+    resetAllowed = true;
     await api("/demo/reset", "POST", { scenario_id: "harvey_houston" });
     await page.goto(BASE);
     const map = page.getByRole("main", { name: "Map workspace" });
@@ -154,7 +156,7 @@ async function main() {
       .catch(() => {});
     throw error;
   } finally {
-    await api("/demo/reset", "POST", { scenario_id: "harvey_houston" }).catch(
+    if (resetAllowed) await api("/demo/reset", "POST", { scenario_id: "harvey_houston" }).catch(
       () => {},
     );
     await browser.close();
