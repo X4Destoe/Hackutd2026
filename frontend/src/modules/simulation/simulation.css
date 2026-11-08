@@ -4,9 +4,11 @@
 .simulation-dialog p { font-size: 12px; line-height: 1.6; color: #52665a; margin: 10px 0; }
 .simulation-dialog form { display: grid; gap: 14px; margin-top: 20px; }
 .simulation-dialog label { display: grid; gap: 7px; font-size: 12px; font-weight: 600; }
-.simulation-dialog select { width: 100%; }
+.simulation-dialog select { width: 100%; max-width: none; }
 .simulation-close { position: absolute; right: 12px; top: 12px; }
 .simulation-control span { display: flex; justify-content: space-between; gap: 12px; }
 .simulation-control output { color: #17603a; font-variant-numeric: tabular-nums; }
 .simulation-control input { width: 100%; accent-color: #1f7a45; }
 .simulation-dialog .simulation-disclaimer { padding: 12px; background: #edf4ed; font-size: 11px; }
+
+.simulation-dialog [role="alert"] { color: #a33224; }
