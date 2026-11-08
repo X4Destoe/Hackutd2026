@@ -1,0 +1,9 @@
+# Custom simulation builder (additive contract)
+
+User-requested mode alongside historical and live scenarios. Choose Houston, Dallas, Fort Myers, or a supported city at random; choose flood, hurricane, windstorm, winter storm, or coastal storm surge (Fort Myers only). Adjust relevant peak water, wind, outage duration, minimum temperature, and ice accumulation. These are hypothetical exercises over the existing synthetic portfolio, not forecasts or claims about local hazard geography.
+
+HTTP contract: GET `/api/simulation/options`; POST `/api/simulation/preview` and `/api/simulation/start`. The request is `{city, disaster, water_ft=6, wind_mph=100, outage_hours=24, temperature_f=10, ice_in=0.5}`. Ranges: water0..20ft; wind0..180mph; outages integer0..168h; temperature-30..32°F; ice0..2in. Unknown IDs/fields, nonfinite and out-of-range values return422. City `random` resolves to a supported city once per request; preview returns that concrete city. UI random selection resolves visibly before start.
+
+Preview returns `{scenario: Scenario, configuration: resolved request}` without changing active state. Start returns the existing `DemoState`, using the public `scenarios.load_definition(Scenario, anchors)` extension so impact, plans, timeline, resources and work orders use the normal scenario.loaded flow. Missing runtime-loader support returns503. Runtime definitions must remain in memory, be bounded, and be resettable through the normal load/reset endpoint; no historical JSON may be overwritten. Metadata must include registered custom scenarios for the city hero/menu. IDs begin `custom_` and UI copy must say custom/synthetic rather than historical/live.
+
+No existing shared-schema fields change. Frontend invalidates scenario metadata and all scenario-bound query prefixes after start. Switching/resetting a scenario has the same store-clearing semantics as the existing historical picker.
