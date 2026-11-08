@@ -127,7 +127,7 @@ class CurrentPhoton:
             if token:
                 raise PhotonError("Set PHOTON_SENDER_ID to select a sending line explicitly")
         owned = [u for u in users if isinstance(u, dict) and u.get("projectId") == self.config.photon_project_id
-                 and u.get("platform") == self.config.photon_platform and u.get("kind") == "agent"
+                 and u.get("platform") == self.config.photon_platform
                  and isinstance(u.get("details"), dict) and u["details"].get("resourceId") and isinstance(u.get("id"), str)]
         if len(owned) != 1:
             raise PhotonError("Configure PHOTON_SENDER_ID for one project-owned sending line; no line was provisioned automatically")

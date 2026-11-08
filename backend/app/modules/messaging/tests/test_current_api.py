@@ -164,3 +164,40 @@ def test_ignored_event_does_not_suppress_later_received_message(cfg, monkeypatch
         result=client.post('/api/webhooks/photon',content=raw,headers=headers)
         assert result.status_code==200 and not result.json().get('duplicate')
         assert len(store.messages.list(direction='inbound'))==1
+
+
+def test_gateway_only_exposes_webhook_and_preserves_signed_bytes(monkeypatch, cfg):
+    from app.modules.messaging import webhook_gateway
+    seen=[]
+    raw, headers = signed({'signed': True}, identity='test-delivery')
+    monkeypatch.setattr(webhook_gateway, 'settings', lambda: cfg)
+    original=httpx.AsyncClient
+    def upstream(request):
+        seen.append(request)
+        assert request.url == 'http://127.0.0.1:8000/api/webhooks/photon'
+        assert request.content == raw
+        assert request.headers['webhook-id']=='test-delivery'
+        assert 'authorization' not in request.headers
+        return httpx.Response(200,json={'ok':True})
+    def factory(**kwargs):
+        assert kwargs['trust_env'] is False
+        return original(**kwargs,transport=httpx.MockTransport(upstream))
+    monkeypatch.setattr(webhook_gateway.httpx,'AsyncClient',factory)
+    with TestClient(webhook_gateway.app) as client:
+        assert client.get('/api/messages').status_code==404
+        assert client.get('/docs').status_code==404
+        assert client.get('/openapi.json').status_code==404
+        assert client.post('/api/webhooks/photon', content=raw).status_code==401
+        result=client.post('/api/webhooks/photon',content=raw,headers={**headers,'Authorization':'not-forwarded'})
+        assert result.status_code==200 and len(seen)==1
+        assert client.post('/api/webhooks/photon',content=b'x'*1048577).status_code==413
+        assert len(seen)==1
+
+
+def test_sender_discovery_uses_owned_resource_not_an_invented_kind_enum(cfg):
+    def native_kind(suffix,code,data):
+        if suffix=='/users' and 'items' in data:
+            data['items'][0]['kind']='phone'
+        return code,data
+    client,_=transport(cfg,native_kind)
+    assert photon.PhotonChannel(client,cfg).send_text(PHONE,'hello',[])=='message-out'

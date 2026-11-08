@@ -13,3 +13,13 @@ Sending reconciles the recipient User, creates a direct Space with the Agent fir
 Inbound `/api/webhooks/photon` verifies Standard Webhooks headers (`webhook-id`, `webhook-timestamp`, `webhook-signature`) over exact raw bytes with the decoded secret. It accepts the documented `2026-07-01` envelope and checks project identity, received status, direct conversation, and phone handle. Group messages, outgoing events, typing and read receipts do not start chat turns. Signed message IDs deduplicate redelivery under a new event ID.
 
 Contracts checked against official `@photon-ai/api@0.6.0` public types and `@photon-ai/convex@0.1.0` webhook parser. Attachment-ID-only events do not yet provide a downloadable photo URL; live attachment retrieval is not verified. Mocked protocol acceptance is separate from real authentication, line provisioning, webhook reachability and handset delivery.
+
+## Run on a machine that can reach Photon
+
+1. From `backend/`, run `python -m app.modules.messaging.check_photon --live`. It must verify the project and sending identity before a live-send claim.
+2. Start the API with `MESSAGING_MODE=photon uvicorn app.main:app --host 127.0.0.1 --port 8000`. The frontend can be open or closed; it is not required for texting.
+3. Start webhook-only ingress in another terminal: `uvicorn app.modules.messaging.webhook_gateway:app --host 127.0.0.1 --port 8788`.
+4. Expose port8788 using the chosen HTTPS tunnel and register `https://<tunnel-host>/api/webhooks/photon` in the Photon destination. The gateway has no management endpoints, Swagger UI, or OpenAPI endpoint; it preserves signed bytes and forwards only webhook headers to the private API. Do not expose port8000 or the legacy sending bridge directly.
+5. Test using the configured phones: manager approval `YES PLAN-001` on a fresh Harvey exercise; technician completion `DONE WO-001`; a resident insurance-claim request should create a referral and notify the claims contact. Check real message delivery and signed inbound receipts separately.
+
+The cloud machine's saved allowlist changes must be applied before its Photon checks can succeed. Local or deployed operation is possible independently, using private settings on that machine. The gateway supplies ingress routing, not TLS certificates or a tunnel account.
