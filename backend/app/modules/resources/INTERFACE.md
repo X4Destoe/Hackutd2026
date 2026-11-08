@@ -16,3 +16,4 @@ Runs on `scenario.loaded` (seed) and `timeline.changed` (refresh_safety).
 - Location (demo simplification): a neighborhood named in the text (`PLACES`), else the scenario's default flooded neighborhood
   (Houston Memorial, Dallas Oak Lawn, Fort Myers Beach) with a small deterministic offset per resident.
 - Repair vendors get "contact" wording, not "go to" (they come to you).
+- Every reply also texts the nearest open, safe State Farm claim site as the emergency claims adjuster (name, address, desk phone, policy-number line, map). A claim request is sent straight there. The adjuster visit does not reserve a spot. An unsafe or closed claim site is never named.
