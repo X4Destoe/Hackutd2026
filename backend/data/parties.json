@@ -1,0 +1,202 @@
+[
+ {
+  "id": "MGR-01",
+  "type": "manager",
+  "name": "Portfolio manager",
+  "phone": "+15550100001",
+  "language": "en",
+  "demo_live": false
+ },
+ {
+  "id": "TECH-HOU-01",
+  "type": "technician",
+  "name": "Marcus (Houston engineer)",
+  "phone": "+15550100002",
+  "language": "en",
+  "demo_live": false
+ },
+ {
+  "id": "TECH-DAL-01",
+  "type": "technician",
+  "name": "Priya (Dallas engineer)",
+  "phone": "+15550100003",
+  "language": "en",
+  "demo_live": false
+ },
+ {
+  "id": "TECH-FMY-01",
+  "type": "technician",
+  "name": "Luis (Fort Myers engineer)",
+  "phone": "+15550100004",
+  "language": "en",
+  "demo_live": false
+ },
+ {
+  "id": "TEN-001",
+  "type": "tenant",
+  "name": "Harbor Legal LLP (facilities contact)",
+  "phone": "+15550100005",
+  "language": "en",
+  "demo_live": false
+ },
+ {
+  "id": "TEN-002",
+  "type": "tenant",
+  "name": "Gulfline Energy (facilities contact)",
+  "phone": "+15550100006",
+  "language": "en",
+  "demo_live": false
+ },
+ {
+  "id": "TEN-003",
+  "type": "tenant",
+  "name": "Bayou Coffee Co. (facilities contact)",
+  "phone": "+15550100007",
+  "language": "en",
+  "demo_live": false
+ },
+ {
+  "id": "TEN-004",
+  "type": "tenant",
+  "name": "CloudCore Hosting (facilities contact)",
+  "phone": "+15550100008",
+  "language": "en",
+  "demo_live": false
+ },
+ {
+  "id": "TEN-005",
+  "type": "tenant",
+  "name": "MedRecords Inc. (facilities contact)",
+  "phone": "+15550100009",
+  "language": "en",
+  "demo_live": false
+ },
+ {
+  "id": "TEN-006",
+  "type": "tenant",
+  "name": "FreshMart Grocery (facilities contact)",
+  "phone": "+15550100010",
+  "language": "en",
+  "demo_live": false
+ },
+ {
+  "id": "TEN-007",
+  "type": "tenant",
+  "name": "Meyerland Pharmacy (facilities contact)",
+  "phone": "+15550100011",
+  "language": "en",
+  "demo_live": false
+ },
+ {
+  "id": "TEN-008",
+  "type": "tenant",
+  "name": "Uptown Clinics (facilities contact)",
+  "phone": "+15550100012",
+  "language": "en",
+  "demo_live": false
+ },
+ {
+  "id": "TEN-009",
+  "type": "tenant",
+  "name": "Westpark Petroleum (facilities contact)",
+  "phone": "+15550100013",
+  "language": "en",
+  "demo_live": false
+ },
+ {
+  "id": "TEN-010",
+  "type": "tenant",
+  "name": "Trinity Capital (facilities contact)",
+  "phone": "+15550100014",
+  "language": "en",
+  "demo_live": false
+ },
+ {
+  "id": "TEN-011",
+  "type": "tenant",
+  "name": "Prairie Cloud (facilities contact)",
+  "phone": "+15550100015",
+  "language": "en",
+  "demo_live": false
+ },
+ {
+  "id": "TEN-012",
+  "type": "tenant",
+  "name": "LoneStar Payments (facilities contact)",
+  "phone": "+15550100016",
+  "language": "en",
+  "demo_live": false
+ },
+ {
+  "id": "TEN-013",
+  "type": "tenant",
+  "name": "Texas Health Data (facilities contact)",
+  "phone": "+15550100017",
+  "language": "en",
+  "demo_live": false
+ },
+ {
+  "id": "TEN-014",
+  "type": "tenant",
+  "name": "Lakewood Grocers (facilities contact)",
+  "phone": "+15550100018",
+  "language": "en",
+  "demo_live": false
+ },
+ {
+  "id": "TEN-015",
+  "type": "tenant",
+  "name": "Bluebonnet Fitness (facilities contact)",
+  "phone": "+15550100019",
+  "language": "en",
+  "demo_live": false
+ },
+ {
+  "id": "TEN-016",
+  "type": "tenant",
+  "name": "Dallas Market Events (facilities contact)",
+  "phone": "+15550100020",
+  "language": "en",
+  "demo_live": false
+ },
+ {
+  "id": "TEN-017",
+  "type": "tenant",
+  "name": "Caloosa Law Group (facilities contact)",
+  "phone": "+15550100021",
+  "language": "en",
+  "demo_live": false
+ },
+ {
+  "id": "TEN-018",
+  "type": "tenant",
+  "name": "SWFL Title Co. (facilities contact)",
+  "phone": "+15550100022",
+  "language": "en",
+  "demo_live": false
+ },
+ {
+  "id": "TEN-019",
+  "type": "tenant",
+  "name": "Lee Health Partners (facilities contact)",
+  "phone": "+15550100023",
+  "language": "en",
+  "demo_live": false
+ },
+ {
+  "id": "TEN-020",
+  "type": "tenant",
+  "name": "Beach Outfitters (facilities contact)",
+  "phone": "+15550100024",
+  "language": "en",
+  "demo_live": false
+ },
+ {
+  "id": "TEN-021",
+  "type": "tenant",
+  "name": "Salt Life Caf\u00e9 (facilities contact)",
+  "phone": "+15550100025",
+  "language": "en",
+  "demo_live": false
+ }
+]

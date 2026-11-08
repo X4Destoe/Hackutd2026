@@ -1,0 +1,683 @@
+[
+ {
+  "id": "BLD-HOU-01",
+  "name": "Bayou Plaza",
+  "type": "office",
+  "city": "Houston",
+  "address": "901 Bayou Plaza Dr (illustrative)",
+  "lat": 29.7567,
+  "lon": -95.3625,
+  "sqft": 420000,
+  "floors": 28,
+  "year_built": 1982,
+  "first_floor_elev_ft": 1.0,
+  "replacement_value_cents": 6200000000,
+  "utility_node_id": "UTL-HOU-SUB1",
+  "systems": {
+   "has_generator": true,
+   "generator_fuel_hours": 18.0,
+   "freeze_protection": true,
+   "flood_barriers_installed": false,
+   "roof_wind_rating_mph": 110,
+   "ground_floor_equipment": true
+  },
+  "tenants": [
+   {
+    "id": "TEN-001",
+    "name": "Harbor Legal LLP",
+    "sqft": 120000,
+    "rent_per_day_cents": 1249315,
+    "sla_penalty_per_hour_cents": 0,
+    "critical_ops": false,
+    "contact_party_id": "TEN-001"
+   },
+   {
+    "id": "TEN-002",
+    "name": "Gulfline Energy",
+    "sqft": 210000,
+    "rent_per_day_cents": 2071233,
+    "sla_penalty_per_hour_cents": 0,
+    "critical_ops": false,
+    "contact_party_id": "TEN-002"
+   },
+   {
+    "id": "TEN-003",
+    "name": "Bayou Coffee Co.",
+    "sqft": 4000,
+    "rent_per_day_cents": 49315,
+    "sla_penalty_per_hour_cents": 0,
+    "critical_ops": false,
+    "contact_party_id": "TEN-003"
+   }
+  ],
+  "insurance": {
+   "carrier": "State Farm",
+   "deductible_cents": 186000000,
+   "limit_cents": 6200000000,
+   "bi_days_covered": 60
+  },
+  "onsite_party_id": "TECH-HOU-01",
+  "can_host_help_site": false,
+  "host_capacity": 0,
+  "data_sources": [
+   "lease_abstracts",
+   "bms",
+   "utility_map",
+   "insurance_sov",
+   "work_orders"
+  ]
+ },
+ {
+  "id": "BLD-HOU-02",
+  "name": "Northwest Data Hub",
+  "type": "data_center",
+  "city": "Houston",
+  "address": "4400 Northwest Data Way (illustrative)",
+  "lat": 29.849,
+  "lon": -95.538,
+  "sqft": 180000,
+  "floors": 3,
+  "year_built": 2014,
+  "first_floor_elev_ft": 4.0,
+  "replacement_value_cents": 9500000000,
+  "utility_node_id": "UTL-HOU-SUB5",
+  "systems": {
+   "has_generator": true,
+   "generator_fuel_hours": 30.0,
+   "freeze_protection": true,
+   "flood_barriers_installed": false,
+   "roof_wind_rating_mph": 130,
+   "ground_floor_equipment": false
+  },
+  "tenants": [
+   {
+    "id": "TEN-004",
+    "name": "CloudCore Hosting",
+    "sqft": 90000,
+    "rent_per_day_cents": 1479452,
+    "sla_penalty_per_hour_cents": 120000,
+    "critical_ops": true,
+    "contact_party_id": "TEN-004"
+   },
+   {
+    "id": "TEN-005",
+    "name": "MedRecords Inc.",
+    "sqft": 50000,
+    "rent_per_day_cents": 821918,
+    "sla_penalty_per_hour_cents": 55000,
+    "critical_ops": true,
+    "contact_party_id": "TEN-005"
+   }
+  ],
+  "insurance": {
+   "carrier": "Other",
+   "deductible_cents": 190000000,
+   "limit_cents": 9500000000,
+   "bi_days_covered": 30
+  },
+  "onsite_party_id": "TECH-HOU-01",
+  "can_host_help_site": false,
+  "host_capacity": 0,
+  "data_sources": [
+   "lease_abstracts",
+   "bms",
+   "utility_map",
+   "insurance_sov",
+   "work_orders"
+  ]
+ },
+ {
+  "id": "BLD-HOU-03",
+  "name": "Meyerland Retail Center",
+  "type": "retail",
+  "city": "Houston",
+  "address": "5300 Meyerland Plaza (illustrative)",
+  "lat": 29.6885,
+  "lon": -95.4625,
+  "sqft": 160000,
+  "floors": 2,
+  "year_built": 1975,
+  "first_floor_elev_ft": 0.5,
+  "replacement_value_cents": 2800000000,
+  "utility_node_id": "UTL-HOU-SUB3",
+  "systems": {
+   "has_generator": false,
+   "generator_fuel_hours": 0.0,
+   "freeze_protection": false,
+   "flood_barriers_installed": false,
+   "roof_wind_rating_mph": 100,
+   "ground_floor_equipment": true
+  },
+  "tenants": [
+   {
+    "id": "TEN-006",
+    "name": "FreshMart Grocery",
+    "sqft": 60000,
+    "rent_per_day_cents": 361644,
+    "sla_penalty_per_hour_cents": 0,
+    "critical_ops": false,
+    "contact_party_id": "TEN-006"
+   },
+   {
+    "id": "TEN-007",
+    "name": "Meyerland Pharmacy",
+    "sqft": 12000,
+    "rent_per_day_cents": 98630,
+    "sla_penalty_per_hour_cents": 0,
+    "critical_ops": false,
+    "contact_party_id": "TEN-007"
+   }
+  ],
+  "insurance": {
+   "carrier": "State Farm",
+   "deductible_cents": 140000000,
+   "limit_cents": 2800000000,
+   "bi_days_covered": 45
+  },
+  "onsite_party_id": "TECH-HOU-01",
+  "can_host_help_site": false,
+  "host_capacity": 0,
+  "data_sources": [
+   "lease_abstracts",
+   "bms",
+   "utility_map",
+   "insurance_sov",
+   "work_orders"
+  ]
+ },
+ {
+  "id": "BLD-HOU-04",
+  "name": "Galleria Medical Offices",
+  "type": "medical_office",
+  "city": "Houston",
+  "address": "5100 Galleria Medical Pkwy (illustrative)",
+  "lat": 29.7395,
+  "lon": -95.4605,
+  "sqft": 240000,
+  "floors": 12,
+  "year_built": 2006,
+  "first_floor_elev_ft": 3.0,
+  "replacement_value_cents": 4800000000,
+  "utility_node_id": "UTL-HOU-SUB2",
+  "systems": {
+   "has_generator": true,
+   "generator_fuel_hours": 48.0,
+   "freeze_protection": true,
+   "flood_barriers_installed": false,
+   "roof_wind_rating_mph": 130,
+   "ground_floor_equipment": false
+  },
+  "tenants": [
+   {
+    "id": "TEN-008",
+    "name": "Uptown Clinics",
+    "sqft": 200000,
+    "rent_per_day_cents": 1863014,
+    "sla_penalty_per_hour_cents": 0,
+    "critical_ops": false,
+    "contact_party_id": "TEN-008"
+   }
+  ],
+  "insurance": {
+   "carrier": "State Farm",
+   "deductible_cents": 144000000,
+   "limit_cents": 4800000000,
+   "bi_days_covered": 60
+  },
+  "onsite_party_id": "TECH-HOU-01",
+  "can_host_help_site": true,
+  "host_capacity": 250,
+  "data_sources": [
+   "lease_abstracts",
+   "bms",
+   "utility_map",
+   "insurance_sov",
+   "work_orders"
+  ]
+ },
+ {
+  "id": "BLD-HOU-05",
+  "name": "Energy Corridor Tower",
+  "type": "office",
+  "city": "Houston",
+  "address": "14200 Energy Corridor Blvd (illustrative)",
+  "lat": 29.7785,
+  "lon": -95.628,
+  "sqft": 380000,
+  "floors": 20,
+  "year_built": 1998,
+  "first_floor_elev_ft": 2.0,
+  "replacement_value_cents": 5400000000,
+  "utility_node_id": "UTL-HOU-SUB4",
+  "systems": {
+   "has_generator": true,
+   "generator_fuel_hours": 12.0,
+   "freeze_protection": true,
+   "flood_barriers_installed": false,
+   "roof_wind_rating_mph": 110,
+   "ground_floor_equipment": true
+  },
+  "tenants": [
+   {
+    "id": "TEN-009",
+    "name": "Westpark Petroleum",
+    "sqft": 300000,
+    "rent_per_day_cents": 2630137,
+    "sla_penalty_per_hour_cents": 0,
+    "critical_ops": false,
+    "contact_party_id": "TEN-009"
+   }
+  ],
+  "insurance": {
+   "carrier": "Other",
+   "deductible_cents": 162000000,
+   "limit_cents": 5400000000,
+   "bi_days_covered": 60
+  },
+  "onsite_party_id": "TECH-HOU-01",
+  "can_host_help_site": false,
+  "host_capacity": 0,
+  "data_sources": [
+   "lease_abstracts",
+   "bms",
+   "utility_map",
+   "insurance_sov",
+   "work_orders"
+  ]
+ },
+ {
+  "id": "BLD-DAL-01",
+  "name": "Elm Street Tower",
+  "type": "office",
+  "city": "Dallas",
+  "address": "1600 Elm St (illustrative)",
+  "lat": 32.781,
+  "lon": -96.799,
+  "sqft": 350000,
+  "floors": 32,
+  "year_built": 1985,
+  "first_floor_elev_ft": 2.0,
+  "replacement_value_cents": 5000000000,
+  "utility_node_id": "UTL-DAL-SUB1",
+  "systems": {
+   "has_generator": true,
+   "generator_fuel_hours": 8.0,
+   "freeze_protection": true,
+   "flood_barriers_installed": false,
+   "roof_wind_rating_mph": 110,
+   "ground_floor_equipment": false
+  },
+  "tenants": [
+   {
+    "id": "TEN-010",
+    "name": "Trinity Capital",
+    "sqft": 200000,
+    "rent_per_day_cents": 1863014,
+    "sla_penalty_per_hour_cents": 0,
+    "critical_ops": false,
+    "contact_party_id": "TEN-010"
+   }
+  ],
+  "insurance": {
+   "carrier": "State Farm",
+   "deductible_cents": 100000000,
+   "limit_cents": 5000000000,
+   "bi_days_covered": 60
+  },
+  "onsite_party_id": "TECH-DAL-01",
+  "can_host_help_site": false,
+  "host_capacity": 0,
+  "data_sources": [
+   "lease_abstracts",
+   "bms",
+   "utility_map",
+   "insurance_sov",
+   "work_orders"
+  ]
+ },
+ {
+  "id": "BLD-DAL-02",
+  "name": "Lone Star Data Center",
+  "type": "data_center",
+  "city": "Dallas",
+  "address": "2800 Lone Star Data Dr, Farmers Branch (illustrative)",
+  "lat": 32.924,
+  "lon": -96.889,
+  "sqft": 200000,
+  "floors": 2,
+  "year_built": 2016,
+  "first_floor_elev_ft": 3.0,
+  "replacement_value_cents": 11000000000,
+  "utility_node_id": "UTL-DAL-SUB3",
+  "systems": {
+   "has_generator": true,
+   "generator_fuel_hours": 5.0,
+   "freeze_protection": true,
+   "flood_barriers_installed": false,
+   "roof_wind_rating_mph": 130,
+   "ground_floor_equipment": false
+  },
+  "tenants": [
+   {
+    "id": "TEN-011",
+    "name": "Prairie Cloud",
+    "sqft": 90000,
+    "rent_per_day_cents": 1602740,
+    "sla_penalty_per_hour_cents": 1100000,
+    "critical_ops": true,
+    "contact_party_id": "TEN-011"
+   },
+   {
+    "id": "TEN-012",
+    "name": "LoneStar Payments",
+    "sqft": 60000,
+    "rent_per_day_cents": 1068493,
+    "sla_penalty_per_hour_cents": 900000,
+    "critical_ops": true,
+    "contact_party_id": "TEN-012"
+   },
+   {
+    "id": "TEN-013",
+    "name": "Texas Health Data",
+    "sqft": 40000,
+    "rent_per_day_cents": 712329,
+    "sla_penalty_per_hour_cents": 500000,
+    "critical_ops": true,
+    "contact_party_id": "TEN-013"
+   }
+  ],
+  "insurance": {
+   "carrier": "Other",
+   "deductible_cents": 220000000,
+   "limit_cents": 11000000000,
+   "bi_days_covered": 30
+  },
+  "onsite_party_id": "TECH-DAL-01",
+  "can_host_help_site": false,
+  "host_capacity": 0,
+  "data_sources": [
+   "lease_abstracts",
+   "bms",
+   "utility_map",
+   "insurance_sov",
+   "work_orders"
+  ]
+ },
+ {
+  "id": "BLD-DAL-03",
+  "name": "Lakewood Retail Center",
+  "type": "retail",
+  "city": "Dallas",
+  "address": "6300 Lakewood Retail Ct (illustrative)",
+  "lat": 32.8185,
+  "lon": -96.7505,
+  "sqft": 120000,
+  "floors": 1,
+  "year_built": 1979,
+  "first_floor_elev_ft": 1.0,
+  "replacement_value_cents": 2200000000,
+  "utility_node_id": "UTL-DAL-SUB4",
+  "systems": {
+   "has_generator": false,
+   "generator_fuel_hours": 0.0,
+   "freeze_protection": false,
+   "flood_barriers_installed": false,
+   "roof_wind_rating_mph": 100,
+   "ground_floor_equipment": false
+  },
+  "tenants": [
+   {
+    "id": "TEN-014",
+    "name": "Lakewood Grocers",
+    "sqft": 50000,
+    "rent_per_day_cents": 328767,
+    "sla_penalty_per_hour_cents": 0,
+    "critical_ops": false,
+    "contact_party_id": "TEN-014"
+   },
+   {
+    "id": "TEN-015",
+    "name": "Bluebonnet Fitness",
+    "sqft": 30000,
+    "rent_per_day_cents": 180822,
+    "sla_penalty_per_hour_cents": 0,
+    "critical_ops": false,
+    "contact_party_id": "TEN-015"
+   }
+  ],
+  "insurance": {
+   "carrier": "State Farm",
+   "deductible_cents": 44000000,
+   "limit_cents": 2200000000,
+   "bi_days_covered": 45
+  },
+  "onsite_party_id": "TECH-DAL-01",
+  "can_host_help_site": false,
+  "host_capacity": 0,
+  "data_sources": [
+   "lease_abstracts",
+   "bms",
+   "utility_map",
+   "insurance_sov",
+   "work_orders"
+  ]
+ },
+ {
+  "id": "BLD-DAL-04",
+  "name": "Market Center Expo Hall",
+  "type": "retail",
+  "city": "Dallas",
+  "address": "2100 Market Center Expo Way (illustrative)",
+  "lat": 32.8015,
+  "lon": -96.8265,
+  "sqft": 300000,
+  "floors": 4,
+  "year_built": 1992,
+  "first_floor_elev_ft": 1.0,
+  "replacement_value_cents": 4000000000,
+  "utility_node_id": "UTL-DAL-SUB2",
+  "systems": {
+   "has_generator": true,
+   "generator_fuel_hours": 24.0,
+   "freeze_protection": true,
+   "flood_barriers_installed": false,
+   "roof_wind_rating_mph": 110,
+   "ground_floor_equipment": false
+  },
+  "tenants": [
+   {
+    "id": "TEN-016",
+    "name": "Dallas Market Events",
+    "sqft": 300000,
+    "rent_per_day_cents": 1479452,
+    "sla_penalty_per_hour_cents": 0,
+    "critical_ops": false,
+    "contact_party_id": "TEN-016"
+   }
+  ],
+  "insurance": {
+   "carrier": "State Farm",
+   "deductible_cents": 80000000,
+   "limit_cents": 4000000000,
+   "bi_days_covered": 60
+  },
+  "onsite_party_id": "TECH-DAL-01",
+  "can_host_help_site": true,
+  "host_capacity": 400,
+  "data_sources": [
+   "lease_abstracts",
+   "bms",
+   "utility_map",
+   "insurance_sov",
+   "work_orders"
+  ]
+ },
+ {
+  "id": "BLD-FMY-01",
+  "name": "Riverside Commons",
+  "type": "office",
+  "city": "Fort Myers",
+  "address": "2200 Riverside Commons Dr (illustrative)",
+  "lat": 26.6415,
+  "lon": -81.8705,
+  "sqft": 150000,
+  "floors": 8,
+  "year_built": 2001,
+  "first_floor_elev_ft": 3.0,
+  "replacement_value_cents": 2400000000,
+  "utility_node_id": "UTL-FMY-SUB1",
+  "systems": {
+   "has_generator": true,
+   "generator_fuel_hours": 12.0,
+   "freeze_protection": true,
+   "flood_barriers_installed": false,
+   "roof_wind_rating_mph": 130,
+   "ground_floor_equipment": true
+  },
+  "tenants": [
+   {
+    "id": "TEN-017",
+    "name": "Caloosa Law Group",
+    "sqft": 60000,
+    "rent_per_day_cents": 493151,
+    "sla_penalty_per_hour_cents": 0,
+    "critical_ops": false,
+    "contact_party_id": "TEN-017"
+   },
+   {
+    "id": "TEN-018",
+    "name": "SWFL Title Co.",
+    "sqft": 30000,
+    "rent_per_day_cents": 246575,
+    "sla_penalty_per_hour_cents": 0,
+    "critical_ops": false,
+    "contact_party_id": "TEN-018"
+   }
+  ],
+  "insurance": {
+   "carrier": "State Farm",
+   "deductible_cents": 120000000,
+   "limit_cents": 2400000000,
+   "bi_days_covered": 45
+  },
+  "onsite_party_id": "TECH-FMY-01",
+  "can_host_help_site": false,
+  "host_capacity": 0,
+  "data_sources": [
+   "lease_abstracts",
+   "bms",
+   "utility_map",
+   "insurance_sov",
+   "work_orders"
+  ]
+ },
+ {
+  "id": "BLD-FMY-02",
+  "name": "Gulf Coast Medical Pavilion",
+  "type": "medical_office",
+  "city": "Fort Myers",
+  "address": "9800 Gulf Coast Medical Blvd (illustrative)",
+  "lat": 26.5535,
+  "lon": -81.829,
+  "sqft": 180000,
+  "floors": 6,
+  "year_built": 2012,
+  "first_floor_elev_ft": 6.0,
+  "replacement_value_cents": 3600000000,
+  "utility_node_id": "UTL-FMY-SUB2",
+  "systems": {
+   "has_generator": true,
+   "generator_fuel_hours": 48.0,
+   "freeze_protection": true,
+   "flood_barriers_installed": false,
+   "roof_wind_rating_mph": 160,
+   "ground_floor_equipment": false
+  },
+  "tenants": [
+   {
+    "id": "TEN-019",
+    "name": "Lee Health Partners",
+    "sqft": 150000,
+    "rent_per_day_cents": 1315068,
+    "sla_penalty_per_hour_cents": 0,
+    "critical_ops": false,
+    "contact_party_id": "TEN-019"
+   }
+  ],
+  "insurance": {
+   "carrier": "State Farm",
+   "deductible_cents": 180000000,
+   "limit_cents": 3600000000,
+   "bi_days_covered": 60
+  },
+  "onsite_party_id": "TECH-FMY-01",
+  "can_host_help_site": true,
+  "host_capacity": 200,
+  "data_sources": [
+   "lease_abstracts",
+   "bms",
+   "utility_map",
+   "insurance_sov",
+   "work_orders"
+  ]
+ },
+ {
+  "id": "BLD-FMY-03",
+  "name": "Estero Boulevard Retail",
+  "type": "retail",
+  "city": "Fort Myers",
+  "address": "1100 Estero Blvd, Fort Myers Beach (illustrative)",
+  "lat": 26.4525,
+  "lon": -81.9475,
+  "sqft": 60000,
+  "floors": 1,
+  "year_built": 1988,
+  "first_floor_elev_ft": 1.0,
+  "replacement_value_cents": 1400000000,
+  "utility_node_id": "UTL-FMY-SUB3",
+  "systems": {
+   "has_generator": false,
+   "generator_fuel_hours": 0.0,
+   "freeze_protection": true,
+   "flood_barriers_installed": false,
+   "roof_wind_rating_mph": 120,
+   "ground_floor_equipment": true
+  },
+  "tenants": [
+   {
+    "id": "TEN-020",
+    "name": "Beach Outfitters",
+    "sqft": 20000,
+    "rent_per_day_cents": 219178,
+    "sla_penalty_per_hour_cents": 0,
+    "critical_ops": false,
+    "contact_party_id": "TEN-020"
+   },
+   {
+    "id": "TEN-021",
+    "name": "Salt Life Caf\u00e9",
+    "sqft": 6000,
+    "rent_per_day_cents": 73973,
+    "sla_penalty_per_hour_cents": 0,
+    "critical_ops": false,
+    "contact_party_id": "TEN-021"
+   }
+  ],
+  "insurance": {
+   "carrier": "State Farm",
+   "deductible_cents": 70000000,
+   "limit_cents": 1400000000,
+   "bi_days_covered": 30
+  },
+  "onsite_party_id": "TECH-FMY-01",
+  "can_host_help_site": false,
+  "host_capacity": 0,
+  "data_sources": [
+   "lease_abstracts",
+   "bms",
+   "utility_map",
+   "insurance_sov",
+   "work_orders"
+  ]
+ }
+]

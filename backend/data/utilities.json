@@ -1,0 +1,98 @@
+[
+ {
+  "id": "UTL-HOU-SUB1",
+  "kind": "substation",
+  "name": "Downtown substation",
+  "city": "Houston",
+  "lat": 29.758,
+  "lon": -95.368
+ },
+ {
+  "id": "UTL-HOU-SUB2",
+  "kind": "substation",
+  "name": "Galleria substation",
+  "city": "Houston",
+  "lat": 29.742,
+  "lon": -95.455
+ },
+ {
+  "id": "UTL-HOU-SUB3",
+  "kind": "substation",
+  "name": "Meyerland substation",
+  "city": "Houston",
+  "lat": 29.692,
+  "lon": -95.468
+ },
+ {
+  "id": "UTL-HOU-SUB4",
+  "kind": "substation",
+  "name": "Energy Corridor substation",
+  "city": "Houston",
+  "lat": 29.777,
+  "lon": -95.622
+ },
+ {
+  "id": "UTL-HOU-SUB5",
+  "kind": "substation",
+  "name": "NW Houston substation",
+  "city": "Houston",
+  "lat": 29.852,
+  "lon": -95.545
+ },
+ {
+  "id": "UTL-DAL-SUB1",
+  "kind": "substation",
+  "name": "Downtown substation",
+  "city": "Dallas",
+  "lat": 32.784,
+  "lon": -96.796
+ },
+ {
+  "id": "UTL-DAL-SUB2",
+  "kind": "substation",
+  "name": "Market Center (critical circuit)",
+  "city": "Dallas",
+  "lat": 32.8,
+  "lon": -96.83
+ },
+ {
+  "id": "UTL-DAL-SUB3",
+  "kind": "substation",
+  "name": "Farmers Branch substation",
+  "city": "Dallas",
+  "lat": 32.92,
+  "lon": -96.885
+ },
+ {
+  "id": "UTL-DAL-SUB4",
+  "kind": "substation",
+  "name": "Lakewood substation",
+  "city": "Dallas",
+  "lat": 32.822,
+  "lon": -96.752
+ },
+ {
+  "id": "UTL-FMY-SUB1",
+  "kind": "substation",
+  "name": "Downtown Fort Myers substation",
+  "city": "Fort Myers",
+  "lat": 26.638,
+  "lon": -81.866
+ },
+ {
+  "id": "UTL-FMY-SUB2",
+  "kind": "substation",
+  "name": "Inland hardened substation",
+  "city": "Fort Myers",
+  "lat": 26.553,
+  "lon": -81.828
+ },
+ {
+  "id": "UTL-FMY-SUB3",
+  "kind": "substation",
+  "name": "Fort Myers Beach substation",
+  "city": "Fort Myers",
+  "lat": 26.452,
+  "lon": -81.942
+ }
+]
