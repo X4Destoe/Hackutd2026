@@ -20,6 +20,8 @@ npm run test:e2e
 
 The browser runner checks simulator mode, runs checks serially, and stops on a failure. It requires the API and frontend to be running already. Set `STORM_URL` and `CHROMIUM_PATH` for another local origin or installed browser. Do not run other reset-based tests against the same backend concurrently.
 
+Use the circular-arrow **Restart current scenario** button to repeat an exercise. Cancel preserves the current run; confirmation clears the shared demo records and returns the selected scenario to its first step. Failed requests remain visible and can be retried. Already-sent real texts cannot be recalled.
+
 Use [DEMO.md](DEMO.md) for the three-track story, [PITCH.md](PITCH.md) for accurate sponsor claims, and [the backup video](media/operation-storm-demo.mp4) when a live presentation is unavailable. The recording uses simulated texts and synthetic buildings/finances; it is not evidence of real message delivery. `STORM_RECORD_VIDEO=0 node docs/media/record-demo.cjs` repeats the actual API/UI story without encoding a video.
 
 ## Verified behavior
