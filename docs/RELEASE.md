@@ -1,6 +1,6 @@
 # Tested demo release candidate
 
-This candidate combines the illustrated UI and glossary explanations (TASK-073), repeatable browser tooling (TASK-075), demo documentation/backup recording (TASK-037), and the reviewed resident follow-up and claims-adjuster workflow (TASK-071). It is a single shared simulator workspace. Main still requires peer review and merge.
+This candidate combines the illustrated UI and glossary explanations (TASK-073), repeatable browser tooling (TASK-075), demo documentation/backup recording (TASK-037), and the reviewed resident follow-up and claims-adjuster workflow (TASK-071). It is a single shared simulator workspace. Independent review found no blocking issues for this simulator release.
 
 ## Run and rehearse
 
@@ -42,3 +42,7 @@ Validation: 211 backend tests, nine serial browser checks, and the production bu
 Real Photon sending/replies need Spectrum project credentials, a provisioned line, mapped demo recipients, a signing secret, and an HTTPS webhook endpoint configured securely. The code is already on main and its messaging tests pass; the running demonstration uses the simulator. Provider acknowledgement is not proof of delivery. Follow [REHEARSAL.md](REHEARSAL.md) before claiming real-phone acceptance.
 
 Official flood-zone/waterway source expansion and the separately scoped grounded assistant are follow-up work. Current hazard footprints and custom effects are illustrative, not official flood maps. There is no insurance claim submission, authentication, or real property-management-system integration in this hackathon demo.
+
+## Review follow-ups for provider expansion
+
+The independent review identified two nonblocking follow-ups outside the simulator release: unusually long external site names/addresses need a guaranteed message-length bound, and resource notification sends remain synchronous outside the resource lock. Seeded demo messages fit the current limit. Moving sends outside the lock avoids lock contention; it does not make provider I/O asynchronous. Address these before expanding the real-phone workflow beyond the verified rehearsal.
