@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="984" height="200" viewBox="0 0 984 200" role="img" aria-label="Operation Storm">
+  <g transform="translate(20 20) scale(5)">
+    <rect width="32" height="32" fill="#1f7a45"/>
+    <path d="M6 8.6h20M9 14.2h14M12 19.8h8M14.5 25.4h3" stroke="#ffffff" stroke-width="3.2"/>
+  </g>
+  <text x="218" y="128" fill="#17301f" font-family="Inter, 'SF Pro Display', -apple-system, 'Helvetica Neue', Arial, sans-serif"
+        font-size="96" font-weight="600" letter-spacing="-2.4">Operation Storm</text>
+</svg>
