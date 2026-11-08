@@ -1,3 +1,7 @@
+import HelpSites from "./views/community/HelpSites";
+import Reports from "./views/community/Reports";
+import Messages from "./views/community/Messages";
+import "./views/community/community.css";
 import { useEffect, useState } from "react";
 import {
   Building2,
@@ -191,6 +195,12 @@ export default function Panel({ onClose }: { onClose?: () => void }) {
           <Buildings search={search} city={scenario?.city} />
         ) : panelView === "building" ? (
           <BuildingDetail />
+        ) : panelView === "help" ? (
+          <HelpSites city={scenario?.city} />
+        ) : panelView === "reports" ? (
+          <Reports />
+        ) : panelView === "messages" ? (
+          <Messages />
         ) : (
           <>
             <h2>{titles[panelView]}</h2>
