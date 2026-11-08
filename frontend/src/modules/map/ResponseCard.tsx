@@ -11,6 +11,7 @@ import {
 import { useUIStore } from "../../shared/ui-store";
 import { hours, money } from "../../shared/format";
 import { Button } from "../../shared/ui";
+import WorkOrderControl from "./WorkOrderControl";
 export default function ResponseCard() {
   const { selectedBuildingId } = useUIStore();
   return selectedBuildingId ? (
@@ -94,14 +95,11 @@ function BuildingResponse({ id }: { id: string }) {
                     : "Plan approved"}
               </strong>
               {orders.data?.length ? (
-                <ul>
+                <div>
                   {orders.data.map((order) => (
-                    <li key={order.id}>
-                      <span>{order.action_code.replaceAll("_", " ")}</span>
-                      <b>{order.status}</b>
-                    </li>
+                    <WorkOrderControl key={order.id} order={order} />
                   ))}
-                </ul>
+                </div>
               ) : (
                 <p>
                   {orders.isError
