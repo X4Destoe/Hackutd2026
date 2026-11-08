@@ -38,8 +38,8 @@
     "UTL-FMY-SUB3": 240
   },
   "sources": [
-    "NHC: Hurricane Ian tropical cyclone report, AL092022 (VERIFY before quoting)",
-    "NWS Tampa Bay: Hurricane Ian event summary (VERIFY local surge figures)"
+    "NOAA National Hurricane Center: Tropical Cyclone Report, Hurricane Ian (AL092022)",
+    "NWS Tampa Bay: Hurricane Ian event summary"
   ],
   "disclaimer": "Hazard footprints are approximate and illustrative, not official hazard maps. Buildings, outages and dollar figures are synthetic.",
   "rivers": [
