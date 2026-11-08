@@ -1,0 +1,213 @@
+[
+ {
+  "code": "FLOOD_BARRIERS",
+  "title": "Deploy temporary flood barriers",
+  "description": "Temporary flood barriers at ground-level entrances. Very effective up to about 3 ft of water above the first floor.",
+  "cost_cents": 1800000,
+  "act_by_hour": -12,
+  "effect": {
+   "damage_mult": 0.3,
+   "max_depth_above_floor_ft": 3.0,
+   "damage_mult_above_max": 0.85,
+   "hazards": [
+    "flood",
+    "surge"
+   ]
+  },
+  "task_text": "{building}: deploy temporary flood barriers at all ground-level entrances. Deadline: {deadline}.",
+  "tenant_notice_text": "Ground-floor entrances will be closed while flood barriers are in place.",
+  "creates_help_site": false,
+  "community": false
+ },
+ {
+  "code": "SANDBAGS",
+  "title": "Sandbag entrances",
+  "description": "Sandbags at entrances and loading docks. Cheap; only helps for shallow water (up to 1.5 ft).",
+  "cost_cents": 250000,
+  "act_by_hour": -6,
+  "effect": {
+   "damage_mult": 0.85,
+   "max_depth_above_floor_ft": 1.5,
+   "damage_mult_above_max": 1.0,
+   "hazards": [
+    "flood",
+    "surge"
+   ]
+  },
+  "task_text": "{building}: sandbag all ground-floor entrances and loading docks. Deadline: {deadline}.",
+  "creates_help_site": false,
+  "community": false
+ },
+ {
+  "code": "RELOCATE_EQUIPMENT",
+  "title": "Move ground-floor equipment up",
+  "description": "Move ground-floor electrical and IT equipment upstairs. Cuts damage and speeds reopening.",
+  "cost_cents": 600000,
+  "act_by_hour": -6,
+  "effect": {
+   "damage_mult": 0.8,
+   "downtime_mult": 0.7,
+   "hazards": [
+    "flood",
+    "surge"
+   ]
+  },
+  "task_text": "{building}: move ground-floor electrical and IT equipment to level 2 or higher. Deadline: {deadline}.",
+  "tenant_notice_text": "Please move servers and critical equipment off the ground floor today.",
+  "creates_help_site": false,
+  "community": false
+ },
+ {
+  "code": "STORM_SHUTTERS",
+  "title": "Install storm shutters",
+  "description": "Install storm shutters on exposed glazing before hurricane-force winds.",
+  "cost_cents": 2200000,
+  "act_by_hour": -24,
+  "effect": {
+   "damage_mult": 0.55,
+   "hazards": [
+    "wind"
+   ]
+  },
+  "task_text": "{building}: install storm shutters on all exposed glazing. Deadline: {deadline}.",
+  "creates_help_site": false,
+  "community": false
+ },
+ {
+  "code": "SECURE_ROOFTOP",
+  "title": "Secure rooftop units and debris",
+  "description": "Strap rooftop units and clear loose debris.",
+  "cost_cents": 350000,
+  "act_by_hour": -12,
+  "effect": {
+   "damage_mult": 0.8,
+   "hazards": [
+    "wind"
+   ]
+  },
+  "task_text": "{building}: strap rooftop units and clear loose roof debris. Deadline: {deadline}.",
+  "creates_help_site": false,
+  "community": false
+ },
+ {
+  "code": "GENERATOR_FUEL",
+  "title": "Top off and pre-book fuel delivery",
+  "description": "Top off generator fuel and pre-book the next delivery so backup power lasts 24h longer.",
+  "cost_cents": 380000,
+  "act_by_hour": -6,
+  "effect": {
+   "add_generator_hours": 24.0,
+   "requires_generator": true,
+   "hazards": []
+  },
+  "task_text": "{building}: top off generator fuel and confirm the next delivery slot. Deadline: {deadline}.",
+  "creates_help_site": false,
+  "community": false
+ },
+ {
+  "code": "RENTAL_GENERATOR",
+  "title": "Rent and hook up a portable generator",
+  "description": "Rent and connect a portable generator for a building with no backup power.",
+  "cost_cents": 950000,
+  "act_by_hour": -24,
+  "effect": {
+   "add_generator_hours": 72.0,
+   "requires_no_generator": true,
+   "hazards": []
+  },
+  "task_text": "{building}: receive and connect a rental generator to the transfer switch. Deadline: {deadline}.",
+  "creates_help_site": false,
+  "community": false
+ },
+ {
+  "code": "TENANT_CONTINUITY",
+  "title": "Activate tenant continuity (move critical ops)",
+  "description": "Critical tenants fail over to their secondary sites, cutting SLA penalties.",
+  "cost_cents": 150000,
+  "act_by_hour": -12,
+  "effect": {
+   "sla_mult": 0.4,
+   "hazards": []
+  },
+  "task_text": "{building}: coordinate tenant failover to their secondary site. Deadline: {deadline}.",
+  "tenant_notice_text": "Please activate your continuity plan and fail over critical systems before the storm.",
+  "creates_help_site": false,
+  "community": false
+ },
+ {
+  "code": "PIPE_PROTECTION",
+  "title": "Drain and heat-trace exposed pipes",
+  "description": "Drain exposed lines and heat-trace mechanical rooms so pipes do not freeze and burst.",
+  "cost_cents": 210000,
+  "act_by_hour": -6,
+  "effect": {
+   "damage_mult": 0.1,
+   "hazards": [
+    "winter"
+   ]
+  },
+  "task_text": "{building}: drain exposed lines and install heat trace in mechanical rooms. Deadline: {deadline}.",
+  "creates_help_site": false,
+  "community": false
+ },
+ {
+  "code": "PRESTAGE_CONTRACTOR",
+  "title": "Pre-book a restoration contractor",
+  "description": "Retain a restoration contractor before the storm to avoid post-storm demand surge and waiting lists.",
+  "cost_cents": 500000,
+  "act_by_hour": -24,
+  "effect": {
+   "downtime_mult": 0.6,
+   "hazards": []
+  },
+  "task_text": "{building}: confirm the restoration contractor retainer and on-site arrival time. Deadline: {deadline}.",
+  "creates_help_site": false,
+  "community": false
+ },
+ {
+  "code": "PORTABLE_HEAT",
+  "title": "Portable heat in mechanical rooms",
+  "description": "Portable heaters in mechanical rooms keep pipes above freezing during outages.",
+  "cost_cents": 90000,
+  "act_by_hour": 0,
+  "effect": {
+   "damage_mult": 0.5,
+   "hazards": [
+    "winter"
+   ]
+  },
+  "task_text": "{building}: place portable heaters in all mechanical rooms. Deadline: {deadline}.",
+  "creates_help_site": false,
+  "community": false
+ },
+ {
+  "code": "EMERGENCY_DRYOUT",
+  "title": "Emergency dry-out and mold prevention",
+  "description": "Start water extraction and drying right after the event to prevent mold and cut downtime.",
+  "cost_cents": 1500000,
+  "act_by_hour": 48,
+  "effect": {
+   "downtime_mult": 0.7,
+   "hazards": [
+    "flood",
+    "surge"
+   ]
+  },
+  "task_text": "{building}: start emergency water extraction and drying. Deadline: {deadline}.",
+  "creates_help_site": false,
+  "community": false
+ },
+ {
+  "code": "OFFER_HELP_SITE",
+  "title": "Offer as community help site",
+  "description": "Open the building as a community help site; residents are routed here by Operation Storm.",
+  "cost_cents": 200000,
+  "act_by_hour": 12,
+  "effect": {
+   "hazards": []
+  },
+  "task_text": "{building}: open the lobby as a community help site (staff, security, cots). Deadline: {deadline}.",
+  "creates_help_site": true,
+  "community": true
+ }
+]
