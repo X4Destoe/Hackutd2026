@@ -50,7 +50,7 @@ const assert = require("node:assert/strict");
     await page.getByRole("button", { name: "Texts", exact: true }).click();
     await page.getByLabel("Send as").selectOption("TECH-HOU-01");
     for (const order of orders) {
-      await page.locator("textarea").fill("DONE " + order.id);
+      await page.getByLabel("Message", { exact: true }).fill("DONE " + order.id);
       const start = Date.now();
       await page
         .getByRole("button", { name: "Send simulated message" })
