@@ -14,8 +14,8 @@ from pathlib import Path
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 from datetime import datetime, timezone
-from shapely.geometry import LineString, box, mapping, shape
-from shapely.ops import unary_union, linemerge, transform
+from shapely.geometry import LineString, Polygon, box, mapping, shape
+from shapely.ops import unary_union, linemerge, transform, polygonize
 
 DATA=Path(__file__).resolve().parent
 ENDPOINT='https://overpass-api.de/api/interpreter'
@@ -26,6 +26,8 @@ GROUPS={
   ('Buffalo Bayou','waterway','Buffalo Bayou',(29.70,-95.75,29.86,-95.25)),
   ('Brays Bayou','waterway','Brays Bayou',(29.64,-95.65,29.75,-95.25)),
   ('White Oak Bayou','waterway','White Oak Bayou',(29.74,-95.57,29.88,-95.35)),
+  ('Addicks Reservoir','reservoir','Addicks Reservoir',(29.72,-95.80,29.92,-95.55)),
+  ('Barker Reservoir','reservoir','Barker Reservoir',(29.64,-95.82,29.84,-95.57)),
  ],
  'ian_fort_myers':[
   ('Caloosahatchee River','waterway','Caloosahatchee River',(26.49,-82.02,26.73,-81.73)),
@@ -35,6 +37,8 @@ GROUPS={
 
 def query(kind,name,bounds):
     bbox=','.join(map(str,bounds))
+    if kind=='reservoir':
+        return f'[out:json][timeout:45];wr["name"={json.dumps(name)}]({bbox});out geom;'
     selector='["natural"="coastline"]' if kind=='coastline' else '["waterway"~"^(river|stream)$"]["name"='+json.dumps(name)+']'
     return f'[out:json][timeout:45];way{selector}({bbox});out geom;'
 
@@ -89,10 +93,50 @@ def group_features(response,group_name,bounds):
     return [{'type':'Feature','geometry':mapping(simplify(line)),'properties':{'anchor_name':group_name,'part':i,'osm_way_ids':sorted(set(way_ids)),'osm_base':response.get('osm3s',{}).get('timestamp_osm_base'),'attribution':ATTRIBUTION}} for i,line in enumerate(lines) if line.length>0]
 
 
+def reservoir_features(response,group_name,bounds):
+    """Assemble only closed OSM rings; no implicit closing of incomplete data."""
+    if response.get('remark'):raise ValueError('Incomplete Overpass reservoir response')
+    areas=[];references=[]
+    for element in response.get('elements',[]):
+        if element.get('type')=='way':
+            coords=[(point['lon'],point['lat']) for point in element.get('geometry',[])]
+            if len(coords)>=4 and coords[0]==coords[-1]:
+                polygon=Polygon(coords)
+                if not polygon.is_valid:raise ValueError('Invalid reservoir boundary')
+                areas.append(polygon);references.append(f"way/{element['id']}")
+        elif element.get('type')=='relation':
+            rings={'outer':[],'inner':[]}
+            for member in element.get('members',[]):
+                if member.get('type')!='way' or member.get('role','outer') not in ('outer','inner',''):continue
+                coords=[(point['lon'],point['lat']) for point in member.get('geometry',[])]
+                if len(coords)>=2:rings[member.get('role') or 'outer'].append(LineString(coords))
+            if not rings['outer']:continue
+            def area_from_lines(lines):
+                if not lines:return None
+                merged=unary_union(lines)
+                polygons=list(polygonize(merged))
+                if not polygons:raise ValueError('Reservoir relation has incomplete rings')
+                area=unary_union(polygons)
+                # Every fetched segment must be accounted for by a closed ring.
+                if merged.difference(area.boundary).length>1e-8:raise ValueError('Reservoir relation has dangling segments')
+                return area
+            outer=area_from_lines(rings['outer']);inner=area_from_lines(rings['inner'])
+            area=outer.difference(inner) if inner is not None else outer
+            if not area.is_valid or area.is_empty:raise ValueError('Invalid reservoir multipolygon')
+            areas.append(area);references.append(f"relation/{element['id']}")
+    if not areas:raise ValueError(f'No closed OSM reservoir geometry for {group_name}')
+    south,west,north,east=bounds
+    result=unary_union(areas).intersection(box(west,south,east,north))
+    if result.is_empty or result.geom_type not in ('Polygon','MultiPolygon'):raise ValueError('Reservoir outside query region')
+    # Boundaries are references, not simulated inundation footprints; do not feed them to river buffers.
+    return [{'type':'Feature','geometry':mapping(result),'properties':{'anchor_name':group_name,'role':'reservoir_reference','osm_references':sorted(set(references)),'osm_base':response.get('osm3s',{}).get('timestamp_osm_base'),'attribution':ATTRIBUTION,'reference_only':True}}]
+
+
 def snapshot(scenario,fetcher=fetch):
     features=[]
     for group,kind,name,bounds in GROUPS[scenario]:
-        features.extend(group_features(fetcher(query(kind,name,bounds)),group,bounds))
+        response=fetcher(query(kind,name,bounds))
+        features.extend(reservoir_features(response,group,bounds) if kind=='reservoir' else group_features(response,group,bounds))
     return {'type':'FeatureCollection','properties':{'scenario_id':scenario,'endpoint':ENDPOINT,'retrieved_at':datetime.now(timezone.utc).isoformat(),'attribution':ATTRIBUTION,'license':'https://www.openstreetmap.org/copyright','note':'Real base geometry; hazard widths and depths remain synthetic, not official flood zones.'},'features':features}
 
 
@@ -130,7 +174,7 @@ def main():
         target=DATA/'osm'/f'{scenario}.geojson';target.parent.mkdir(parents=True,exist_ok=True)
         target.write_text(json.dumps(result,indent=2,ensure_ascii=False)+'\n')
         if updated:anchor_path.write_text(json.dumps(updated,indent=2,ensure_ascii=False)+'\n')
-        print(f'Saved {target.name}: {len(result["features"])} attributable line parts'+('; anchors updated, regenerate and validate overlays next' if updated else '; anchors unchanged'))
+        print(f'Saved {target.name}: {len(result["features"])} attributable geometry features'+('; anchors updated, regenerate and validate overlays next' if updated else '; anchors unchanged'))
 
 
 if __name__=='__main__':main()
