@@ -89,3 +89,17 @@ def test_missing_key(monkeypatch):
     monkeypatch.setattr(ai.config.settings, 'llm_provider', 'openai')
     monkeypatch.setattr(ai.config.settings, 'openai_api_key', '')
     assert ai.provider_name() == 'templates'
+
+def test_valid_classification_keeps_medical_urgency(monkeypatch):
+    class Valid(Fake):
+        def json(self, *args):
+            return {'needs': ['info'], 'people': 1, 'urgent': False, 'language': 'es', 'summary': 'Needs assistance'}
+    monkeypatch.setattr(ai, '_provider', lambda: Valid())
+    result = ai.classify_need('mi papá usa oxígeno y no hay luz')
+    assert result['urgent'] and 'medical' in result['needs']
+
+def test_valid_provider_text_used(monkeypatch):
+    class Valid(Fake):
+        def text(self, *args): return 'Please go to 123 Main.'
+    monkeypatch.setattr(ai, '_provider', lambda: Valid())
+    assert ai.compose('redirect', {'address': '123 Main'}) == 'Please go to 123 Main.'
