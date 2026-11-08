@@ -162,6 +162,99 @@
   }
 }
 
+.help-pin {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #20342b;
+  cursor: pointer;
+}
+.help-pin-ring {
+  position: absolute;
+  inset: 0;
+  width: 36px;
+  height: 36px;
+  transform: rotate(-90deg);
+}
+.help-pin-track {
+  fill: none;
+  stroke: #e6eee9;
+  stroke-width: 3;
+}
+.help-pin-used {
+  fill: none;
+  stroke-width: 3;
+}
+.help-pin-plate {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  border: 1px solid #d5e0da;
+  color: #1f7a45;
+}
+.help-pin-unsafe .help-pin-plate {
+  color: #dc2626;
+}
+.help-pin-icon {
+  width: 14px;
+  height: 14px;
+}
+.help-pin-x {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 4px;
+  text-align: center;
+  color: #dc2626;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+.help-pin-label {
+  position: absolute;
+  left: 40px;
+  top: 9px;
+  padding: 2px 6px;
+  background: #173024;
+  color: #fff;
+  font-size: 11px;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.help-type-claim_site .help-pin-label {
+  top: -16px;
+  left: 6px;
+}
+.help-type-repair_vendor .help-pin-label {
+  top: 34px;
+  left: 6px;
+}
+.help-arc-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+}
+.help-pin-count {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
 .storm-building-button {
   display: flex;
   align-items: center;

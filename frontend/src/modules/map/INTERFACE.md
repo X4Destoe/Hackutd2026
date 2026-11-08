@@ -18,11 +18,11 @@
 | `buildings`, `buildings-approved`, `buildings-label` | risk color, radius ∝ √value (8–22 px), selected outline, green ring when approved, "name · $net" at zoom ≥ 9.5 | buildings    |
 | `power`, `link`                                      | substations (red, pulsing when down), dashed line from the selected building to its substation                 | power        |
 
-## For TASK-030 (snow particles, surge waves, wind rotation, help-site pins)
+## For TASK-030 (snow particles, surge waves, wind rotation)
 
-Add your layers to `LAYERS`/`TOGGLES` in `style.ts` and hook into the existing `requestAnimationFrame` loop in `index.tsx`
+Add hazard motion to `LAYERS`/`TOGGLES` in `style.ts` and hook into the existing `requestAnimationFrame` loop in `index.tsx`
 (keep one loop, ≤ 400 particles). The `hazard` source already holds every overlay feature with `properties.style`, `.intensity`
-and `.forecast`. Help sites: add a `help` source fed by `useResources(city)`.
+and `.forecast`. Help-site pins, capacity rings, unsafe marks, and referral arcs are `HelpLayer.tsx` (the `help` layer toggle). Do not add a second set of help pins.
 
 ## Integration follow-up (TASK-046)
 

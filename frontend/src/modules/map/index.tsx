@@ -29,6 +29,7 @@ import {
 import TimelineControl from "./TimelineControl";
 import Legend from "./Legend";
 import ResponseCard from "./ResponseCard";
+import HelpLayer from "./HelpLayer";
 import "./map.css";
 
 type FC = { type: "FeatureCollection"; features: unknown[] };
@@ -475,6 +476,7 @@ export default function MapView() {
         </div>
       </div>
       <ResponseCard />
+      <HelpLayer map={ready ? mapRef.current : null} city={city} />
       <div className="storm-map-tools">
         <button
           type="button"
