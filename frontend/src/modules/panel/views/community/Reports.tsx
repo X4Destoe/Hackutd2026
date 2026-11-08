@@ -4,6 +4,7 @@ import {
   useBuildings,
   useGenerateReport,
   useReports,
+  useSummary,
 } from "../../../../shared/queries";
 import { useUIStore } from "../../../../shared/ui-store";
 import { Button } from "../../../../shared/ui";
@@ -11,6 +12,8 @@ export default function Reports() {
   const reports = useReports();
   const buildings = useBuildings();
   const generate = useGenerateReport();
+  const summary = useSummary();
+  const unknown = summary.data?.data_quality === "unknown";
   const { selectedBuildingId } = useUIStore();
   const [building, setBuilding] = useState(selectedBuildingId ?? "");
   useEffect(() => {
@@ -22,9 +25,10 @@ export default function Reports() {
       <p className="panel-caption">
         Create a report, review it, then print or share it.
       </p>
+      {unknown && <p role="status" className="attention-label">Live financial inputs are unknown. Report generation is unavailable until current source data is confirmed.</p>}
       <div className="report-controls">
         <Button
-          disabled={generate.isPending}
+          disabled={generate.isPending || unknown}
           onClick={() => generate.mutate({ kind: "executive_summary" })}
         >
           Generate executive summary
@@ -46,7 +50,7 @@ export default function Reports() {
         </label>
         <Button
           variant="outline"
-          disabled={!building || generate.isPending}
+          disabled={!building || generate.isPending || unknown}
           onClick={() =>
             generate.mutate({ kind: "tenant_notice", building_id: building })
           }

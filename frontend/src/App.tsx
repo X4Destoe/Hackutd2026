@@ -105,13 +105,13 @@ export default function App() {
           <div>
             <small title="Estimated financial loss after insurance and approved actions">Estimated loss</small>
             <strong>
-              {summary.data ? money(summary.data.net_exposure_cents) : "—"}
+              {summary.data?.data_quality === "unknown" ? "Unknown" : summary.data ? money(summary.data.net_exposure_cents) : "—"}
             </strong>
           </div>
           <div>
             <small>Avoided</small>
             <strong>
-              {summary.data ? money(summary.data.avoided_cents) : "—"}
+              {summary.data?.data_quality === "unknown" ? "Unknown" : summary.data ? money(summary.data.avoided_cents) : "—"}
             </strong>
           </div>
         </div>

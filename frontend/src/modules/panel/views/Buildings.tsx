@@ -77,19 +77,19 @@ export default function Buildings({
               <span className="building-row-title">
                 <span
                   className="risk-square"
-                  style={{ background: riskColor(impact?.risk ?? "none") }}
+                  style={{ background: impact?.data_quality === "unknown" ? "#64748b" : riskColor(impact?.risk ?? "none") }}
                 />
                 <strong>{b.name}</strong>
               </span>
               <span className="building-row-meta">
                 {b.city}
                 <b>
-                  {impact
+                  {impact?.data_quality === "unknown" ? "Impact unknown" : impact
                     ? money(impact.money.net_exposure_cents)
                     : "Impact pending"}
                 </b>
               </span>
-              {impact && (
+              {impact && impact.data_quality !== "unknown" && (
                 <span className="exposure-bar">
                   <span
                     style={{

@@ -213,8 +213,8 @@ export default function MapView() {
       type: "FeatureCollection",
       features: list.map((b, k) => {
         const i = byId.get(b.id);
-        const risk = i?.risk as RiskLevel | undefined;
-        const net = i?.money.net_exposure_cents;
+        const risk = (i?.data_quality === "unknown" ? undefined : i?.risk) as RiskLevel | undefined;
+        const net = i?.data_quality === "unknown" ? undefined : i?.money.net_exposure_cents;
         return {
           type: "Feature",
           geometry: { type: "Point", coordinates: [b.lon, b.lat] },
@@ -222,7 +222,7 @@ export default function MapView() {
             id: b.id,
             name: b.name,
             risk: risk ?? "unknown",
-            color: riskColor(risk ?? "none"),
+            color: risk == null ? "#64748b" : riskColor(risk),
             r: 8 + (hi > lo ? (14 * (roots[k] - lo)) / (hi - lo) : 7),
             label: `${b.name} · ${net == null ? "impact unavailable" : money(net)}`,
             net: net == null ? "impact unavailable" : money(net),

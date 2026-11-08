@@ -19,7 +19,7 @@ export default function Overview() {
           Portfolio impact is unavailable. Building records are still
           accessible.
         </p>
-      ) : (
+      ) : summary.data.data_quality === "unknown" ? <p role="status" className="panel-empty">Financial impact is unknown because live inputs are unavailable or stale. This does not mean zero loss or safe conditions.</p> : (
         <dl className="kpi-grid">
           {[
             ["Buildings at risk", String(summary.data.buildings_at_risk)],
