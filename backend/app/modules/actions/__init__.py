@@ -12,7 +12,7 @@ from app.shared.events import bus
 from app.shared.store import store
 
 from .catalog import catalog, is_community
-from .plans import ACTIVE, fix_first, plan_is_community, refresh as _refresh
+from .plans import ACTIVE, LOCK, fix_first, plan_is_community, refresh as _refresh
 
 log = logging.getLogger(__name__)
 
@@ -39,20 +39,21 @@ def approved_codes(building_id: str) -> list[str]:
 
 
 def _decide(plan_id: str, by: str, status: str) -> schemas.Plan:
-    plan = store.plans.require(plan_id)
-    if str(getattr(plan.status, "value", plan.status)) != "proposed":
-        raise PlanConflict(f"{plan_id} is {getattr(plan.status, 'value', plan.status)}, only proposed plans can be {status}")
-    update = {"status": status}
-    if status == "approved":
-        update |= {"approved_by": by, "approved_at_hour": scenarios.current().step_hour}
-    plan = store.plans.put(plan.model_copy(update=update))
-    if status == "approved":
-        try:
-            from . import execute  # TASK-021: work orders, task texts, tenant notices, help-site registration
-        except ImportError:
-            execute = None
-        if execute is not None and hasattr(execute, "on_approved"):
-            plan = execute.on_approved(plan) or store.plans.require(plan_id)
+    with LOCK:  # check + write + execute as one step: concurrent approvals cannot both win
+        plan = store.plans.require(plan_id)
+        if str(getattr(plan.status, "value", plan.status)) != "proposed":
+            raise PlanConflict(f"{plan_id} is {getattr(plan.status, 'value', plan.status)}, only proposed plans can be {status}")
+        update = {"status": status}
+        if status == "approved":
+            update |= {"approved_by": by, "approved_at_hour": scenarios.current().step_hour}
+        plan = store.plans.put(plan.model_copy(update=update))
+        if status == "approved":
+            try:
+                from . import execute  # TASK-021: work orders, task texts, tenant notices, help-site registration
+            except ImportError:
+                execute = None
+            if execute is not None and hasattr(execute, "on_approved"):
+                plan = execute.on_approved(plan) or store.plans.require(plan_id)
     # impact recomputes on plan.changed -> impact.updated -> refresh(): the building drops out of Fix-First
     bus.emit("plan.changed", {"plan_id": plan.id, "building_id": plan.building_id, "status": str(getattr(plan.status, "value", plan.status))})
     return plan

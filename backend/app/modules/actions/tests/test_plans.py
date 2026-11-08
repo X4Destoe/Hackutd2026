@@ -1,3 +1,8 @@
+import sys
+import threading
+import time
+import types
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -119,3 +124,40 @@ def test_response_plans_after_landfall_have_no_pre_storm_actions(c):
 def test_catalog_route(c):
     codes = [t["code"] for t in c.get("/api/actions/catalog").json()]
     assert "FLOOD_BARRIERS" in codes and len(codes) == len(ac.catalog)
+
+
+def test_a_slow_ai_provider_never_blocks_the_timeline(c, monkeypatch):
+    from app.modules import ai
+    monkeypatch.setattr(ai, "provider_name", lambda: "fake:slow")
+    monkeypatch.setattr(ai, "rationale", lambda facts: (time.sleep(0.4), "Slow but thoughtful rationale.")[1])
+    t = time.perf_counter()
+    step(c, -24)
+    assert time.perf_counter() - t < 0.3  # plans use the instant local text first
+    assert plan_for("BLD-HOU-01").rationale.startswith("Cost $")
+    deadline = time.time() + 3
+    while time.time() < deadline and plan_for("BLD-HOU-01").rationale != "Slow but thoughtful rationale.":
+        time.sleep(0.05)
+    assert plan_for("BLD-HOU-01").rationale == "Slow but thoughtful rationale."  # upgraded in the background
+
+
+def test_concurrent_approvals_decide_a_plan_exactly_once(c, monkeypatch):
+    calls = []
+    fake = types.ModuleType("app.modules.actions.execute")
+    fake.on_approved = lambda plan: (calls.append(plan.id), time.sleep(0.05))[0] and None
+    monkeypatch.setitem(sys.modules, "app.modules.actions.execute", fake)
+    step(c, -24)
+    pid = plan_for("BLD-HOU-01").id
+    barrier, results = threading.Barrier(2), []
+
+    def go():
+        barrier.wait()
+        try:
+            ac.approve(pid, "MGR-01")
+            results.append("ok")
+        except ac.PlanConflict:
+            results.append("409")
+
+    threads = [threading.Thread(target=go) for _ in range(2)]
+    [t.start() for t in threads]
+    [t.join() for t in threads]
+    assert sorted(results) == ["409", "ok"] and calls == [pid]

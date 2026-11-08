@@ -1,6 +1,8 @@
 """Plan building (greedy by marginal ROI), missed plans and Fix-First ranking. docs/prd/modules/actions.md."""
 from __future__ import annotations
 
+import threading
+
 from app.modules import impact, scenarios
 from app.shared import ids, schemas
 from app.shared.store import store
@@ -11,6 +13,7 @@ ACTIVE = ("approved", "executing", "done")
 DECIDED = ACTIVE + ("rejected",)
 HELP_SITE = "OFFER_HELP_SITE"
 _rationale_cache: dict[tuple, str] = {}
+LOCK = threading.RLock()  # serializes refresh() and approve/reject so a plan is decided exactly once
 
 
 def _s(x) -> str:
@@ -68,16 +71,39 @@ def best_plan(b: schemas.Building, hour: int) -> tuple[list[schemas.ActionTempla
 
 
 def _rationale(b: schemas.Building, codes: list[str], cost: int, avoided: int) -> str:
-    key = (b.id, tuple(codes), cost, avoided)
-    if key not in _rationale_cache:
+    """Instant local text; when an LLM provider is configured, a background thread upgrades it (never blocks a request)."""
+    try:
+        from app.modules import ai
+        provider = ai.provider_name()
+    except ImportError:
+        ai, provider = None, "templates"
+    key = (provider, b.id, tuple(codes), cost, avoided)
+    if key in _rationale_cache:
+        return _rationale_cache[key]
+    _rationale_cache[key] = f"Cost {money(cost)}; avoids {money(avoided)} in estimated losses."
+    if ai is not None and provider != "templates":
         facts = {"building_name": b.name, "actions": ", ".join(catalog[c].title for c in codes),
                  "cost_cents": cost, "avoided_cents": avoided}
-        try:
-            from app.modules import ai
-            _rationale_cache[key] = ai.rationale(facts)
-        except Exception:  # ai is optional: the plan must still be built
-            _rationale_cache[key] = f"Cost {money(cost)}; avoids {money(avoided)} in estimated losses."
+        threading.Thread(target=_enrich, args=(key, facts), daemon=True).start()
     return _rationale_cache[key]
+
+
+def _enrich(key: tuple, facts: dict) -> None:
+    from app.modules import ai
+    from app.shared.events import bus
+    try:
+        text = ai.rationale(facts)
+    except Exception:
+        return
+    with LOCK:
+        if not text or _rationale_cache.get(key) == text:
+            return
+        _rationale_cache[key] = text
+        _provider, building_id, codes, cost, avoided = key
+        for p in store.plans.list(building_id=building_id, status="proposed"):
+            if tuple(a.code for a in p.actions) == codes and p.cost_cents == cost and p.avoided_cents == avoided:
+                store.plans.put(p.model_copy(update={"rationale": text}))
+    bus.emit("plans.updated", {"count": store.plans.count(), "fix_first_top": []})
 
 
 def _put_plan(plan_id: str | None, b: schemas.Building, chosen: list[schemas.ActionTemplate], cost: int, avoided: int,
@@ -141,11 +167,12 @@ def _refresh_community(b: schemas.Building, hour: int) -> None:
 
 
 def refresh() -> list[schemas.Plan]:
-    hour = scenarios.current().step_hour
-    for b in store.buildings.list():
-        _refresh_building(b, hour)
-        _refresh_community(b, hour)
-    return store.plans.list()
+    with LOCK:
+        hour = scenarios.current().step_hour
+        for b in store.buildings.list():
+            _refresh_building(b, hour)
+            _refresh_community(b, hour)
+        return store.plans.list()
 
 
 def _why(p: schemas.Plan, hours_left: int, b: schemas.Building) -> str:
