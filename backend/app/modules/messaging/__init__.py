@@ -126,16 +126,21 @@ def send(
     )
     with _lock:
         store.messages.put(message)
-        try:
-            if channel == "photon":
-                _photon_send(party.phone, body, message.media_urls)
-            delivered = message.model_copy(update={"status": "sent", "error": None})
-            _last_error = None
-        except Exception as exc:
-            error = str(exc) or exc.__class__.__name__
-            _remember_error(error)
-            log.warning("outbound message %s failed on %s", message.id, channel)
-            delivered = message.model_copy(update={"status": "failed", "error": error[:300]})
+    # Network I/O must not prevent incoming DONE replies from acquiring the messaging lock.
+    try:
+        if channel == "photon":
+            _photon_send(party.phone, body, message.media_urls)
+        delivered = message.model_copy(update={"status": "sent", "error": None})
+    except Exception as exc:
+        error = str(exc) or exc.__class__.__name__
+        log.warning("outbound message %s failed on %s", message.id, channel)
+        delivered = message.model_copy(update={"status": "failed", "error": error[:300]})
+    with _lock:
+        # Reset can reuse MSG identifiers; object identity distinguishes the old queued record.
+        # An already-started provider send cannot be recalled, but it must not overwrite a new scene.
+        if store.messages.get(message.id) is not message:
+            return delivered
+        _last_error = delivered.error
         store.messages.put(delivered)
     if delivered.status == "sent":
         bus.emit("message.sent", {"message_id": delivered.id, "party_id": delivered.party_id, "kind": _type(delivered.kind)})

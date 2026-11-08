@@ -2,6 +2,7 @@ import hashlib
 import hmac
 import json
 import time
+import threading
 
 import httpx
 import pytest
@@ -154,3 +155,29 @@ def test_delivery_and_signed_message_id_use_separate_dedupe_namespaces(live):
     second, h2 = signed(envelope(live.phone, "second", mid="same-text"), delivery="delivery-second")
     assert live.post("/api/webhooks/photon", content=first, headers=h1).json()["ok"]
     assert live.post("/api/webhooks/photon", content=second, headers=h2).json().get("duplicate") is not True
+
+
+def test_slow_send_does_not_block_inbound_or_overwrite_messages_after_reset(live, monkeypatch):
+    started, finish = threading.Event(), threading.Event()
+    def slow_send(self, to, text, media):
+        started.set()
+        finish.wait(3)
+        return "accepted-old-scene"
+    monkeypatch.setattr(photon.PhotonChannel, "send_text", slow_send)
+    thread = threading.Thread(target=lambda: messaging.send(live.tech, "old scene notice", "task"), daemon=True)
+    thread.start()
+    try:
+        assert started.wait(1)
+        raw, headers = signed(envelope(live.phone, "progress", mid="concurrent-reply"), delivery="concurrent-delivery")
+        before = time.perf_counter()
+        assert live.post("/api/webhooks/photon", content=raw, headers=headers).status_code == 200
+        assert time.perf_counter() - before < 1, "Provider send must not block inbound processing"
+        live.post("/api/demo/reset", json={"scenario_id": "uri_dallas"})
+        party = next(p for p in store.parties.list() if p.id != live.tech and p.type == "tenant")
+        fresh = messaging.send(party.id, "new scene notice", "tenant_notice")
+        finish.set(); thread.join(2)
+        assert not thread.is_alive()
+        assert store.messages.require(fresh.id).body == "new scene notice"
+        assert all(message.body != "old scene notice" for message in store.messages.list())
+    finally:
+        finish.set(); thread.join(2)
