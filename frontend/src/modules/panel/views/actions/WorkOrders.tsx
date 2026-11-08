@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import type { Model } from '../../../../shared/api';
 import { useBuildings, useUpdateWorkOrder, useWorkOrders } from '../../../../shared/queries';
 import { useUIStore } from '../../../../shared/ui-store';
@@ -12,6 +12,8 @@ function Order({ order, building }: { order: Model<'WorkOrder'>; building: strin
   const update = useUpdateWorkOrder();
   const { selectBuilding } = useUIStore();
   const [notice, setNotice] = useState('');
+  const [note, setNote] = useState('');
+  const hintId = useId();
   return <Card className="response-card">
     <div className="response-heading"><strong>{order.id}</strong><Badge className={`order-status order-${order.status}`}>{order.status}</Badge></div>
     <button className="response-building" onClick={() => selectBuilding(order.building_id)}>{building}</button>
@@ -21,12 +23,18 @@ function Order({ order, building }: { order: Model<'WorkOrder'>; building: strin
       const source = safePhoto(url);
       return source ? <a key={`${url}-${i}`} href={source} target="_blank" rel="noopener noreferrer"><img src={source} alt={`Work order ${order.id} photo ${i + 1}`} loading="lazy" referrerPolicy="no-referrer" /></a> : null;
     })}</div>
+    {order.status !== 'done' && <div className="order-note-field">
+      <label>Progress or blocker note<textarea aria-label={`Progress or blocker note for ${order.id}`} aria-describedby={hintId}
+        rows={3} maxLength={1000} value={note} disabled={update.isPending} onChange={event => setNote(event.target.value)}
+        placeholder="What was completed, or what is needed to unblock this task?" /></label>
+      <p id={hintId} className="panel-caption">A note is required to mark a task blocked. Progress notes are optional for other status changes.</p>
+    </div>}
     {order.status !== 'done' && <div className="response-controls" aria-label={`Update ${order.id}`}>
-      {(['accepted', 'blocked', 'done'] as const).map(status => <Button key={status} variant={status === 'done' ? 'primary' : 'outline'} disabled={update.isPending || order.status === status} onClick={() => {
+      {(['accepted', 'blocked', 'done'] as const).map(status => <Button key={status} variant={status === 'done' ? 'primary' : 'outline'} disabled={update.isPending || order.status === status || (status === 'blocked' && !note.trim())} onClick={() => {
         setNotice('Saving status…');
-        update.mutate({ id: order.id, status, note: 'Manual status update from portfolio manager.' }, {
-          onSuccess: () => setNotice(`Work order marked ${status}.`),
-          onError: () => setNotice('Status update failed. Please retry.'),
+        update.mutate({ id: order.id, status, note: note.trim() || 'Manual status update from portfolio manager.' }, {
+          onSuccess: () => { setNotice(`Work order marked ${status}.`); setNote(''); },
+          onError: () => setNotice('Status update failed. Your note is kept; please retry.'),
         });
       }}>{status === 'done' ? 'Mark done' : status === 'blocked' ? 'Mark blocked' : 'Accept'}</Button>)}
     </div>}

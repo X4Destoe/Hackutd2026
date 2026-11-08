@@ -71,7 +71,7 @@ export default function Reports() {
       {reports.isPending ? (
         <p role="status">Loading reports…</p>
       ) : reports.isError ? (
-        <p className="panel-empty">Reports are unavailable.</p>
+        <div role="alert" className="panel-empty">Reports are unavailable. <Button variant="outline" disabled={reports.isFetching} onClick={() => void reports.refetch()}>Retry reports</Button></div>
       ) : reports.data.length === 0 ? (
         <p className="panel-empty">No reports generated yet.</p>
       ) : (
