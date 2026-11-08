@@ -117,6 +117,7 @@ Report:        id, kind: ReportKind, scenario_id, building_id?, title, markdown:
 | `POST /demo/reset` | `{scenario_id?}` | `DemoState` | scenarios |
 | `POST /scenarios/{id}/load` | | `DemoState` (step = first step) | scenarios |
 | `GET /demo/state` | | `DemoState` | scenarios |
+| `GET /timeline` | | `[{hour, phase, label, narrative, utility_outages}]` steps without geometry (added 2026-11-08, TASK-039) | scenarios |
 | `POST /timeline` | `{hour}` (must be one of the scenario's step hours) | `DemoState` | scenarios |
 | `GET /overlays` | `?hour=` (default current) | GeoJSON FeatureCollection (all overlays at that step, `properties.style`) | scenarios |
 | `GET /buildings` | | `[Building]` | scenarios |
