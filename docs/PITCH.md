@@ -39,6 +39,10 @@ the screen does not show those.
 - George R. Brown Convention Center, 1001 Avenida de las Americas, is the Houston mega-shelter in the data. It was a Harvey shelter. NRG Center and the Kay Bailey Hutchison Convention Center are the other named public venues. The rest of the help sites are generic and the addresses say so.
 - Buildings, tenants, policies, and every dollar figure are synthetic. State Farm in the product is the insurer on those synthetic policies and the operator of the claim-site records, not a quote from a State Farm loss report.
 
+## What is already on main
+
+Impact, Fix-First, work orders, the message simulator, and the building map are on main. Resident routing (including the claims-adjuster text), printable reports, and the help-site pins are on their own branches until those pull requests merge. If a beat above 404s, that branch is not in the tree you are running.
+
 ## What to say if a judge asks
 
 - No key is loaded. Copy is the template fallback. Turn a provider on with `LLM_PROVIDER` only if you want the optional paragraph in a report. The numbers never come from the model.
