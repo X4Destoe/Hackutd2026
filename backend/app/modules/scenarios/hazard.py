@@ -62,8 +62,12 @@ def _winter(anchors: dict, lon: float, lat: float, hour: int, present: bool) -> 
     ice = anchors.get("ice_in", 0.0)
     if present:
         return temps.get(hour), ice if 0 <= hour <= 48 else 0.0
-    window = temps.values() if hour < 0 else [t for h, t in temps.items() if h <= max(hour, 12)]
-    return min(window), ice
+    # forecast: the predicted coldest; impact: that step; recovery: the coldest seen so far (PRD 03 §3 peak rule)
+    if hour < 0:
+        return min(temps.values()), ice
+    if hour <= 12:
+        return temps[hour], ice
+    return min(t for h, t in temps.items() if 0 <= h <= hour), ice
 
 
 def hazard_at(anchors: dict, lat: float, lon: float, hour: int, present: bool = False) -> dict:

@@ -99,6 +99,9 @@ def test_winter_reading_inside_and_outside_the_storm():
     lone_star = store.buildings.require("BLD-DAL-02")
     hz = sc.hazard_at(lone_star.lat, lone_star.lon, 0)
     assert hz["temp_f"] <= 20 and hz["ice_in"] > 0
+    temps = [sc.hazard_at(lone_star.lat, lone_star.lon, h)["temp_f"] for h in (-24, 0, 12, 48, 168)]
+    assert temps == [2, 5, 2, 2, 2]  # forecast: predicted coldest; impact: that step; recovery: coldest seen
+    assert sc.hazard_at(lone_star.lat, lone_star.lon, 168, present=True)["temp_f"] == 40
     houston = store.buildings.require("BLD-HOU-01")
     assert sc.hazard_at(houston.lat, houston.lon, 0)["temp_f"] is None
 
