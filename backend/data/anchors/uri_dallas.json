@@ -1,0 +1,63 @@
+{
+  "_comment": "Synthetic demo hazard model. Approximate hand-placed footprints, not official hazard maps. Event details and venue availability require verification before public claims. Farmers Branch outage is tuned to 40h (versus prototype 60h) so the current contract portfolio and money formula produce TASK-025 target $1–2M Lone Star net exposure.",
+  "id": "uri_dallas",
+  "name": "Winter Storm Uri",
+  "real_event": "Winter Storm Uri",
+  "date_label": "Feb 13–17, 2021",
+  "city": "Dallas",
+  "center": {
+    "lat": 32.84,
+    "lon": -96.82
+  },
+  "zoom": 10.4,
+  "kind": "winter",
+  "hazards": [
+    "winter"
+  ],
+  "present": {
+    "0": 0.7,
+    "12": 1,
+    "48": 0.5,
+    "168": 0.1,
+    "-48": 0,
+    "-24": 0,
+    "-12": 0
+  },
+  "narrative": {
+    "0": "Impact: rotating outages begin. Temperatures fall to about 5°F.",
+    "12": "Outages extend for days. Buildings without heat begin freezing.",
+    "48": "Thaw starts. Burst pipes discovered as heat returns.",
+    "168": "Recovery: plumbers and restoration crews booked weeks out.",
+    "-48": "Forecast: arctic outbreak. Single-digit temperatures and ice expected across North Texas.",
+    "-24": "Forecast: grid operator warns of record demand. Rotating outages likely.",
+    "-12": "Final window: fuel, pipe protection, tenant continuity."
+  },
+  "outages": {
+    "UTL-DAL-SUB1": 40,
+    "UTL-DAL-SUB3": 40,
+    "UTL-DAL-SUB4": 50
+  },
+  "sources": [
+    "FERC/NERC: February 2021 Cold Weather Outages in Texas and the South Central United States (VERIFY before quoting)",
+    "NWS Fort Worth: February 2021 historic winter storm and arctic outbreak (VERIFY event figures)"
+  ],
+  "disclaimer": "Hazard footprints are approximate and illustrative, not official hazard maps. Buildings, outages and dollar figures are synthetic.",
+  "temps": {
+    "0": 5,
+    "12": 2,
+    "48": 18,
+    "168": 40,
+    "-48": 22,
+    "-24": 15,
+    "-12": 10
+  },
+  "ice_in": 0.3,
+  "area": {
+    "center": [
+      -96.82,
+      32.84
+    ],
+    "rx": 0.32,
+    "ry": 0.22
+  }
+}
