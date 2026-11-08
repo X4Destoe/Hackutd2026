@@ -53,7 +53,8 @@
     ],
     "utility_node_id": "UTL-DAL-SUB2",
     "hours": "24 hours",
-    "source": "statefarm"
+    "source": "statefarm",
+    "phone": "+12145551004"
   },
   {
     "id": "RES-DAL-04",
@@ -147,7 +148,8 @@
     ],
     "utility_node_id": "UTL-FMY-SUB2",
     "hours": "24 hours",
-    "source": "statefarm"
+    "source": "statefarm",
+    "phone": "+12395551004"
   },
   {
     "id": "RES-FMY-04",
@@ -261,7 +263,8 @@
     ],
     "utility_node_id": "UTL-HOU-SUB2",
     "hours": "24 hours",
-    "source": "statefarm"
+    "source": "statefarm",
+    "phone": "+17135551004"
   },
   {
     "id": "RES-HOU-05",
