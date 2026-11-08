@@ -56,6 +56,12 @@ const RECORD = process.env.STORM_RECORD_VIDEO !== '0';
           .catch(() => {}).finally(() => { busy = false; });
       }, 100);
     }
+    await caption('Plain-language explanations: hover the information icon');
+    await page.getByRole('button', { name: 'About Estimated loss', exact: true }).first().hover();
+    await page.getByRole('tooltip').waitFor();
+    await page.waitForTimeout(1800);
+    await page.keyboard.press('Escape');
+    await page.mouse.move(700, 600, { steps: 10 });
     await caption('CBRE: see modeled loss and choose a response');
     await page.getByRole('main', { name: 'Map workspace' }).getByRole('button', { name: /Bayou Plaza/ }).click();
     const card = page.getByRole('region', { name: 'Building response actions' });
@@ -106,6 +112,14 @@ const RECORD = process.env.STORM_RECORD_VIDEO !== '0';
       await page.getByRole('navigation', { name: 'Disaster timeline' }).locator('button').filter({ has: page.locator('strong', { hasText: /^0h$/ }) }).click();
       await page.waitForFunction(() => document.querySelector('.storm-map')?.dataset.mapMoving === 'false'); await caption(text);
     }
+    await caption('Restart the shared exercise from the app');
+    await page.getByRole('button', { name: 'Restart current scenario', exact: true }).click();
+    const restartDialog = page.getByRole('dialog', { name: 'Restart scenario?', exact: true });
+    await restartDialog.getByRole('button', { name: 'Restart scenario', exact: true }).click();
+    await restartDialog.waitFor({ state: 'hidden' });
+    assert.equal((await api('/demo/state')).step_hour, (await api('/timeline'))[0].hour);
+    assert.equal((await api('/workorders')).length, 0);
+    await caption('Ready to run again: same scenario, clean starting point');
     assert.deepEqual(errors, []); assert(Date.now() - started < 210000, 'Demo must finish under 3:30');
     console.log('PASS repeatable demo flow in ' + ((Date.now() - started) / 1000).toFixed(1) + ' seconds');
   } finally {
