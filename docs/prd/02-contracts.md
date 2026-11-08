@@ -72,7 +72,8 @@ MoneyBreakdown: property_damage_cents, downtime_days: float, rent_abatement_cent
 Impact:        building_id, step_hour, risk: RiskLevel, damage_ratio: float, money: MoneyBreakdown,
                drivers: [str], exposure: Exposure, with_approved_actions: bool
 PortfolioSummary: scenario_id, step_hour, buildings_at_risk: int, gross_loss_cents, net_exposure_cents,
-               avoided_cents, actions_approved: int, worst_building_ids: [str]
+               avoided_cents, actions_approved: int, worst_building_ids: [str],
+               insurance_recovery_cents: int = 0   # added 2026-11-08, see comms DECISIONS
 ```
 
 ### Actions (owned by actions)
@@ -116,6 +117,7 @@ Report:        id, kind: ReportKind, scenario_id, building_id?, title, markdown:
 | `POST /demo/reset` | `{scenario_id?}` | `DemoState` | scenarios |
 | `POST /scenarios/{id}/load` | | `DemoState` (step = first step) | scenarios |
 | `GET /demo/state` | | `DemoState` | scenarios |
+| `GET /timeline` | | `[{hour, phase, label, narrative, utility_outages}]` steps without geometry (added 2026-11-08, TASK-039) | scenarios |
 | `POST /timeline` | `{hour}` (must be one of the scenario's step hours) | `DemoState` | scenarios |
 | `GET /overlays` | `?hour=` (default current) | GeoJSON FeatureCollection (all overlays at that step, `properties.style`) | scenarios |
 | `GET /buildings` | | `[Building]` | scenarios |
