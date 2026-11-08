@@ -15,7 +15,7 @@ buildings offered to the community.
 
 ## Run it (VS Code terminal)
 
-You need **Python 3.11+**, **Node.js 20+** and **git** (check with `python3 --version`, `node --version`; on Windows use
+You need **Python 3.11+**, **Node.js 24 LTS** and **git** (check with `python3 --version`, `node --version`; on Windows use
 `py --version`). No Node? macOS: `brew install node`, or download the LTS installer from nodejs.org.
 
 ### Step 0 - get the code and open it in VS Code (once)
@@ -74,4 +74,17 @@ Open **http://localhost:5173**. The frontend forwards `/api` to the backend, so 
 | `uvicorn: command not found` | The venv is not active: run the `activate` line again (prompt shows `(.venv)`) |
 | `Address already in use` / port 8000 or 5173 busy | Stop the other server (Ctrl+C in its terminal) or change `--port` |
 | Page loads but numbers say "unavailable" | The backend is not running, or crashed: look at Terminal 1 |
-| Map area says "Map module pending" | Expected for now: the map is still being built |
+| Map area says "Map module pending" | You are serving an old checkout or build. Pull current main, restart both servers, and reload the page |
+
+## Working demo
+
+The React app includes a map, modeled loss estimates, approvals, technician updates, resident routing, help-site activation, printable reports, and a custom simulation builder. Choose Houston, Dallas, or Fort Myers (or randomize among them), then set a disaster and its effects.
+
+Start with **simulated messaging** and `LIVE_FETCH=0` for a repeatable offline rehearsal. Buildings, money, capacities, and custom effects are illustrative; live alerts and forecasts are proxies, and missing inputs display Unknown. Real phone delivery requires a configured Photon bridge and credentials.
+
+- [Measured demo walkthrough](docs/DEMO.md) and [rehearsal checklist](docs/REHEARSAL.md)
+- [Track pitch and honest limitations](docs/PITCH.md)
+- [Recorded simulator demo](docs/media/operation-storm-demo.mp4)
+- [Integration checks](docs/INTEGRATION.md)
+
+Re-record the backup with both servers running in simulator mode: `node docs/media/record-demo.cjs`. This requires Playwright, Chromium, and FFmpeg; `CHROMIUM_PATH`, `FFMPEG_PATH`, and `STORM_URL` can override defaults. The script resets the scenario, performs real API/UI actions, and resets again when finished.
