@@ -1,31 +1,39 @@
-# Current Photon HTTP API
+# Real Photon texting locally
 
-`PHOTON_API_KEY` selects direct HTTPS using `PHOTON_PROJECT_ID` (`pho_prj_…`). It never falls back to the legacy Spectrum credential scheme after a failure. Secrets stay in ignored `backend/.env` and are sent only to `https://api.photon.codes`.
+With the backend Python environment active, run from `Hackutd2026/backend`:
 
-Additional settings: `PHOTON_PLATFORM` is `imessage` (default) or `sms`; optional `PHOTON_SENDER_ID` selects a canonical project-owned Agent User ID. Without it, discovery selects exactly one dedicated project-owned Agent. Multiple/shared/unavailable lines require explicit configuration and verification. Nothing provisions or purchases a line automatically.
+```sh
+python -m app.modules.messaging.live
+```
 
-`PHOTON_WEBHOOK_SECRET` holds the `whsec_…` signing secret; `SPECTRUM_WEBHOOK_SECRET` is accepted as a configuration fallback. `DEMO_PHONES` maps authorized `+E164:party_id` recipients. `PHOTON_CLAIMS_ALERT_PHONE` optionally selects an allowlisted recipient for resident claim-assistance notifications. Alerts include a referral ID and status, not private resident prose, and do not file insurance claims.
+The launcher verifies your configured project/Agent identities and message-read access, enables real Photon mode for this process, then starts API8000 and a two-second reply poller. Polling starts after the scenario and handlers are ready. No public tunnel, open browser, or Node bridge is needed for local texting. Stop an existing API on port8000 first. Connection/configuration failures stop startup instead of silently simulating delivery.
 
-From `backend/`, run `python -m app.modules.messaging.check_photon` for configuration readiness; add `--live` for read-only project and sender checks. Neither prints keys/phone numbers or sends messages. Restart the API after settings changes. Keep `MESSAGING_MODE=sim` until live verification and public webhook configuration succeed.
+Your private `backend/.env` must exist on the machine running this command; Git does not copy ignored cloud credentials to your laptop. Required settings are `PHOTON_API_KEY`, `PHOTON_PROJECT_ID`, and `DEMO_PHONES` (`+E164:party_id` mappings). Optional `PHOTON_PLATFORM` is `imessage` (default) or `sms`; `PHOTON_SENDER_ID` selects an Agent when needed. Keys are sent only as Bearer headers to `https://api.photon.codes` and never printed.
 
-Sending reconciles the recipient User, creates a direct Space with the Agent first, then sends plain text. Space/message requests use distinct idempotency keys. HTTP202 and a valid dispatched/accepted/delivered Message acknowledge a send, not handset delivery. No automatic retries occur; timeout outcomes may be unknown.
+## Shared iMessage setup
 
-Inbound `/api/webhooks/photon` verifies Standard Webhooks headers (`webhook-id`, `webhook-timestamp`, `webhook-signature`) over exact raw bytes with the decoded secret. It accepts the documented `2026-07-01` envelope and checks project identity, received status, direct conversation, and phone handle. Group messages, outgoing events, typing and read receipts do not start chat turns. Signed message IDs deduplicate redelivery under a new event ID.
+Shared Agents have no resourceId; the adapter accepts their documented type=shared identity. Add each test phone under **iMessage > senders** in the Photon dashboard, and have each phone text its assigned Photon agent number first. The adapter looks up and reuses the existing direct Space with that recipient. It does not try to cold-create a conversation on a shared line. A missing assignment/conversation produces instructions rather than a false success. Dedicated identities can create a direct Space when needed. Multiple matching Agent conversations require explicit `PHOTON_SENDER_ID` selection. No line is purchased or provisioned automatically.
 
-Contracts checked against official `@photon-ai/api@0.6.0` public types and `@photon-ai/convex@0.1.0` webhook parser. Attachment-ID-only events do not yet provide a downloadable photo URL; live attachment retrieval is not verified. Mocked protocol acceptance is separate from real authentication, line provisioning, webhook reachability and handset delivery.
+In another terminal, with the same backend folder/environment, send one explicit test:
 
-## One-command local backend
+```sh
+python -m app.modules.messaging.live --test-party MGR-01
+```
 
-From `backend/` with its Python environment active, `python -m app.modules.messaging.live` performs the live project/sender checks, switches this process to real messaging, and starts both API8000 and signed webhook-only receiver8788. Stop an existing API/gateway first. `python -m app.modules.messaging.live --test-party MGR-01` sends one explicit test to the configured manager and exits; use this in another terminal after starting services. Neither command retries a failed send or pretends a provider acknowledgement proves handset delivery. No Node bridge is needed for current Project API keys.
+Use another configured party ID to test another recipient. This command sends once and exits; it does not automatically retry. HTTP202 with a valid dispatched/accepted/delivered Message acknowledges a request, not handset delivery. Timeout outcomes may be unknown.
 
-The `.env` file must exist on the machine running this command; ignored cloud secrets are not included in Git pulls. The default ordinary demo startup remains simulated.
+## Roles and claims alerts
 
-## Manual startup on a machine that can reach Photon
+`DEMO_PHONES` maps the manager to `MGR-01`, a technician to the relevant `TECH-…` party, and a resident test number to a `RESIDENT-…` identity. Signed/polled messages use the existing handlers: `YES PLAN-…` approves; `DONE WO-…` completes an assigned task. `PHOTON_CLAIMS_ALERT_PHONE` optionally selects an allowlisted contact for new resident insurance-claim assistance requests. Notifications contain a referral ID and status, not private resident prose. They do not submit an insurance claim. Keep unrelated recipients out of the allowlist.
 
-1. From `backend/`, run `python -m app.modules.messaging.check_photon --live`. It must verify the project and sending identity before a live-send claim.
-2. Start the API with `MESSAGING_MODE=photon uvicorn app.main:app --host 127.0.0.1 --port 8000`. The frontend can be open or closed; it is not required for texting.
-3. Start webhook-only ingress in another terminal: `uvicorn app.modules.messaging.webhook_gateway:app --host 127.0.0.1 --port 8788`.
-4. Expose port8788 using the chosen HTTPS tunnel and register `https://<tunnel-host>/api/webhooks/photon` in the Photon destination. The gateway has no management endpoints, Swagger UI, or OpenAPI endpoint; it preserves signed bytes and forwards only webhook headers to the private API. Do not expose port8000 or the legacy sending bridge directly.
-5. Test using the configured phones: manager approval `YES PLAN-001` on a fresh Harvey exercise; technician completion `DONE WO-001`; a resident insurance-claim request should create a referral and notify the claims contact. Check real message delivery and signed inbound receipts separately.
+## Optional webhook receiver
 
-The cloud machine's saved allowlist changes must be applied before its Photon checks can succeed. Local or deployed operation is possible independently, using private settings on that machine. The gateway supplies ingress routing, not TLS certificates or a tunnel account.
+Use `python -m app.modules.messaging.live --webhook` instead of polling when a public HTTPS callback is desired. Set `PHOTON_WEBHOOK_SECRET` (`whsec_…`); the existing `SPECTRUM_WEBHOOK_SECRET` name is accepted as a fallback. Expose only the signature-verifying gateway on port8788, and register `https://<tunnel-host>/api/webhooks/photon`. The gateway excludes management APIs and docs, limits request size, preserves signed bytes, and forwards only webhook headers to the private API. Startup checks gateway readiness and reports later child failure. Never expose API8000 or the legacy sending bridge directly.
+
+Standard Webhooks verification checks exact raw bytes, decoded signing secret, five-minute timestamp window, documented `2026-07-01` envelope, project identity, received status, direct conversation, and phone handle. Polling reads authenticated project messages and bounds history/pagination/dedupe. Both paths share message-ID dedupe. Group conversations, outgoing messages, typing and read receipts do not start chat turns.
+
+## Validation and limits
+
+`python -m app.modules.messaging.check_photon --live` performs read-only Agent checks; it never sends. Ordinary demo startup remains simulated. Live texting requires provider access/permissions and assigned numbers; this cloud's egress policy may block Photon even when a laptop can reach it. Real authentication, inbound reachability, and handset delivery must be verified separately from mocked protocol tests.
+
+Contracts were checked against official `@photon-ai/api@0.6.0` types and `@photon-ai/convex@0.1.0`. Attachment-ID-only events do not yet supply downloadable photo evidence; text replies work independently of future attachment retrieval. The legacy Spectrum bridge is supported only when a current Project API key is not configured.

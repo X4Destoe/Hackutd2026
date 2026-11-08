@@ -21,8 +21,10 @@ def main():
     if args.live:
         try:
             client = CurrentPhoton(cfg)
-            client.request('GET', '')
-            result['sender_id'] = client.sender()
+            agents = client.agents()
+            if not agents:
+                raise PhotonError('No available Photon Agent identity was found. Check the project line setup.')
+            result['sender_ids'] = list(agents)
             result['live_verified'] = True
         except PhotonError as exc:
             result['error'] = str(exc)

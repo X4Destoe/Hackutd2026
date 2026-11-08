@@ -125,23 +125,23 @@ Terminal 2 `cd $HOME\Hackutd2026\frontend; npm install; npm run dev`.
 
 ### Real Photon messaging locally
 
-Use the current Photon API adapter with a private `backend/.env` containing `PHOTON_API_KEY`, `PHOTON_PROJECT_ID`, the webhook signing secret, and authorized `DEMO_PHONES` mappings. Private settings created in a cloud workspace must also be present on your laptop; Git deliberately does not transfer them.
+Keep your Photon key, project ID, and authorized `DEMO_PHONES` mappings in private `backend/.env`. Settings prepared in a cloud workspace must also exist on your laptop; Git deliberately does not transfer them. Each test phone must be assigned in Photon and must first text its Photon agent number (required for shared iMessage lines).
 
-With the backend Python environment active, stop the ordinary API process and run from `Hackutd2026/backend`:
+With the backend Python environment active, stop the ordinary API and run from `Hackutd2026/backend`:
 
 ```sh
 python -m app.modules.messaging.live
 ```
 
-This checks the project and dedicated sending identity, enables real Photon mode for this process, and starts the private API on port8000 plus a signature-verifying webhook-only receiver on port8788. It stops with an error if the configuration or provider connection fails; it does not silently switch to simulated texts. The separate Node/Spectrum bridge is not needed for current Project API keys.
+This verifies Photon access, enables real messages, and starts the API plus reply polling. **No tunnel or separate Node bridge is needed.** The frontend can be open or closed. A failed check stops with an error rather than silently simulating texts.
 
-To send one test in another terminal (same backend folder and Python environment):
+To send one test in another terminal (same backend folder/environment):
 
 ```sh
 python -m app.modules.messaging.live --test-party MGR-01
 ```
 
-That sends one message to the mapped manager and exits; no automatic retry occurs. A Photon acknowledgement is not a handset delivery receipt. For incoming replies, expose only port8788 through your HTTPS tunnel and register `/api/webhooks/photon` on that URL in Photon. See the [current API runbook](backend/app/modules/messaging/HTTP_API.md). A provisioned sending line and provider permissions remain required; missing resources are reported rather than purchased automatically.
+That sends once to the mapped manager and exits. Other configured party IDs can be tested the same way. A provider acknowledgement is not a delivery receipt; check the actual phone. See the [current Photon runbook](backend/app/modules/messaging/HTTP_API.md) for role mappings, claims alerts, troubleshooting and optional signed HTTPS webhooks (`--webhook`). No paid sending resource is provisioned automatically.
 
 ### Optional
 - **Just want to look?** Open `demo/operation-storm-demo.html` in a browser. No install needed.
