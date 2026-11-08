@@ -39,6 +39,8 @@ def message(text, mid, phone, at=T0 + 1, **over):
          "space": {"id": "space-1", "kind": "direct"}, "sentBy": {"id": "user-1", "kind": "human", "handle": phone},
          "receivedBy": {"id": "agent-1", "kind": "agent"}, "content": {"type": "text", "format": "plain", "text": text}}
     m.update(over)
+    if m.get("createdAt") is None:
+        m.pop("createdAt", None)
     return m
 
 
@@ -73,8 +75,15 @@ def tech(app):
     return party
 
 
-def poller(fake, clock=lambda: T0, **kw):
-    cfg = photon.PhotonSettings(_env_file=None, photon_api_key=KEY, photon_project_id=PROJECT, photon_webhook_secret=SECRET)
+RESIDENT_PHONE = "+17135550188"
+
+
+def poller(fake, clock=lambda: T0, phones=None, **kw):
+    if phones is None:  # the Bayou Plaza technician and one mapped resident phone
+        tech_phone = store.parties.require(store.buildings.require("BLD-HOU-01").onsite_party_id).phone
+        phones = f"{tech_phone}:TECH,{RESIDENT_PHONE}:RESIDENT-0188"
+    cfg = photon.PhotonSettings(_env_file=None, photon_api_key=KEY, photon_project_id=PROJECT, photon_webhook_secret=SECRET,
+                                demo_phones=phones)
     return polling.PhotonPoller(cfg, httpx.Client(transport=httpx.MockTransport(fake)), clock=clock, **kw), cfg
 
 
@@ -113,6 +122,7 @@ def test_pages_are_followed(app, tech):
     {"sentBy": {"id": "u", "kind": "human", "handle": "someone@example.com"}},
     {"content": {"type": "space.typing.update"}}, {"content": {"type": "message.read"}},
     {"createdAt": iso(T0 - 600)},  # sent before polling started
+    {"createdAt": None}, {"createdAt": "2027-01-15T08:00:00"},  # unknown age / no timezone: could be old history
 ])
 def test_non_replies_are_ignored(app, tech, change):
     p, _ = poller(FakePhoton([[message("ignored", "m-x", tech.phone, **change)]]))
@@ -133,11 +143,35 @@ def test_a_message_seen_by_the_signed_webhook_is_not_delivered_again(app, tech, 
     assert p.poll_once() == 0 and inbound_bodies(tech.id) == ["from webhook"]
 
 
-def test_unknown_numbers_become_residents_who_get_photon_replies(app):
-    p, _ = poller(FakePhoton([[message("our apartment flooded, need a dry place", "m-r", "+17135550188")]]))
+def test_a_mapped_resident_phone_is_routed_and_gets_photon_replies(app):
+    p, _ = poller(FakePhoton([[message("our apartment flooded, need a dry place", "m-r", RESIDENT_PHONE)]]))
     assert p.poll_once() == 1
-    party = messaging.party_for_phone("+17135550188")
+    party = messaging.party_for_phone(RESIDENT_PHONE)
     assert party.type == "resident" and party.demo_live is True
+
+
+def test_a_phone_not_in_demo_phones_is_ignored_before_any_party_exists(app):
+    stranger = "+17135550177"
+    before = len(store.parties.list())
+    p, _ = poller(FakePhoton([[message("DONE WO-001", "m-s", stranger)]]))
+    assert p.poll_once() == 0
+    assert len(store.parties.list()) == before and not any(m.body == "DONE WO-001" for m in store.messages.list())
+
+
+def test_an_unexpected_failure_logs_no_message_text(app, tech, monkeypatch, caplog):
+    def boom(*_a, **_k):
+        raise RuntimeError("private reply text and token-123")
+    monkeypatch.setattr(messaging, "receive", boom)
+    p, _ = poller(FakePhoton([[message("private reply text", "m-e", tech.phone)]]), interval=0.01)
+    p.start()
+    try:
+        deadline = time.time() + 2
+        while p.error is None and time.time() < deadline:
+            time.sleep(0.01)
+    finally:
+        p.stop()
+    assert p.error and "private" not in p.error
+    assert "private" not in caplog.text and "token-123" not in caplog.text and "RuntimeError" in caplog.text
 
 
 def test_a_refusal_sets_a_safe_error_and_the_loop_keeps_going(app, tech):
