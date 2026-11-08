@@ -53,6 +53,19 @@ const BASE = process.env.STORM_URL || 'http://127.0.0.1:5173';
     if (resources.ok()) {
       const sites = await resources.json();
       assert.equal(await page.locator('[data-activity-kind="help"]').count(), sites.length);
+      if (sites.length) assert((await page.locator('[data-activity-kind="help"]').first().getAttribute('aria-label')).includes(sites[0].name), 'Help pins need descriptive accessible names');
+      await tools.getByRole('button', { name: 'Texts', exact: true }).click();
+      await page.getByLabel('Send as').selectOption('resident');
+      await page.getByLabel('Resident phone').fill('+12145550123');
+      await page.getByLabel('Message', { exact: true }).fill('Our apartment in Memorial flooded. 2 adults need shelter and a dry place.');
+      await page.getByRole('button', { name: 'Send simulated message', exact: true }).click();
+      await page.getByText('Message submitted. Responses and updates appear below.', { exact: true }).waitFor();
+      const referrals = await api('/referrals');
+      assert(referrals.length > 0 && referrals[0].status === 'routed', 'Resident request must create a routed referral');
+      const destination = (await api('/resources?city=Houston')).find(site => site.id === referrals[0].resource_id);
+      assert(destination && destination.used >= referrals[0].people, 'Routing must reserve real capacity');
+      await tools.getByRole('button', { name: 'Help Sites', exact: true }).click();
+      await content.getByText(referrals[0].party_id, { exact: true }).waitFor();
     } else {
       await activity.getByText('Unavailable · open details', { exact: true }).waitFor();
       console.log('DEPENDENCY: resource API unavailable; UI shows explicit unavailable state');
