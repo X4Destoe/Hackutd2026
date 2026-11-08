@@ -12,11 +12,11 @@ Show the simulator conversations, technician DONE/BLOCKED replies, resident rout
 
 ## State Farm
 
-Show a resident request, safety and capacity checks, and the chosen help site. Activate an eligible building as a community help site and show the resulting capacity. This demonstrates disaster assistance and recovery coordination; it does not submit an insurance claim or promise coverage.
+Show a resident request, safety and capacity checks, and the chosen help site. Activate an eligible building as a community help site and show the resulting capacity. Residents can also receive an available modeled State Farm claims-desk contact, phone, and map link. Waiting shelter requests are placed automatically when a safe site opens. This demonstrates disaster assistance and recovery coordination; it does not submit an insurance claim or promise coverage.
 
 ## Repeatable demo
 
-Follow [DEMO.md](DEMO.md) for measured figures and [REHEARSAL.md](REHEARSAL.md) for setup. The [backup recording](media/operation-storm-demo.mp4) completes approvals, technician updates, resident assistance, help-site activation, a printable report, and a randomized supported-city custom simulation in under a minute. Re-run the recording script to check the current checkout.
+Follow [DEMO.md](DEMO.md) for measured figures and [REHEARSAL.md](REHEARSAL.md) for setup. The [backup recording](media/operation-storm-demo.mp4) completes approvals, technician updates, resident assistance, help-site activation, a printable report, and a randomized supported-city custom simulation in a short repeatable rehearsal. Re-run the recording script to check the current checkout.
 
 ## What the estimates mean
 
