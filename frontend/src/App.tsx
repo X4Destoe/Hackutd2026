@@ -1,3 +1,4 @@
+import MapView from "./modules/map";
 import { useEffect, useState } from "react";
 import {
   Building2,
@@ -139,15 +140,7 @@ export default function App() {
           <Panel onClose={() => setDrawerOpen(false)} />
         </aside>
         <main className="map-slot" aria-label="Map workspace">
-          <div className="map-grid" aria-hidden="true" />
-          <div className="map-placeholder">
-            <Layers size={30} />
-            <h2>Portfolio map</h2>
-            <p>
-              Scenario hazards, buildings and response layers will appear here.
-            </p>
-            <span className="status-label">Map module pending</span>
-          </div>
+          <MapView />
           <div className="map-note">
             Illustrative hazards · Synthetic buildings and dollar figures
           </div>
