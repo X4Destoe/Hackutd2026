@@ -43,6 +43,15 @@ EMERGENCY = {
     "es": "Si alguien necesita oxígeno o atención médica, llame al 911 ahora. Su solicitud quedó marcada para seguimiento de un coordinador.",
     "vi": "Nếu có người cần oxy hoặc cấp cứu, hãy gọi 911 ngay. Yêu cầu của bạn đã được đánh dấu để điều phối viên theo dõi.",
 }
+SHELTER = {  # hurricane-force wind where the resident is: travelling is the danger
+    "en": "Hurricane-force winds now: stay where you are, away from windows, on the lowest floor that is not flooding. "
+          "Do not travel. We will text you the nearest open, safe site as soon as one opens. If anyone is hurt, call 911.",
+    "es": "Vientos huracanados ahora: quédese donde está, lejos de las ventanas, en el piso más bajo que no se esté inundando. "
+          "No viaje. Le enviaremos el sitio abierto y seguro más cercano en cuanto haya uno. Si alguien está herido, llame al 911.",
+    "vi": "Gió bão mạnh lúc này: ở yên tại chỗ, tránh xa cửa sổ, ở tầng thấp nhất không bị ngập. Đừng di chuyển. "
+          "Chúng tôi sẽ nhắn nơi an toàn gần nhất ngay khi có. Nếu có người bị thương, gọi 911.",
+}
+HURRICANE_FORCE_MPH = 74
 FINDING = {
     "en": "We received your request. No open, safe site has room right now; your request is flagged for coordinator follow-up.",
     "es": "Recibimos su solicitud. Ahora no hay un sitio abierto y seguro con espacio; su solicitud quedó marcada para seguimiento de un coordinador.",
@@ -106,6 +115,22 @@ def refresh_safety() -> list[str]:
                 ref, ids_ = _reroute(ref, site, outbox)
                 moved.append(ref)
                 changed += [i for i in ids_ if i not in changed]
+        # Residents still waiting (no safe site, no room, or hurricane-force wind): route them as soon as a site opens.
+        for ref in sorted(store.referrals.list(status="unrouted"), key=lambda r: r.id):
+            options = _candidates(ref.needs, ref.people, _locate(ref.party_id, "", city), exclude=set())
+            if not options:
+                continue
+            dist, site = options[0]
+            site = _reserve(site, ref.people)
+            party = store.parties.get(ref.party_id)
+            lang = party.language if party and party.language in EMERGENCY else "en"
+            ref = ref.model_copy(update={"resource_id": site.id, "distance_mi": round(dist, 1), "status": "routed",
+                                         "history": ref.history + [f"{hour}h: a safe site opened; routed to {site.name}, "
+                                                                   f"{ref.people} spot(s) reserved"]})
+            store.referrals.put(ref)
+            outbox.append((ref.party_id, _site_text(site, dist, lang, "redirect"), ref.id))
+            moved.append(ref)
+            changed += [site.id] if site.id not in changed else []
     _flush(outbox)  # texts go out after the lock: a slow channel never stalls the timeline
     if changed:
         bus.emit("resources.changed", {"changed_ids": changed})
@@ -144,6 +169,14 @@ def _candidates(needs: list[str], people: int, at: tuple[float, float], exclude:
     sites = [r for r in store.resources.list(city=city)
              if r.id not in exclude and _v(r.type) in wanted and _v(r.status) == "open" and r.capacity - r.used >= people]
     return sorted(((miles(at, (r.lat, r.lon)), r) for r in sites), key=lambda x: x[0])
+
+
+def _hurricane_force(at: tuple[float, float]) -> bool:
+    """Wind physically at the resident's location right now (present reading), not the forecast peak."""
+    try:
+        return scenarios.hazard_at(at[0], at[1], present=True).get("wind_mph", 0) > HURRICANE_FORCE_MPH
+    except Exception:  # noqa: BLE001 - guidance must never break routing
+        return False
 
 
 def _maps(r: schemas.Resource) -> str:
@@ -210,11 +243,13 @@ def route(party_id: str, text: str) -> schemas.Referral:
                                    resource_id=site.id, distance_mi=round(dist, 1), status="routed", history=history)
             outbox.append((party_id, _site_text(site, dist, lang, "redirect"), ref_id))
         else:
-            history.append(f"{hour}h: no open, safe site with room for {people}")
+            windy = _hurricane_force(at)
+            history.append(f"{hour}h: no open, safe site with room for {people}"
+                           + ("; hurricane-force wind: told to shelter in place, will be routed when a site opens" if windy else ""))
             ref = schemas.Referral(id=ref_id, party_id=party_id, needs=needs, people=people, summary=need.get("summary", ""),
                                    status="unrouted", history=history)
             if not (urgent and needs == ["medical"]):
-                outbox.append((party_id, FINDING[lang], ref_id))
+                outbox.append((party_id, (SHELTER if windy else FINDING)[lang], ref_id))
         store.referrals.put(ref)
     _flush(outbox)
     if changed:

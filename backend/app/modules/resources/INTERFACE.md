@@ -16,3 +16,9 @@ Runs on `scenario.loaded` (seed) and `timeline.changed` (refresh_safety).
 - Location (demo simplification): a neighborhood named in the text (`PLACES`), else the scenario's default flooded neighborhood
   (Houston Memorial, Dallas Oak Lawn, Fort Myers Beach) with a small deterministic offset per resident.
 - Repair vendors get "contact" wording, not "go to" (they come to you).
+
+## Waiting residents (TASK-071)
+- No open, safe site with room **and** hurricane-force wind (> 74 mph, present reading) at the resident's location: the reply is
+  shelter-in-place guidance in their language (`SHELTER`), not a generic coordinator line; history says why.
+- `refresh_safety()` (every timeline step) routes `unrouted` referrals as soon as a matching open, safe site has room,
+  reserves the spots and texts the redirect. Medical-only requests have no site type and stay with the coordinator.

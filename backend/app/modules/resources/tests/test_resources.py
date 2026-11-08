@@ -119,3 +119,21 @@ def test_replies_never_call_the_llm(c, monkeypatch):
     step(c, 0)
     pid = text(c, "+17135550118", "flooded, need shelter for 2")
     assert texts_to(pid)[-1].startswith("Go to")
+
+
+def test_hurricane_force_wind_means_shelter_in_place_then_automatic_routing(c):
+    c.post("/api/scenarios/ian_fort_myers/load")
+    step(c, 0)  # Ian landfall: every site is in hurricane-force wind
+    pid = text(c, "+12395550100", "we need shelter, 2 people")
+    ref = next(r for r in store.referrals.list() if r.party_id == pid)
+    assert ref.status == "unrouted" and "shelter in place" in ref.history[-1]
+    assert texts_to(pid)[-1].startswith("Hurricane-force winds now: stay where you are")
+    step(c, 48)  # winds drop: the waiting resident is routed and told where to go, without texting again
+    ref = store.referrals.require(ref.id)
+    site = store.resources.require(ref.resource_id)
+    assert ref.status == "routed" and "a safe site opened" in ref.history[-1]
+    assert texts_to(pid)[-1].startswith(f"Go to {site.name}")
+
+
+def test_shelter_in_place_texts_fit_one_sms():
+    assert all(len(t) <= 320 for t in resources.SHELTER.values())
