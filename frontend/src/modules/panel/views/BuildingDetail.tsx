@@ -125,7 +125,7 @@ export default function BuildingDetail() {
                 <li key={n}>{driver}</li>
               ))}
             </ul>
-            <h3 className="section-title"><TermHelp term="Money waterfall" /></h3>
+            <h3 className="section-title" aria-label="Money waterfall"><TermHelp term="Money waterfall" /></h3>
             <div className="waterfall">
               {waterfall.map(([label, value, credit]) => (
                 <div key={label} className={credit ? "waterfall-credit" : ""}>
