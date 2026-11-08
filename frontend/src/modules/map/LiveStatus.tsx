@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
-import { useDemoState } from "../../shared/queries";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useDemoState, invalidateKeys } from "../../shared/queries";
 import { Button } from "../../shared/ui";
 import "./live.css";
 
@@ -16,6 +17,7 @@ function fetched(feed?: Feed) {
 /** Fetch receipt time is not a hazard observation timestamp or a safety guarantee. */
 export default function LiveStatus({ city }: { city?: string }) {
   const state = useDemoState();
+  const cache = useQueryClient();
   const active = state.data?.scenario_id.startsWith("live") ?? false;
   const cityName = city ?? CITIES[state.data?.scenario_id ?? ""];
   const status = useQuery({ queryKey: ["liveStatus"], enabled: active,
@@ -24,6 +26,11 @@ export default function LiveStatus({ city }: { city?: string }) {
       if (!response.ok) throw new Error("Live status unavailable");
       return response.json();
     }, refetchInterval: 60_000 });
+  useEffect(() => {
+    if (active && (status.dataUpdatedAt || status.errorUpdatedAt)) {
+      void invalidateKeys(cache, ["overlays", "impact", "summary", "plans", "fixFirst", "resources"]);
+    }
+  }, [active, status.dataUpdatedAt, status.errorUpdatedAt, cache]);
   if (!active) return null;
   const sources = [["alerts", "NWS alerts"], [`forecast:${cityName}`, "NWS forecast"], [`gauges:${cityName}`, "USGS gauges"]];
   const unknown = status.isError || !status.data || sources.some(([key]) => fetched(status.data.feeds?.[key]).unknown);
