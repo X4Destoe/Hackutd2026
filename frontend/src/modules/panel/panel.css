@@ -317,3 +317,40 @@ td small {
     animation: none;
   }
 }
+
+.panel-city-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(3px);
+  transform: scale(1.08);
+  opacity: 0;
+}
+.photo-present .panel-city-photo {
+  opacity: 1;
+}
+.photo-present .hero-skyline {
+  opacity: 0.12;
+}
+.photo-present .hero-copy {
+  background: linear-gradient(
+    180deg,
+    rgba(9, 35, 29, 0.58),
+    rgba(9, 35, 29, 0.87) 65%,
+    rgba(9, 35, 29, 0.96)
+  );
+}
+.hero-photo-credit {
+  display: block;
+  font-size: 8px;
+  line-height: 1.5;
+  margin-top: 12px;
+  color: #d5e5da;
+  text-shadow: 0 1px 3px #122d24;
+}
+.photo-present .hero-copy h1,
+.photo-present .hero-copy p {
+  color: #fff;
+}
