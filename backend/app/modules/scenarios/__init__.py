@@ -27,7 +27,7 @@ _runtime: OrderedDict[str, tuple[schemas.Scenario, dict]] = OrderedDict()
 
 # ---------- data files ----------
 
-_live_built: dict[str, tuple[str | None, schemas.Scenario]] = {}
+_live_built: dict[str, tuple[tuple, schemas.Scenario]] = {}
 
 
 def _live_snapshot() -> dict:
@@ -39,11 +39,17 @@ def _live_scenario(scenario_id: str) -> schemas.Scenario:
     """Built from the live snapshot; rebuilt only when new data arrives."""
     from app.modules import live
     snap = live.snapshot()
+    freshness = live.status()
+    city = live_scenario.CITIES[scenario_id]
+    feeds = freshness.get("feeds") or {}
+    fingerprint = tuple((key, (feeds.get(key) or {}).get("as_of"), (feeds.get(key) or {}).get("stale", True),
+                         (feeds.get(key) or {}).get("error")) for key in ("alerts", f"forecast:{city}", f"gauges:{city}"))
+    key = (snap.get("fetched_at"), id(snap), fingerprint)
     cached = _live_built.get(scenario_id)
-    if cached and cached[0] == snap.get("fetched_at"):
+    if cached and cached[0] == key:
         return cached[1]
-    built = live_scenario.build(scenario_id, snap, live.status())
-    _live_built[scenario_id] = (snap.get("fetched_at"), built)
+    built = live_scenario.build(scenario_id, snap, freshness)
+    _live_built[scenario_id] = (key, built)
     return built
 
 
@@ -206,6 +212,13 @@ def set_hour(hour: int) -> schemas.DemoState:
 
 # ---------- hazard and utilities ----------
 
+def data_quality() -> str:
+    sid = current().scenario_id
+    if sid not in live_scenario.CITIES:
+        return "modeled"
+    from app.modules import live
+    return live_scenario.data_quality(live.snapshot(), live.status(), live_scenario.CITIES[sid])
+
 def hazard_at(lat: float, lon: float, hour: int | None = None, present: bool = False) -> dict:
     """{"flood_depth_ft","wind_mph","ice_in","temp_f","in_burn_zone"} at a point.
 
@@ -215,7 +228,10 @@ def hazard_at(lat: float, lon: float, hour: int | None = None, present: bool = F
     """
     sid = current().scenario_id
     if sid in live_scenario.CITIES:  # labeled proxies from real NWS alerts + forecast (same reading now and in the window)
-        return live_scenario.hazard_at(_live_snapshot(), sid, lat, lon)
+        from app.modules import live
+        snapshot = _live_snapshot()
+        return {**live_scenario.hazard_at(snapshot, sid, lat, lon),
+                "data_quality": live_scenario.data_quality(snapshot, live.status(), live_scenario.CITIES[sid])}
     return hazard.hazard_at(_anchors(sid), lat, lon, _hour(hour), present)
 
 
@@ -259,4 +275,4 @@ def register() -> None:
 from .routes import router  # noqa: E402  (routes use the functions above)
 
 __all__ = ["load", "load_definition", "current", "scenario", "step", "set_hour", "hazard_at", "utility_down", "outage_hours", "overlays",
-           "scenarios_meta", "scenario_ids", "register", "router"]
+           "scenarios_meta", "scenario_ids", "data_quality", "register", "router"]

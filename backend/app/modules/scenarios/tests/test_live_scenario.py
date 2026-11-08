@@ -34,7 +34,7 @@ SNAP = {
     "gauges": [], "gauges_by_city": {}, "building_gauges": {},
     "feeds": {"alerts": {"as_of": "x", "error": None}, "forecast:Houston": {"as_of": "x", "error": None}},
 }
-FRESH = {"feeds": {"alerts": {"stale": False}, "forecast:Houston": {"stale": False}, "gauges:Houston": {"stale": False}}}
+FRESH = {"feeds": {key: {"as_of": "2026-11-08T06:00:00+00:00", "stale": False} for key in ("alerts", "forecast:Houston", "gauges:Houston")}}
 
 
 @pytest.fixture
@@ -102,3 +102,30 @@ def test_proxy_table():
     assert live_scenario.proxy("Storm Surge Warning", "Severe")[0] == "surge_water"
     assert live_scenario.proxy("Hurricane Warning", "Extreme") == ("wind_swirl", "wind", 90.0)
     assert live_scenario.proxy("Rip Current Statement", "Moderate") is None
+
+
+def test_missing_live_feeds_do_not_become_zero_loss_safe_sites(c):
+    c.state["snap"] = {"fetched_at": None, "alerts": None, "conditions": {}, "gauges": []}
+    c.state["status"] = {"feeds": {}}
+    assert c.post("/api/scenarios/live_houston/load").status_code == 200
+    value = c.get("/api/impact/BLD-HOU-04").json()
+    assert value["data_quality"] == "unknown"
+    assert "unknown, not zero or safe" in value["drivers"][0]
+    assert c.get("/api/portfolio/summary").json()["data_quality"] == "unknown"
+    assert impact.site_safe(29.7405, -95.4660) is False
+    assert c.get("/api/fix-first?community=1").json() == []
+
+
+def test_fresh_proxy_is_labelled_and_live_power_never_assumed_verified(c):
+    c.post("/api/scenarios/live_houston/load")
+    assert c.get("/api/impact/BLD-HOU-01").json()["data_quality"] == "live_proxy"
+    assert c.get("/api/portfolio/summary").json()["data_quality"] == "live_proxy"
+    assert impact.site_safe(29.7405, -95.4660) is False
+
+
+def test_cached_live_impacts_become_unknown_when_feed_ages_without_new_snapshot(c):
+    c.post("/api/scenarios/live_houston/load")
+    assert c.get("/api/portfolio/summary").json()["data_quality"] == "live_proxy"
+    c.state["status"]["feeds"]["alerts"]["stale"] = True
+    assert c.get("/api/portfolio/summary").json()["data_quality"] == "unknown"
+    assert "unknown, not safe" in sc.step().narrative

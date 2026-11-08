@@ -43,3 +43,5 @@ alerts + hourly forecast; never blocks): steps `-24` "Now · act before the wind
   `sources` naming the alert; impact appends "— NWS Flood Warning (proxy)" to the matching driver.
 - No utility outages (no free real-time feed). Stale/missing feeds are named in the "Now" narrative as unknown, not safe.
 - On `live.updated` while a live scenario is shown: rebuilt and `timeline.changed` is emitted (everything recomputes).
+
+`data_quality()` returns modeled for historical/custom exercises, live_proxy for fresh usable alert+city forecast inputs, unknown otherwise. Live hazard dictionaries include the same data_quality marker. Live scenario cache identity includes per-feed freshness so becoming stale without a new fetched_at updates narrative/impact. Source fetch times are not measurement times.

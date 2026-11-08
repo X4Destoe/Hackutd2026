@@ -175,3 +175,9 @@ The frontend uses events only to refresh queries (TanStack Query invalidation).
 
 **Circular imports:** `impact` and `actions` call each other (impact reads approved actions and the catalog; actions asks impact
 for what-if numbers). Import the other module *inside the function* (`from app.modules import actions`), never at the top of the file.
+
+### Runtime simulation and live data quality (additive)
+
+Custom supported-city simulation endpoints and validation are specified in `modules/simulation.md`. `scenarios.load_definition(Scenario, anchors)` registers at most16 in-memory `custom_` definitions, seeds the normal store and emits scenario.loaded; metadata and reset work normally without overwriting historical files.
+
+`Impact.data_quality` and `PortfolioSummary.data_quality` are `modeled | live_proxy | unknown` (default `modeled`). Unknown means the numeric/risk fields are compatibility placeholders, not zero loss or a safe condition; consumers must show unavailable/unknown and withhold financial reports. `live_proxy` means a screening estimate from fresh alert/forecast inputs, not verified flood depths or utility conditions. Gauge readings remain informational. `scenarios.data_quality()` exposes the current quality. Live help-site safety always fails closed until real-time power/operational verification exists; no automated site offer or resident routing may infer working power from the absence of an outage feed.

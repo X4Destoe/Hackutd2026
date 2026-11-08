@@ -28,6 +28,23 @@ WINTER = {"Ice Storm Warning": 0.5, "Winter Storm Warning": 0.25, "Winter Weathe
 SEVERITY = {"Extreme": 1.5, "Severe": 1.0, "Moderate": 0.75, "Minor": 0.5}
 
 
+def data_quality(snapshot: dict, freshness: dict, city: str) -> str:
+    """Only alerts and forecast feed the financial proxy; gauges are informational, power is unverified."""
+    feeds = freshness.get("feeds") or {}
+    for key in ("alerts", f"forecast:{city}"):
+        feed = feeds.get(key) or {}
+        try:
+            datetime.fromisoformat(feed.get("as_of") or "")
+        except (TypeError, ValueError):
+            return "unknown"
+        if feed.get("stale", True) or feed.get("error"):
+            return "unknown"
+    conditions = (snapshot.get("conditions") or {}).get(city) or {}
+    if not isinstance(snapshot.get("alerts"), dict) or any(conditions.get(key) is None for key in ("min_temp_f", "max_wind_mph")):
+        return "unknown"
+    return "live_proxy"
+
+
 def proxy(event: str, severity: str | None) -> tuple[str, str, float] | None:
     """(overlay style, hazard kind, proxy intensity) for an NWS event, or None if the app does not model it."""
     k = SEVERITY.get(severity or "", 0.75)

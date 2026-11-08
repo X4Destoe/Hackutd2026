@@ -76,6 +76,9 @@ def compute(b: schemas.Building, s: Site, with_approved_actions: bool = False) -
     if not s.in_scenario:
         return zero_impact(b, s.hour, "Not in the hazard area")
     hz, sysm = s.hazard, b.systems
+    quality = hz.get("data_quality", "modeled")
+    if quality == "unknown":
+        return zero_impact(b, s.hour, "Live data unavailable or stale: financial impact is unknown, not zero or safe.").model_copy(update={"data_quality": "unknown"})
     actions = [a for a in s.actions if _applies(a.effect, sysm.has_generator)]
 
     # power cascade: grid -> generator -> unpowered hours
@@ -201,4 +204,4 @@ def compute(b: schemas.Building, s: Site, with_approved_actions: bool = False) -
         on_generator=s.grid_down and gen_hours > since_landfall,
         generator_hours_left=max(0.0, gen_hours - since_landfall) if gen_hours > 0 else None, cause_chain=chain)
     return schemas.Impact(building_id=b.id, step_hour=s.hour, risk=risk_for(net), damage_ratio=round(ratio, 4), money=money,
-                          drivers=drivers, exposure=exposure, with_approved_actions=with_approved_actions)
+                          drivers=drivers, exposure=exposure, with_approved_actions=with_approved_actions, data_quality=quality)
