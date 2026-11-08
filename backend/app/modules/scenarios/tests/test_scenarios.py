@@ -34,6 +34,8 @@ def test_uri_load_gives_snow_overlay_and_12_buildings(client):
 def test_three_scenarios_have_three_different_hazard_looks(client):
     looks = {}
     for meta in client.get("/api/scenarios").json():
+        if meta["id"].startswith("live_"):
+            continue  # real-time scenarios: tests/test_live_scenario.py
         assert meta["step_hours"] == HOURS
         client.post(f"/api/scenarios/{meta['id']}/load")
         looks[meta["id"]] = {f["properties"]["style"] for f in client.get("/api/overlays?hour=0").json()["features"]}

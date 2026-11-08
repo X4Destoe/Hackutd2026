@@ -51,11 +51,13 @@ function BuildingResponse({ id }: { id: string }) {
       <p className="response-exposure" title="After insurance and approved actions">
         Estimated loss{" "}
         <strong>
-          {impact.data
+          {impact.data?.data_quality === "unknown" ? "Unknown" : impact.data
             ? money(impact.data.money.net_exposure_cents)
             : "Unavailable"}
         </strong>
       </p>
+      {impact.data?.data_quality === "unknown" && <p className="response-unavailable">Live financial inputs are unavailable. This does not confirm zero loss or safe conditions.</p>}
+      {impact.data?.data_quality === "live_proxy" && <p className="response-unavailable">Alert-based estimates; power conditions are unverified.</p>}
       {plan ? (
         <>
           <h3>
