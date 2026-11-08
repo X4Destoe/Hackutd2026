@@ -17,9 +17,11 @@
     "@radix-ui/react-tooltip": "1.1.8",
     "@tanstack/react-query": "5.107.1",
     "lucide-react": "0.468.0",
+    "maplibre-gl": "4.7.1",
     "openapi-typescript": "7.13.0",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "react-map-gl": "7.1.8"
   },
   "devDependencies": {
     "@types/react": "18.3.18",

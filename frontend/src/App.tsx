@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button, Tooltip } from "./shared/ui";
 import Panel from "./modules/panel";
+import MapView from "./modules/map";
 import {
   useScenarios,
   useDemoState,
@@ -139,18 +140,7 @@ export default function App() {
           <Panel onClose={() => setDrawerOpen(false)} />
         </aside>
         <main className="map-slot" aria-label="Map workspace">
-          <div className="map-grid" aria-hidden="true" />
-          <div className="map-placeholder">
-            <Layers size={30} />
-            <h2>Portfolio map</h2>
-            <p>
-              Scenario hazards, buildings and response layers will appear here.
-            </p>
-            <span className="status-label">Map module pending</span>
-          </div>
-          <div className="map-note">
-            Illustrative hazards · Synthetic buildings and dollar figures
-          </div>
+          <MapView />
           <Tooltip content="Map layers can be changed in the portfolio panel">
             <Button
               variant="outline"
