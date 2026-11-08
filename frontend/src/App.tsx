@@ -1,3 +1,4 @@
+import { HomeScreenHelp, MobileConnection, MobileNavigation, registerHomeScreenWorker, usePhoneLayout } from "./shared/mobile";
 import DemoReset from "./shared/DemoReset";
 import TermHelp from "./shared/TermHelp";
 import MapView from "./modules/map";
@@ -36,6 +37,8 @@ const navigation = [
 ] as const;
 export default function App() {
   const { panelView, setPanelView, selectBuilding, selectedBuildingId } = useUIStore();
+  const phone = usePhoneLayout();
+  useEffect(registerHomeScreenWorker, []);
   const scenarios = useScenarios();
   const state = useDemoState();
   const summary = useSummary();
@@ -45,16 +48,29 @@ export default function App() {
     setPanelView("overview");
   }, [state.data?.scenario_id]);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [mobileLegend, setMobileLegend] = useState(false);
   useEffect(() => {
     if (selectedBuildingId || panelView !== "overview") setDrawerOpen(true);
   }, [selectedBuildingId, panelView]);
+  useEffect(() => {
+    if (phone && panelView === "messages") { setPanelView("overview"); setDrawerOpen(false); }
+  }, [phone, panelView]);
+  useEffect(() => {
+    if (!phone || !drawerOpen) return;
+    const panel = document.getElementById("portfolio-panel");
+    if (panel) panel.scrollTop = 0;
+  }, [phone, drawerOpen, panelView]);
+  const showMap = () => {
+    setDrawerOpen(false);
+    if (phone) requestAnimationFrame(() => document.querySelector<HTMLButtonElement>(".mobile-navigation button")?.focus());
+  };
   const openView = (view: PanelView) => {
     setPanelView(view);
     setDrawerOpen(true);
   };
   return (
-    <div className="app-shell">
-      <a className="skip-link" href="#panel-content">
+    <div className="app-shell" data-mobile-panel={phone && drawerOpen} data-mobile-legend={mobileLegend}>
+      <a className="skip-link" href="#panel-content" onClick={() => phone && openView("overview")}>
         Skip to panel
       </a>
       <header className="top-bar">
@@ -90,8 +106,8 @@ export default function App() {
             ))}
           </select>
         </label>
-        <SimulationBuilder />
-        <DemoReset />
+        <div className="desktop-simulation-tools"><SimulationBuilder /><DemoReset /></div>
+        <HomeScreenHelp />
         <nav aria-label="Portfolio tools">
           {navigation.map(([view, label, Icon]) => (
             <Button
@@ -132,6 +148,10 @@ export default function App() {
       {load.isError && (
         <p role="alert">Could not switch scenario. Please retry.</p>
       )}
+      {phone && <><MobileConnection serviceError={state.isError || summary.isError} /><div className="mobile-context">
+        <div>Estimated loss<strong>{summary.data?.data_quality === "unknown" ? "Unknown" : summary.data ? money(summary.data.net_exposure_cents) : "Unavailable"}</strong></div>
+        <div>{state.data ? `${state.data.phase} · ${state.data.step_hour}h` : "Loading scenario"}<br />{state.dataUpdatedAt ? `Synced ${new Date(state.dataUpdatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · ${state.data?.scenario_id.startsWith("live") ? "live source" : "simulated impact"}` : "Awaiting response service"}</div>
+      </div></>}
       <div className="workspace">
         {drawerOpen && (
           <button
@@ -144,13 +164,16 @@ export default function App() {
           id="portfolio-panel"
           className={`left-panel ${drawerOpen ? "drawer-open" : ""}`}
           aria-label="Portfolio panel"
+          data-view={panelView}
         >
+          {phone && <div className="mobile-panel-heading"><strong>{({ fixfirst: "Fix-First", workorders: "Work Orders", help: "Help Sites", building: "Building details", buildings: "Buildings", overview: "Portfolio & layers", reports: "Reports", messages: "Portfolio" })[panelView]}</strong><Button variant="outline" onClick={showMap}>Back to map</Button></div>}
           <Panel onClose={() => setDrawerOpen(false)} />
         </aside>
-        <main className="map-slot" aria-label="Map workspace" onClickCapture={event => {
+        <main className="map-slot" aria-label="Map workspace" aria-hidden={phone && drawerOpen ? true : undefined} onClickCapture={event => {
           if (event.target instanceof Element && event.target.closest("[data-open-panel], [data-building-id], .response-details")) setDrawerOpen(true);
         }}>
           <MapView />
+          {phone && <Button variant="outline" className="mobile-key-button" aria-label="Map key" aria-pressed={mobileLegend} onClick={() => setMobileLegend(!mobileLegend)}>Key</Button>}
           <div className="map-note">
             Illustrative hazards · Synthetic buildings and dollar figures
           </div>
@@ -160,6 +183,7 @@ export default function App() {
               className="map-layer-button"
               aria-label="Open map layers in portfolio panel"
               onClick={() => {
+                setPanelView("overview");
                 setDrawerOpen(true);
                 window.dispatchEvent(new Event("storm:open-layers"));
               }}
@@ -169,6 +193,7 @@ export default function App() {
           </Tooltip>
         </main>
       </div>
+      {phone && <MobileNavigation view={panelView} panelOpen={drawerOpen} onMap={showMap} onView={openView} />}
     </div>
   );
 }
