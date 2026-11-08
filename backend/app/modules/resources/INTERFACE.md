@@ -4,7 +4,7 @@ Import `from app.modules import resources`. Spec: `docs/prd/modules/resources.md
 
 | Function | What |
 |---|---|
-| `route(party_id, text) -> Referral` | classify (ai), locate, pick the nearest **open + safe** site of a matching type with room, reserve `people` spots, text the resident (their language) with address, distance, hours, spots left and a Google Maps link. Urgent medical: 911 guidance first, flagged `URGENT` in history. Nothing fits: `unrouted` + "a coordinator will text you". |
+| `route(party_id, text) -> Referral` | classify (ai), locate, pick the nearest **open + safe** site of a matching type with room, reserve `people` spots, text the resident (their language) with address, distance, hours, spots left and a Google Maps link. Urgent medical: 911 guidance first, flagged `URGENT` in history ("flagged for coordinator follow-up": nothing is sent to a coordinator automatically). Nothing fits: `unrouted`. Replies use local templates (en/es/vi), never an LLM, and are sent after the lock is released. |
 | `refresh_safety() -> [changed ids]` | per step: `unsafe` if `impact.site_safe(...)` is False right now (present hazard, power), `full` if used ≥ capacity, else `open` (`closed` stays). Referrals at sites that became unsafe are re-routed with a change-of-plan text (`rerouted`, spots released at the old site), or `unrouted` if nothing fits. |
 | `register_site(resource) -> Resource` | add a site (actions: OFFER_HELP_SITE -> `cbre_help_site`); status computed immediately |
 | `seed()` | reload `data/resources.json` after a scenario load (store.reset() clears sites) |

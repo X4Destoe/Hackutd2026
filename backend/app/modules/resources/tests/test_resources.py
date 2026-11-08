@@ -82,16 +82,40 @@ def test_site_losing_power_reroutes_its_referrals_with_a_change_of_plan_text(c):
     ref = store.referrals.require(ref.id)
     assert ref.status == "rerouted" and ref.resource_id != "RES-HOU-03"
     assert store.resources.require("RES-HOU-03").used == 40  # spots released
-    assert any("previous site is unavailable" in t for t in texts_to(pid))
+    assert any(t.startswith("Change of plan: Bayou Community Center Shelter is no longer safe") for t in texts_to(pid))
 
 
 def test_unrouted_when_nothing_fits(c):
     step(c, 0)
     pid = text(c, "+17135550116", "we need a dry place for 50000 people")
     ref = next(r for r in store.referrals.list() if r.party_id == pid)
-    assert ref.status == "unrouted" and "coordinator" in texts_to(pid)[-1]
+    assert ref.status == "unrouted" and "flagged for coordinator follow-up" in texts_to(pid)[-1]
 
 
 def test_routes(c):
     assert len(c.get("/api/resources?city=Houston").json()) == 6
     assert c.get("/api/referrals").json() == []
+
+
+def test_reroute_that_takes_the_last_spots_marks_the_site_full(c):
+    step(c, -24)
+    pid = text(c, "+17135550117", "we need a dry place to stay, memorial area")
+    ref = next(r for r in store.referrals.list() if r.party_id == pid)
+    assert ref.resource_id == "RES-HOU-03"
+    # make the nearest alternative have exactly one spot left
+    for rid in ("RES-HOU-01", "RES-HOU-02", "RES-HOU-05"):
+        r = store.resources.require(rid)
+        store.resources.put(r.model_copy(update={"used": r.capacity - (ref.people if rid == "RES-HOU-01" else 0)}))
+    step(c, 0)
+    moved = store.referrals.require(ref.id)
+    assert moved.resource_id == "RES-HOU-01"
+    site = store.resources.require("RES-HOU-01")
+    assert site.used == site.capacity and site.status == "full"
+
+
+def test_replies_never_call_the_llm(c, monkeypatch):
+    from app.modules import ai
+    monkeypatch.setattr(ai, "compose", lambda *a, **k: (_ for _ in ()).throw(AssertionError("compose called")))
+    step(c, 0)
+    pid = text(c, "+17135550118", "flooded, need shelter for 2")
+    assert texts_to(pid)[-1].startswith("Go to")

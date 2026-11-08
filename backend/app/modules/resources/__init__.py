@@ -39,17 +39,26 @@ PLACES = {
 }
 DEFAULT_PLACE = {"Houston": "memorial", "Dallas": "oak lawn", "Fort Myers": "fort myers beach"}
 EMERGENCY = {
-    "en": "If anyone needs oxygen or medical help, call 911 now. A coordinator has been alerted.",
-    "es": "Si alguien necesita oxígeno o atención médica, llame al 911 ahora. Un coordinador ya fue avisado.",
-    "vi": "Nếu có người cần oxy hoặc cấp cứu, hãy gọi 911 ngay. Điều phối viên đã được báo.",
+    "en": "If anyone needs oxygen or medical help, call 911 now. Your request is flagged for coordinator follow-up.",
+    "es": "Si alguien necesita oxígeno o atención médica, llame al 911 ahora. Su solicitud quedó marcada para seguimiento de un coordinador.",
+    "vi": "Nếu có người cần oxy hoặc cấp cứu, hãy gọi 911 ngay. Yêu cầu của bạn đã được đánh dấu để điều phối viên theo dõi.",
 }
 FINDING = {
-    "en": "We're finding you a safe place; a coordinator will text you shortly.",
-    "es": "Estamos buscando un lugar seguro para usted; un coordinador le escribirá pronto.",
-    "vi": "Chúng tôi đang tìm nơi an toàn cho bạn; điều phối viên sẽ nhắn tin sớm.",
+    "en": "We received your request. No open, safe site has room right now; your request is flagged for coordinator follow-up.",
+    "es": "Recibimos su solicitud. Ahora no hay un sitio abierto y seguro con espacio; su solicitud quedó marcada para seguimiento de un coordinador.",
+    "vi": "Chúng tôi đã nhận yêu cầu. Hiện chưa có nơi an toàn còn chỗ; yêu cầu của bạn đã được đánh dấu để điều phối viên theo dõi.",
 }
 SPOTS = {"en": "spots left", "es": "lugares libres", "vi": "chỗ còn trống"}
 MAP = {"en": "Map", "es": "Mapa", "vi": "Bản đồ"}
+REPLY = {  # local, deterministic copy: replies never wait on an LLM (they run inside the timeline handler)
+    "redirect": {"en": "Go to {site}, {address}. {details}", "es": "Vaya a {site}, {address}. {details}",
+                 "vi": "Hãy đến {site}, {address}. {details}"},
+    "reroute": {"en": "Change of plan: {old} is no longer safe. Go to {site}, {address}. {details}",
+                "es": "Cambio de plan: {old} ya no es seguro. Vaya a {site}, {address}. {details}",
+                "vi": "Thay đổi kế hoạch: {old} không còn an toàn. Hãy đến {site}, {address}. {details}"},
+    "contact": {"en": "For emergency repairs contact {site}: {contact}.", "es": "Para reparaciones urgentes contacte a {site}: {contact}.",
+                "vi": "Để sửa chữa khẩn cấp, liên hệ {site}: {contact}."},
+}
 CLAIM_EXTRA = {"en": "Bring your policy number if you have it.", "es": "Traiga su número de póliza si lo tiene.",
                "vi": "Mang theo số hợp đồng bảo hiểm nếu có."}
 
@@ -84,7 +93,7 @@ def _status(r: schemas.Resource, hour: int) -> str:
 def refresh_safety() -> list[str]:
     """Update every site's status for the current step; re-route referrals at sites that became unsafe. Returns changed ids."""
     hour, city = scenarios.current().step_hour, scenarios.scenario().city
-    changed = []
+    changed, outbox, moved = [], [], []
     with _lock:
         for r in store.resources.list(city=city):
             status = _status(r, hour)
@@ -94,9 +103,14 @@ def refresh_safety() -> list[str]:
         for ref in store.referrals.list():
             site = store.resources.get(ref.resource_id) if ref.resource_id else None
             if site and _v(site.status) == "unsafe" and ref.status in ("routed", "rerouted"):
-                _reroute(ref, site)
+                ref, ids_ = _reroute(ref, site, outbox)
+                moved.append(ref)
+                changed += [i for i in ids_ if i not in changed]
+    _flush(outbox)  # texts go out after the lock: a slow channel never stalls the timeline
     if changed:
         bus.emit("resources.changed", {"changed_ids": changed})
+    for ref in moved:
+        bus.emit("referral.changed", {"referral_id": ref.id, "status": ref.status, "resource_id": ref.resource_id})
     return changed
 
 
@@ -136,27 +150,34 @@ def _maps(r: schemas.Resource) -> str:
     return f"https://www.google.com/maps/dir/?api=1&destination={r.lat:.4f},{r.lon:.4f}"
 
 
-def _send(party_id: str, purpose: str, facts: dict, language: str, referral_id: str | None, fallback: str) -> None:
+Outbox = list[tuple[str, str, str]]  # (party_id, body, referral_id): sent after the lock is released
+
+
+def _flush(outbox: Outbox) -> None:
     from app.modules import messaging
-    try:
-        from app.modules import ai
-        body = ai.compose(purpose, facts, language)
-    except Exception:  # noqa: BLE001 - a reply must always go out
-        body = fallback
-    messaging.send(party_id, body, "redirect", referral_id=referral_id)
+    for party_id, body, ref_id in outbox:
+        messaging.send(party_id, body, "redirect", referral_id=ref_id)
 
 
-def _tell_site(party_id: str, r: schemas.Resource, dist: float, lang: str, ref_id: str, purpose: str) -> None:
-    spots = r.capacity - r.used
+def _site_text(r: schemas.Resource, dist: float, lang: str, purpose: str, old: str = "") -> str:
+    lang = lang if lang in ("en", "es", "vi") else "en"
     if _v(r.type) == "repair_vendor":
-        contact = r.phone or r.address
-        _send(party_id, "ack", {"details": f"{r.name}: {contact}"}, lang, ref_id, f"{r.name}: {contact}")
-        return
-    details = f"{dist:.1f} mi · {r.hours} · {spots} {SPOTS.get(lang, SPOTS['en'])} · {MAP.get(lang, MAP['en'])}: {_maps(r)}"
+        return REPLY["contact"][lang].format(site=r.name, contact=r.phone or r.address)
+    spots = r.capacity - r.used
+    details = f"{dist:.1f} mi · {r.hours} · {spots} {SPOTS[lang]} · {MAP[lang]}: {_maps(r)}"
     if _v(r.type) == "claim_site":
-        details += " " + CLAIM_EXTRA.get(lang, CLAIM_EXTRA["en"])
-    _send(party_id, purpose, {"site_name": r.name, "address": r.address, "details": details}, lang, ref_id,
-          f"Go to {r.name}, {r.address}. {_maps(r)}")
+        details += " " + CLAIM_EXTRA[lang]
+    body = REPLY[purpose][lang].format(site=r.name, address=r.address, details=details, old=old)
+    if len(body) > 320:  # SMS limit: keep the address and the map link, drop the rest
+        body = REPLY[purpose][lang].format(site=r.name, address=r.address, details=_maps(r), old=old)
+    return body
+
+
+def _reserve(site: schemas.Resource, people: int) -> schemas.Resource:
+    update = {"used": site.used + people}
+    if site.used + people >= site.capacity:
+        update["status"] = "full"
+    return store.resources.put(site.model_copy(update=update))
 
 
 def route(party_id: str, text: str) -> schemas.Referral:
@@ -165,61 +186,64 @@ def route(party_id: str, text: str) -> schemas.Referral:
     party = store.parties.require(party_id)
     need = ai.classify_need(text, party.language)
     lang = need.get("language", "en")
+    if lang not in EMERGENCY:
+        lang = "en"
     if lang != party.language:
         store.parties.put(party.model_copy(update={"language": lang}))
     needs, people = [_v(n) for n in need["needs"]], int(need.get("people", 1))
     ref_id = ids.new_id("REF")
-    history = []
-    if "medical" in needs and need.get("urgent"):
-        _send(party_id, "ack", {"details": EMERGENCY.get(lang, EMERGENCY["en"])}, lang, ref_id, EMERGENCY["en"])
-        history.append("URGENT medical: told to call 911, coordinator alerted")
+    history, outbox, changed = [], [], []
+    urgent = "medical" in needs and bool(need.get("urgent"))
+    if urgent:
+        outbox.append((party_id, EMERGENCY[lang], ref_id))
+        history.append("URGENT medical: told to call 911, flagged for coordinator follow-up")
     with _lock:
+        hour = scenarios.current().step_hour
         at = _locate(party_id, text, scenarios.scenario().city)
         options = _candidates(needs, people, at, exclude=set())
         if options:
             dist, site = options[0]
-            site = store.resources.put(site.model_copy(update={"used": site.used + people}))
-            if site.used >= site.capacity:
-                site = store.resources.put(site.model_copy(update={"status": "full"}))
-            history.append(f"{scenarios.current().step_hour}h: routed to {site.name} ({dist:.1f} mi), {people} spot(s) reserved")
+            site = _reserve(site, people)
+            changed.append(site.id)
+            history.append(f"{hour}h: routed to {site.name} ({dist:.1f} mi), {people} spot(s) reserved")
             ref = schemas.Referral(id=ref_id, party_id=party_id, needs=needs, people=people, summary=need.get("summary", ""),
                                    resource_id=site.id, distance_mi=round(dist, 1), status="routed", history=history)
+            outbox.append((party_id, _site_text(site, dist, lang, "redirect"), ref_id))
         else:
-            history.append(f"{scenarios.current().step_hour}h: no open, safe site with room for {people}")
+            history.append(f"{hour}h: no open, safe site with room for {people}")
             ref = schemas.Referral(id=ref_id, party_id=party_id, needs=needs, people=people, summary=need.get("summary", ""),
                                    status="unrouted", history=history)
+            if not (urgent and needs == ["medical"]):
+                outbox.append((party_id, FINDING[lang], ref_id))
         store.referrals.put(ref)
-    if ref.status == "routed":
-        _tell_site(party_id, site, dist, lang, ref.id, "redirect")
-        bus.emit("resources.changed", {"changed_ids": [site.id]})
-    elif not (needs == ["medical"] and need.get("urgent")):
-        _send(party_id, "ack", {"details": FINDING.get(lang, FINDING["en"])}, lang, ref.id, FINDING["en"])
+    _flush(outbox)
+    if changed:
+        bus.emit("resources.changed", {"changed_ids": changed})
     bus.emit("referral.changed", {"referral_id": ref.id, "status": ref.status, "resource_id": ref.resource_id})
     return ref
 
 
-def _reroute(ref: schemas.Referral, old: schemas.Resource) -> None:
-    """Called under _lock by refresh_safety when a referral's site became unsafe."""
-    store.resources.put(old.model_copy(update={"used": max(0, old.used - ref.people)}))
+def _reroute(ref: schemas.Referral, old: schemas.Resource, outbox: Outbox) -> tuple[schemas.Referral, list[str]]:
+    """Under _lock (refresh_safety): move a referral off a site that became unsafe. Texts go to `outbox`."""
+    old = store.resources.put(old.model_copy(update={"used": max(0, old.used - ref.people)}))
     party = store.parties.get(ref.party_id)
-    lang = party.language if party else "en"
-    b = store.resources.require(old.id)
-    at = _locate(ref.party_id, "", scenarios.scenario().city)
-    options = _candidates(ref.needs, ref.people, at, exclude={old.id})
+    lang = party.language if party and party.language in EMERGENCY else "en"
+    options = _candidates(ref.needs, ref.people, _locate(ref.party_id, "", scenarios.scenario().city), exclude={old.id})
     hour = scenarios.current().step_hour
     if options:
         dist, site = options[0]
-        site = store.resources.put(site.model_copy(update={"used": site.used + ref.people}))
+        site = _reserve(site, ref.people)
         ref = ref.model_copy(update={"resource_id": site.id, "distance_mi": round(dist, 1), "status": "rerouted",
-                                     "history": ref.history + [f"{hour}h: {b.name} became unsafe; rerouted to {site.name}"]})
-        store.referrals.put(ref)
-        _tell_site(ref.party_id, site, dist, lang, ref.id, "reroute")
+                                     "history": ref.history + [f"{hour}h: {old.name} became unsafe; rerouted to {site.name}"]})
+        outbox.append((ref.party_id, _site_text(site, dist, lang, "reroute", old=old.name), ref.id))
+        changed = [old.id, site.id]
     else:
         ref = ref.model_copy(update={"resource_id": None, "distance_mi": None, "status": "unrouted",
-                                     "history": ref.history + [f"{hour}h: {b.name} became unsafe; no alternative yet"]})
-        store.referrals.put(ref)
-        _send(ref.party_id, "ack", {"details": FINDING.get(lang, FINDING["en"])}, lang, ref.id, FINDING["en"])
-    bus.emit("referral.changed", {"referral_id": ref.id, "status": ref.status, "resource_id": ref.resource_id})
+                                     "history": ref.history + [f"{hour}h: {old.name} became unsafe; no alternative with room"]})
+        outbox.append((ref.party_id, FINDING[lang], ref.id))
+        changed = [old.id]
+    store.referrals.put(ref)
+    return ref, changed
 
 
 def register() -> None:
