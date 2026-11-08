@@ -134,6 +134,7 @@ def main(argv=None):
                 'createdSince':datetime.now(timezone.utc).isoformat().replace('+00:00','Z'),'pageSize':1})
             if not isinstance(page.get('items'),list):raise PhotonError('Photon reply preflight returned an invalid response.')
         os.environ['MESSAGING_MODE']='photon'
+        os.environ['PHOTON_RECEIVER']='external'  # this command runs its own receiver; normal startup must not add one
         app_settings.messaging_mode='photon'
         receiver=GatewayReceiver() if args.webhook else _poller(cfg)
         print('LIVE PHOTON MODE: approvals and claims alerts send real texts to mapped recipients.',flush=True)
