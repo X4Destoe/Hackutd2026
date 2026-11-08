@@ -10,6 +10,7 @@ import {
 } from "../../shared/queries";
 import { useUIStore } from "../../shared/ui-store";
 import { hours, money } from "../../shared/format";
+import { crewVerb, shownPhotos, whatsWrong } from "../../shared/plain";
 import { Button } from "../../shared/ui";
 import WorkOrderControl from "./WorkOrderControl";
 export default function ResponseCard() {
@@ -48,6 +49,19 @@ function BuildingResponse({ id }: { id: string }) {
         {committed && <CheckCircle2 size={15} />}
       </div>
       <h2>{building.name}</h2>
+      {impact.data?.data_quality === "modeled" && shownPhotos(impact.data.exposure, impact.data.risk, orders.data).length > 0 && (
+        <div className="response-photos">
+          {shownPhotos(impact.data.exposure, impact.data.risk, orders.data).map((shot) => (
+            <figure key={shot.kind} className={shot.kind === "power" ? "is-outage" : undefined}>
+              <img src={shot.src} alt="" />
+              <figcaption>{shot.caption}</figcaption>
+            </figure>
+          ))}
+        </div>
+      )}
+      {impact.data?.data_quality === "modeled" && (
+        <p className="response-plain">{whatsWrong(impact.data.exposure)}</p>
+      )}
       <p className="response-exposure" title="After insurance and approved actions">
         Estimated loss{" "}
         <strong>
@@ -127,7 +141,7 @@ function BuildingResponse({ id }: { id: string }) {
                 )
               }
             >
-              {approve.isPending ? "Approving…" : "Approve response plan"}
+              {approve.isPending ? "Approving…" : impact.data?.data_quality === "modeled" ? crewVerb(impact.data.exposure) : "Approve response plan"}
               <ArrowRight size={15} />
             </Button>
           )}

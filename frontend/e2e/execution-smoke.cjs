@@ -38,7 +38,7 @@ const assert = require("node:assert/strict");
     const card = page.getByRole("region", {
       name: "Building response actions",
     });
-    await card.getByRole("button", { name: "Approve response plan" }).click();
+    await card.getByRole("button", { name: /Send the .+ crew/ }).click();
     await card.getByText("Execution in progress", { exact: true }).waitFor();
     const orders = await api("/workorders?building_id=BLD-HOU-01");
     assert(orders.length > 0 && orders.every((o) => o.status === "sent"));

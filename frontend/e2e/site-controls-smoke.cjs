@@ -72,7 +72,7 @@ const BASE = process.env.STORM_URL || 'http://127.0.0.1:5173';
     }
     await layers.getByRole('button', { name: 'Select all', exact: true }).click();
     await page.getByRole('main', { name: 'Map workspace' }).getByRole('button', { name: /Bayou Plaza ·/ }).click();
-    await page.getByRole('region', { name: 'Building response actions' }).getByRole('button', { name: 'Approve response plan' }).click();
+    await page.getByRole('region', { name: 'Building response actions' }).getByRole('button', { name: /Send the .+ crew/ }).click();
     const orderPin = page.locator('[data-activity-kind="workorders"][data-activity-id="BLD-HOU-01"]');
     await orderPin.waitFor();
     await orderPin.click();

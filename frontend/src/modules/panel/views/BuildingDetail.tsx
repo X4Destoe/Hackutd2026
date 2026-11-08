@@ -7,6 +7,7 @@ import {
 } from "../../../shared/queries";
 import { useUIStore } from "../../../shared/ui-store";
 import { money, riskColor } from "../../../shared/format";
+import { shownPhotos, whatsWrong } from "../../../shared/plain";
 import { Badge, Button } from "../../../shared/ui";
 import PlanCard from "./PlanCard";
 export default function BuildingDetail() {
@@ -48,6 +49,35 @@ export default function BuildingDetail() {
         {b.type.replaceAll("_", " ")} · {b.city}
       </p>
       <p className="panel-caption">{b.address}</p>
+      <h3 className="section-title">Who's here</h3>
+      {(b.tenants ?? []).length ? (
+        <ul className="people-list">
+          {(b.tenants ?? []).map((tenant) => (
+            <li key={tenant.id}>
+              {tenant.name}
+              {tenant.critical_ops ? " · needs the lights on" : ""}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="panel-empty">No tenants on file.</p>
+      )}
+      {i?.data_quality === "modeled" && (
+        <>
+          <h3 className="section-title">Damage</h3>
+          {shownPhotos(i.exposure, i.risk, orders.data).length > 0 && (
+            <div className="damage-photos">
+              {shownPhotos(i.exposure, i.risk, orders.data).map((shot) => (
+                <figure key={shot.kind} className={shot.kind === "power" ? "is-outage" : undefined}>
+                  <img src={shot.src} alt="" />
+                  <figcaption>{shot.caption}</figcaption>
+                </figure>
+              ))}
+            </div>
+          )}
+          <p className="damage-lead">{whatsWrong(i.exposure)}</p>
+        </>
+      )}
       {i && (
         <Badge
           style={{

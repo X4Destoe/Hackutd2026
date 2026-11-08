@@ -14,9 +14,11 @@ import {
   useOverlays,
   useScenarios,
   useUtilities,
+  useWorkOrders,
 } from "../../shared/queries";
 import { useUIStore } from "../../shared/ui-store";
 import { money, riskColor, type RiskLevel } from "../../shared/format";
+import { shownPhotos, whatsWrong, type Scene } from "../../shared/plain";
 import { offlineStyle } from "./offline";
 import {
   BASEMAP_URL,
@@ -42,6 +44,7 @@ export default function MapView() {
   const layerData = useRef<Record<string, FC>>({});
   const visibility = useRef<Record<string, boolean>>({});
   const markers = useRef(new Map<string, maplibregl.Marker>());
+  const photoMarkers = useRef(new Map<string, maplibregl.Marker>());
   const [basemap, setBasemap] = useState("local");
   const [moving, setMoving] = useState(false);
   const [ready, setReady] = useState(0); // bumps every time a style (basemap or fallback) has our layers
@@ -56,6 +59,7 @@ export default function MapView() {
   const impacts = useImpact();
   const utilities = useUtilities();
   const overlays = useOverlays(state.data?.step_hour);
+  const orders = useWorkOrders();
   const city = scenarios.data?.find(
     (s) => s.id === state.data?.scenario_id,
   )?.city;
@@ -196,6 +200,8 @@ export default function MapView() {
       controller.abort();
       for (const marker of markers.current.values()) marker.remove();
       markers.current.clear();
+      for (const marker of photoMarkers.current.values()) marker.remove();
+      photoMarkers.current.clear();
       popup.remove();
       map.remove();
       mapRef.current = null;
@@ -215,6 +221,9 @@ export default function MapView() {
         const i = byId.get(b.id);
         const risk = (i?.data_quality === "unknown" ? undefined : i?.risk) as RiskLevel | undefined;
         const net = i?.data_quality === "unknown" ? undefined : i?.money.net_exposure_cents;
+        const inCity = !city || b.city === city;
+        const modeled = i?.data_quality === "modeled";
+        const affected = inCity && modeled && !!risk && risk !== "none";
         return {
           type: "Feature",
           geometry: { type: "Point", coordinates: [b.lon, b.lat] },
@@ -227,14 +236,18 @@ export default function MapView() {
             label: `${b.name} · ${net == null ? "impact unavailable" : money(net)}`,
             net: net == null ? "impact unavailable" : money(net),
             driver: i?.drivers?.[0] ?? "",
+            plain: modeled ? whatsWrong(i?.exposure) : "",
             selected: b.id === selectedBuildingId,
             approved: Boolean(i?.with_approved_actions),
+            inCity,
+            affected,
+            people: b.tenants?.length ?? 0,
             kind: "building",
           },
         };
       }),
     };
-  }, [buildings.data, impacts.data, selectedBuildingId]);
+  }, [buildings.data, impacts.data, selectedBuildingId, city]);
 
   const powerFC = useMemo<FC>(
     () => ({
@@ -310,6 +323,25 @@ export default function MapView() {
     }
   }, [layers, ready]);
 
+  const crewShots = useMemo(() => {
+    const byImpact = new Map((impacts.data ?? []).map((impact) => [impact.building_id, impact]));
+    const byOrder = new Map<string, { photo_urls?: string[] }[]>();
+    for (const order of orders.data ?? []) {
+      const list = byOrder.get(order.building_id) ?? [];
+      list.push(order);
+      byOrder.set(order.building_id, list);
+    }
+    const shots = new Map<string, Scene[]>();
+    for (const building of buildings.data ?? []) {
+      if (city && building.city !== city) continue;
+      const impact = byImpact.get(building.id);
+      if (impact?.data_quality !== "modeled") continue;
+      const photos = shownPhotos(impact.exposure, impact.risk, byOrder.get(building.id));
+      if (photos.length) shots.set(building.id, photos);
+    }
+    return shots;
+  }, [buildings.data, impacts.data, orders.data, city]);
+
   // Accessible square markers keep labels usable without remote glyph/font services.
   useEffect(() => {
     const map = mapRef.current;
@@ -342,22 +374,48 @@ export default function MapView() {
       button.dataset.buildingId = p.id;
       button.dataset.risk = p.risk;
       button.dataset.approved = String(p.approved);
+      button.dataset.affected = String(p.affected);
       button.style.display = layers.buildings === false ? "none" : "";
       button.classList.toggle("is-selected", p.selected);
       button.classList.toggle("is-approved", p.approved);
+      button.classList.toggle("is-affected", p.affected);
+      button.classList.toggle("is-quiet", !p.inCity);
       button.replaceChildren();
       const square = document.createElement("span");
       square.className = "storm-building-square";
       square.style.backgroundColor = p.color;
-      square.style.width =
-        square.style.height = `${Math.max(8, Math.min(22, p.r))}px`;
-      square.style.flex = `0 0 ${Math.max(8, Math.min(22, p.r))}px`;
+      const size = Math.max(8, Math.min(22, p.r));
+      square.style.width = square.style.height = `${size}px`;
+      square.style.flex = `0 0 ${size}px`;
+      if (p.affected) square.style.boxShadow = `0 0 0 7px ${p.color}66`;
       if (p.approved) square.textContent = "✓";
       const label = document.createElement("span");
       label.className = "storm-building-label";
       label.textContent = p.label;
-      button.title = p.driver || p.label;
+      button.title = p.plain || p.driver || p.label;
       button.append(square, label);
+      const peopleId = `people:${p.id}`;
+      if (p.inCity && p.people > 0 && layers.buildings !== false) {
+        active.add(peopleId);
+        let people = markers.current.get(peopleId);
+        if (!people) {
+          const chip = document.createElement("button");
+          chip.type = "button";
+          chip.className = "storm-people-button";
+          chip.addEventListener("click", () => selectRef.current(chip.dataset.residents || ""));
+          people = new maplibregl.Marker({ element: chip, anchor: "top", offset: [0, 10] })
+            .setLngLat(feature.geometry.coordinates)
+            .addTo(map);
+          markers.current.set(peopleId, people);
+        }
+        const chip = people.getElement() as HTMLButtonElement;
+        chip.textContent = `${p.people} here`;
+        chip.dataset.residents = p.id;
+        chip.dataset.affected = String(p.affected);
+        chip.classList.toggle("is-affected", p.affected);
+        chip.setAttribute("aria-label", `${p.people} tenants. See who is here and the damage.`);
+        people.setLngLat(feature.geometry.coordinates);
+      }
     }
     for (const [id, marker] of markers.current)
       if (!active.has(id)) {
@@ -367,6 +425,57 @@ export default function MapView() {
     for (const id of ["buildings", "buildings-approved", "buildings-label"])
       if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", "none");
   }, [buildingFC, ready, layers.buildings]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    const active = new Set<string>();
+    for (const feature of buildingFC.features as any[]) {
+      const id = String(feature.properties.id);
+      let shots = crewShots.get(id) ?? [];
+      if (layers.buildings === false) shots = shots.filter((shot) => shot.kind === "power");
+      if (layers.power === false) shots = shots.filter((shot) => shot.kind !== "power");
+      if (!shots.length) continue;
+      active.add(id);
+      let marker = photoMarkers.current.get(id);
+      if (!marker) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "storm-photo-strip";
+        button.addEventListener("click", () => {
+          const buildingId = button.dataset.crewBuilding;
+          if (buildingId) selectRef.current(buildingId);
+        });
+        marker = new maplibregl.Marker({ element: button, anchor: "bottom", offset: [0, -16] })
+          .setLngLat(feature.geometry.coordinates)
+          .addTo(map);
+        photoMarkers.current.set(id, marker);
+      }
+      const button = marker.getElement() as HTMLButtonElement;
+      button.dataset.crewBuilding = id;
+      button.dataset.crewPhoto = shots.map((shot) => shot.kind).join(" ");
+      button.classList.toggle("is-selected", Boolean(feature.properties.selected));
+      button.replaceChildren();
+      for (const shot of shots) {
+        const fig = document.createElement("span");
+        fig.className = shot.kind === "power" ? "storm-photo is-outage" : "storm-photo";
+        const img = document.createElement("img");
+        img.src = shot.src;
+        img.alt = "";
+        const cap = document.createElement("span");
+        cap.textContent = shot.caption;
+        fig.append(img, cap);
+        button.append(fig);
+      }
+      button.setAttribute("aria-label", shots.map((shot) => shot.caption).join(". ") + ".");
+      marker.setLngLat(feature.geometry.coordinates);
+    }
+    for (const [id, marker] of photoMarkers.current)
+      if (!active.has(id)) {
+        marker.remove();
+        photoMarkers.current.delete(id);
+      }
+  }, [buildingFC, crewShots, ready, layers.buildings, layers.power]);
 
   // ---------- fly to the scenario's buildings when the scenario changes ----------
   const framed = useRef<string | null>(null);

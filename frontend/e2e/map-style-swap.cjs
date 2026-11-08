@@ -88,9 +88,9 @@ const BASE = process.env.STORM_URL || "http://127.0.0.1:5173";
       .getByRole("main", { name: "Map workspace" })
       .getByRole("button", { name: /Bayou Plaza/ })
       .click();
-    await card.getByRole("button", { name: "Approve response plan" }).waitFor();
+    await card.getByRole("button", { name: /Send the .+ crew/ }).waitFor();
     const before = await api("/portfolio/summary");
-    await card.getByRole("button", { name: "Approve response plan" }).click();
+    await card.getByRole("button", { name: /Send the .+ crew/ }).click();
     await page.waitForFunction(
       () =>
         document.querySelector('[data-building-id="BLD-HOU-01"]')?.dataset
