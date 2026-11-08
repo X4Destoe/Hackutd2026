@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Model } from '../../../../shared/api';
 import { money, hours } from '../../../../shared/format';
-import { useApprovePlan, useBuildings, useFixFirst, usePlans } from '../../../../shared/queries';
+import { useApprovePlan, useBuildings, useFixFirst, usePlans, useSummary } from '../../../../shared/queries';
 import { useUIStore } from '../../../../shared/ui-store';
 import { Badge, Button, Card } from '../../../../shared/ui';
 import './actions.css';
@@ -29,6 +29,8 @@ function RankedPlan({ item }: { item: Model<'FixFirstItem'> }) {
 
 function RankedList({ community = false }: { community?: boolean }) {
   const query = useFixFirst(100, community);
+  const summary = useSummary();
+  if (summary.data?.data_quality === 'unknown') return <p role="status" className="panel-empty">Ranked actions are unavailable because live financial inputs are unknown. This does not confirm that no response is needed. Manual customer notices remain available below.</p>;
   if (query.isError) return <div role="alert"><p>Plans are unavailable.</p><Button variant="outline" onClick={() => void query.refetch()}>Retry plans</Button></div>;
   if (query.isPending) return <p role="status">Loading response plans…</p>;
   if (!query.data.length) return <p className="panel-empty">{community ? 'No community actions available at this step.' : 'No plans needed at this step: nothing actionable is currently proposed.'}</p>;
