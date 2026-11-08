@@ -14,7 +14,13 @@ Inbound `/api/webhooks/photon` verifies Standard Webhooks headers (`webhook-id`,
 
 Contracts checked against official `@photon-ai/api@0.6.0` public types and `@photon-ai/convex@0.1.0` webhook parser. Attachment-ID-only events do not yet provide a downloadable photo URL; live attachment retrieval is not verified. Mocked protocol acceptance is separate from real authentication, line provisioning, webhook reachability and handset delivery.
 
-## Run on a machine that can reach Photon
+## One-command local backend
+
+From `backend/` with its Python environment active, `python -m app.modules.messaging.live` performs the live project/sender checks, switches this process to real messaging, and starts both API8000 and signed webhook-only receiver8788. Stop an existing API/gateway first. `python -m app.modules.messaging.live --test-party MGR-01` sends one explicit test to the configured manager and exits; use this in another terminal after starting services. Neither command retries a failed send or pretends a provider acknowledgement proves handset delivery. No Node bridge is needed for current Project API keys.
+
+The `.env` file must exist on the machine running this command; ignored cloud secrets are not included in Git pulls. The default ordinary demo startup remains simulated.
+
+## Manual startup on a machine that can reach Photon
 
 1. From `backend/`, run `python -m app.modules.messaging.check_photon --live`. It must verify the project and sending identity before a live-send claim.
 2. Start the API with `MESSAGING_MODE=photon uvicorn app.main:app --host 127.0.0.1 --port 8000`. The frontend can be open or closed; it is not required for texting.

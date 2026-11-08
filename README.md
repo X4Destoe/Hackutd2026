@@ -123,6 +123,26 @@ Terminal 2 `cd $HOME\Hackutd2026\frontend; npm install; npm run dev`.
 | Page opens but numbers say "unavailable" | The backend is not running or crashed: look at Terminal 1 |
 | Map is empty or looks old | Run the "Next time" commands (pull, restart both terminals), then reload the page |
 
+### Real Photon messaging locally
+
+Use the current Photon API adapter with a private `backend/.env` containing `PHOTON_API_KEY`, `PHOTON_PROJECT_ID`, the webhook signing secret, and authorized `DEMO_PHONES` mappings. Private settings created in a cloud workspace must also be present on your laptop; Git deliberately does not transfer them.
+
+With the backend Python environment active, stop the ordinary API process and run from `Hackutd2026/backend`:
+
+```sh
+python -m app.modules.messaging.live
+```
+
+This checks the project and dedicated sending identity, enables real Photon mode for this process, and starts the private API on port8000 plus a signature-verifying webhook-only receiver on port8788. It stops with an error if the configuration or provider connection fails; it does not silently switch to simulated texts. The separate Node/Spectrum bridge is not needed for current Project API keys.
+
+To send one test in another terminal (same backend folder and Python environment):
+
+```sh
+python -m app.modules.messaging.live --test-party MGR-01
+```
+
+That sends one message to the mapped manager and exits; no automatic retry occurs. A Photon acknowledgement is not a handset delivery receipt. For incoming replies, expose only port8788 through your HTTPS tunnel and register `/api/webhooks/photon` on that URL in Photon. See the [current API runbook](backend/app/modules/messaging/HTTP_API.md). A provisioned sending line and provider permissions remain required; missing resources are reported rather than purchased automatically.
+
 ### Optional
 - **Just want to look?** Open `demo/operation-storm-demo.html` in a browser. No install needed.
 - **Settings:** copy `.env.example` (repo root) to `backend/.env`. Everything works with it blank: texts are simulated and AI
@@ -137,7 +157,7 @@ Terminal 2 `cd $HOME\Hackutd2026\frontend; npm install; npm run dev`.
 
 The React app includes a map, modeled loss estimates, approvals, technician updates, resident routing, help-site activation, printable reports, and a custom simulation builder. Choose Houston, Dallas, or Fort Myers (or randomize among them), then set a disaster and its effects.
 
-Start with **simulated messaging** and `LIVE_FETCH=0` for a repeatable offline rehearsal. Buildings, money, capacities, and custom effects are illustrative; live alerts and forecasts are proxies, and missing inputs display Unknown. Real phone delivery requires a configured Photon bridge and credentials.
+Start with **simulated messaging** and `LIVE_FETCH=0` for a repeatable offline rehearsal. Buildings, money, capacities, and custom effects are illustrative; live alerts and forecasts are proxies, and missing inputs display Unknown. Real phone delivery requires the current Photon API configuration or the legacy Spectrum bridge, plus a verified sending line.
 
 - [Measured demo walkthrough](docs/DEMO.md) and [rehearsal checklist](docs/REHEARSAL.md)
 - [Track pitch and honest limitations](docs/PITCH.md)
