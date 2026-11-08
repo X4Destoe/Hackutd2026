@@ -23,6 +23,6 @@ offline backdrop with approximate highways and the Gulf, and everything else sti
 ## Files
 `index.html` · `styles.css` · `app.js` (UI) · `model.js` (hazard, money, plans, routing per PRD 03) · `data.js` (scenarios,
 12 buildings, help sites, actions) · `context.js` (offline backdrop) · `icons.js` (Lucide icons, ISC) · `vendor/` (MapLibre, BSD-3) ·
-`assets/` (optional hero photos, see assets/README.md). Rebuild the single file after edits with the snippet in the git log.
+`assets/` (optional hero photos, see assets/README.md). After edits, rebuild the single file: `python3 demo/build_single.py`.
 
 All buildings, tenants and dollars are synthetic. Disaster footprints are hand-drawn approximations of real events.
