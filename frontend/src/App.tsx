@@ -1,3 +1,4 @@
+import TermHelp from "./shared/TermHelp";
 import MapView from "./modules/map";
 import SimulationBuilder from "./modules/simulation";
 import { useEffect, useState } from "react";
@@ -103,13 +104,13 @@ export default function App() {
         </nav>
         <div className="portfolio-totals" aria-label="Portfolio totals">
           <div>
-            <small title="Estimated financial loss after insurance and approved actions">Estimated loss</small>
+            <small><TermHelp term="Estimated loss" /></small>
             <strong>
               {summary.data?.data_quality === "unknown" ? "Unknown" : summary.data ? money(summary.data.net_exposure_cents) : "—"}
             </strong>
           </div>
           <div>
-            <small>Avoided</small>
+            <small><TermHelp term="Avoided" /></small>
             <strong>
               {summary.data?.data_quality === "unknown" ? "Unknown" : summary.data ? money(summary.data.avoided_cents) : "—"}
             </strong>

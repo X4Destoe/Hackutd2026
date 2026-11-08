@@ -1,3 +1,4 @@
+import TermHelp from "../../../../shared/TermHelp";
 import { useState } from 'react';
 import type { Model } from '../../../../shared/api';
 import { money, hours } from '../../../../shared/format';
@@ -15,7 +16,7 @@ function RankedPlan({ item }: { item: Model<'FixFirstItem'> }) {
     <div className="response-heading"><Badge>#{item.rank}</Badge><Badge>{item.hours_left < 0 ? 'Deadline passed' : item.hours_left === 0 ? 'Act now' : `Act in ${item.hours_left}h`}</Badge></div>
     <button className="response-building" onClick={() => selectBuilding(item.building_id)}>{item.building_name}</button>
     <h3>{item.title}</h3><p>{item.why}</p>
-    <dl className="panel-facts"><div><dt>Cost</dt><dd>{money(item.cost_cents)}</dd></div><div><dt>Saves</dt><dd>{money(item.avoided_cents)}</dd></div><div><dt>ROI</dt><dd>{item.roi.toFixed(1)}×</dd></div><div><dt>Act by impact hour</dt><dd>{hours(item.act_by_hour)}</dd></div></dl>
+    <dl className="panel-facts"><div><dt>Cost</dt><dd>{money(item.cost_cents)}</dd></div><div><dt><TermHelp term="Saves" /></dt><dd>{money(item.avoided_cents)}</dd></div><div><dt><TermHelp term="ROI" /></dt><dd>{item.roi.toFixed(1)}×</dd></div><div><dt><TermHelp term="Act by impact hour" /></dt><dd>{hours(item.act_by_hour)}</dd></div></dl>
     <Button disabled={approve.isPending || approve.isSuccess || item.hours_left < 0} onClick={() => {
       setNotice('Approving plan…');
       approve.mutate({ id: item.plan_id, by: 'MGR-01' }, {
