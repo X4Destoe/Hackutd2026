@@ -5,6 +5,7 @@ Import `from app.modules import scenarios`. Spec: `docs/prd/modules/scenarios.md
 | Function | Returns |
 |---|---|
 | `load(scenario_id)` | `DemoState`. Resets the store, seeds buildings/utilities/parties (DEMO_PHONES applied), starts at the first step (−48), emits `scenario.loaded`. Unknown id → `KeyError` (404). |
+| `load_definition(scenario, anchors)` | `DemoState`. Validates/copies a synthetic `custom_` definition, keeps at most 16 in memory, and uses normal seeding/events. Registered definitions appear in metadata and work with `load` / `/demo/reset`. No source files are written; historical IDs cannot be overridden. |
 | `current()` | `DemoState` (loads the default scenario if nothing is loaded) |
 | `scenario()` | `Scenario` currently loaded |
 | `step(hour=None)` | `TimelineStep`. A non-step hour snaps to the latest step at or before it. |
