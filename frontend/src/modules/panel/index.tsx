@@ -1,20 +1,212 @@
-import { useEffect, useState } from 'react';
-import { Building2, CloudRain, MapPin, MessageSquare, Search, Wrench, X, Zap } from 'lucide-react';
-import { useBuildings, useDemoState, useScenarios, useSummary } from '../../shared/queries';
-import { useUIStore, type Layer } from '../../shared/ui-store';
-import { hours, money, phaseColor } from '../../shared/format';
-import { Button } from '../../shared/ui';
-import Overview from './views/Overview';
-import Buildings from './views/Buildings';
-import BuildingDetail from './views/BuildingDetail';
-import './panel.css';
-const rows = [ ['hazard','Hazard overlay',CloudRain], ['buildings','Buildings by $ at risk',Building2], ['power','Power grid',Zap], ['help','Help sites and residents',MapPin], ['workorders','Work orders',Wrench], ['messages','Messages',MessageSquare] ] as const;
+import { useEffect, useState } from "react";
+import {
+  Building2,
+  CloudRain,
+  MapPin,
+  MessageSquare,
+  Search,
+  Wrench,
+  X,
+  Zap,
+} from "lucide-react";
+import {
+  useBuildings,
+  useDemoState,
+  useScenarios,
+  useSummary,
+} from "../../shared/queries";
+import { useUIStore, type Layer } from "../../shared/ui-store";
+import { hours, money, phaseColor } from "../../shared/format";
+import { Button } from "../../shared/ui";
+import Overview from "./views/Overview";
+import Buildings from "./views/Buildings";
+import BuildingDetail from "./views/BuildingDetail";
+import "./panel.css";
+const rows = [
+  ["hazard", "Hazard overlay", CloudRain],
+  ["buildings", "Buildings by $ at risk", Building2],
+  ["power", "Power grid", Zap],
+  ["help", "Help sites and residents", MapPin],
+  ["workorders", "Work orders", Wrench],
+  ["messages", "Messages", MessageSquare],
+] as const;
 /** Lives inside the app's aside. Map and panel share selection through useUIStore. */
 export default function Panel({ onClose }: { onClose?: () => void }) {
-  const { panelView, setPanelView, selectBuilding, layers, toggleLayer, setAllLayers } = useUIStore();
-  const state = useDemoState(); const scenarios = useScenarios(); const summary = useSummary(); const buildings = useBuildings(); const [search, setSearch] = useState('');
-  const scenario = scenarios.data?.find(s => s.id === state.data?.scenario_id);
-  useEffect(() => { setSearch(''); }, [state.data?.scenario_id]);
-  const titles = { fixfirst: 'Fix-First', workorders: 'Work Orders', help: 'Help Sites', reports: 'Reports', messages: 'Texts' };
-  return <><div className="scenario-hero panel-hero"><div className="hero-skyline" aria-hidden="true"/><div className="hero-copy"><form className="building-search" role="search" onSubmit={e => { e.preventDefault(); const first = buildings.data?.find(b => [b.name,...(b.tenants ?? []).map(t => t.name)].some(name => name.toLowerCase().includes(search.toLowerCase()))); if (search && first) selectBuilding(first.id); }}><Search size={15}/><input aria-label="Search building or tenant" placeholder="Search building, tenant…" value={search} onChange={e => { setSearch(e.target.value); setPanelView('buildings'); }}/>{onClose && <Button variant="ghost" className="drawer-close" aria-label="Close portfolio panel" onClick={onClose}><X size={17}/></Button>}</form><span className="phase-label" style={{ borderColor: state.data ? phaseColor(state.data.phase) : undefined }}>{state.data ? `${state.data.phase} · ${hours(state.data.step_hour)}` : 'Awaiting scenario'}</span><h1>{scenario?.name ?? 'Portfolio disaster impact'}</h1><p className="hero-date">{scenario ? `${scenario.city} · ${scenario.date_label}` : 'Connect a scenario to begin.'}</p><p id="scenario-status">{state.isError ? 'Scenario data is unavailable. Please retry when the service reconnects.' : state.data ? `${state.data.phase === 'forecast' ? 'Review predicted exposure and act before impact.' : state.data.phase === 'impact' ? 'Track building impact and coordinate response.' : 'Review losses and coordinate recovery.'}` : 'Loading scenario…'}</p><div className="hero-metrics" aria-live="polite"><div><span>Net exposure</span><strong key={`net-${summary.data?.net_exposure_cents}`}>{summary.data ? money(summary.data.net_exposure_cents) : '—'}</strong></div><div><span>Avoided</span><strong key={`avoided-${summary.data?.avoided_cents}`}>{summary.data ? money(summary.data.avoided_cents) : '—'}</strong></div></div><small className="hero-disclaimer">Footprints approximate · Portfolio and amounts synthetic</small></div></div><nav className="panel-tabs" aria-label="Portfolio views">{(['overview','buildings','help'] as const).map(view => <button key={view} aria-pressed={panelView === view} onClick={() => setPanelView(view)}>{view === 'help' ? 'Help' : view === 'overview' ? 'Overview' : 'Buildings'}</button>)}</nav><section className="layer-section" aria-label="Map layers"><div className="layer-heading"><span>Map layers</span><div><button onClick={() => setAllLayers(true)}>Select all</button><span> / </span><button onClick={() => setAllLayers(false)}>Clear</button></div></div>{rows.map(([key,label,Icon]) => <label key={key} className="layer-row"><span className={`layer-icon layer-${key}`}><Icon size={16}/></span><span>{label}</span><input type="checkbox" checked={layers[key]} onChange={() => toggleLayer(key as Layer)}/></label>)}</section><section id="panel-content" className="panel-content" tabIndex={-1} aria-label="Portfolio content">{panelView === 'overview' ? <Overview/> : panelView === 'buildings' ? <Buildings search={search} city={scenario?.city}/> : panelView === 'building' ? <BuildingDetail/> : <><h2>{titles[panelView]}</h2><p className="panel-empty">This view will be available when its response module connects.</p></>}</section><footer className="panel-footer">Operation Storm<span>{buildings.data ? `${buildings.data.length} buildings` : 'Portfolio'} · {scenario?.city ?? 'All cities'}</span></footer></>;
+  const {
+    panelView,
+    setPanelView,
+    selectBuilding,
+    layers,
+    toggleLayer,
+    setAllLayers,
+  } = useUIStore();
+  const state = useDemoState();
+  const scenarios = useScenarios();
+  const summary = useSummary();
+  const buildings = useBuildings();
+  const [search, setSearch] = useState("");
+  const scenario = scenarios.data?.find(
+    (s) => s.id === state.data?.scenario_id,
+  );
+  useEffect(() => {
+    setSearch("");
+  }, [state.data?.scenario_id]);
+  const titles = {
+    fixfirst: "Fix-First",
+    workorders: "Work Orders",
+    help: "Help Sites",
+    reports: "Reports",
+    messages: "Texts",
+  };
+  return (
+    <>
+      <div className="scenario-hero panel-hero">
+        <div className="hero-skyline" aria-hidden="true" />
+        <div className="hero-copy">
+          <form
+            className="building-search"
+            role="search"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const first = buildings.data?.find((b) =>
+                [b.name, ...(b.tenants ?? []).map((t) => t.name)].some((name) =>
+                  name.toLowerCase().includes(search.toLowerCase()),
+                ),
+              );
+              if (search && first) selectBuilding(first.id);
+            }}
+          >
+            <Search size={15} />
+            <input
+              aria-label="Search building or tenant"
+              placeholder="Search building, tenant…"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPanelView("buildings");
+              }}
+            />
+            {onClose && (
+              <Button
+                variant="ghost"
+                className="drawer-close"
+                aria-label="Close portfolio panel"
+                onClick={onClose}
+              >
+                <X size={17} />
+              </Button>
+            )}
+          </form>
+          <span
+            className="phase-label"
+            style={{
+              borderColor: state.data
+                ? phaseColor(state.data.phase)
+                : undefined,
+            }}
+          >
+            {state.data
+              ? `${state.data.phase} · ${hours(state.data.step_hour)}`
+              : "Awaiting scenario"}
+          </span>
+          <h1>{scenario?.name ?? "Portfolio disaster impact"}</h1>
+          <p className="hero-date">
+            {scenario
+              ? `${scenario.city} · ${scenario.date_label}`
+              : "Connect a scenario to begin."}
+          </p>
+          <p id="scenario-status">
+            {state.isError
+              ? "Scenario data is unavailable. Please retry when the service reconnects."
+              : state.data
+                ? `${state.data.phase === "forecast" ? "Review predicted exposure and act before impact." : state.data.phase === "impact" ? "Track building impact and coordinate response." : "Review losses and coordinate recovery."}`
+                : "Loading scenario…"}
+          </p>
+          <div className="hero-metrics" aria-live="polite">
+            <div>
+              <span>Net exposure</span>
+              <strong key={`net-${summary.data?.net_exposure_cents}`}>
+                {summary.data ? money(summary.data.net_exposure_cents) : "—"}
+              </strong>
+            </div>
+            <div>
+              <span>Avoided</span>
+              <strong key={`avoided-${summary.data?.avoided_cents}`}>
+                {summary.data ? money(summary.data.avoided_cents) : "—"}
+              </strong>
+            </div>
+          </div>
+          <small className="hero-disclaimer">
+            Footprints approximate · Portfolio and amounts synthetic
+          </small>
+        </div>
+      </div>
+      <nav className="panel-tabs" aria-label="Portfolio views">
+        {(["overview", "buildings", "help"] as const).map((view) => (
+          <button
+            key={view}
+            aria-pressed={panelView === view}
+            onClick={() => setPanelView(view)}
+          >
+            {view === "help"
+              ? "Help"
+              : view === "overview"
+                ? "Overview"
+                : "Buildings"}
+          </button>
+        ))}
+      </nav>
+      <section className="layer-section" aria-label="Map layers">
+        <div className="layer-heading">
+          <span>Map layers</span>
+          <div>
+            <button onClick={() => setAllLayers(true)}>Select all</button>
+            <span> / </span>
+            <button onClick={() => setAllLayers(false)}>Clear</button>
+          </div>
+        </div>
+        {rows.map(([key, label, Icon]) => (
+          <label key={key} className="layer-row">
+            <span className={`layer-icon layer-${key}`}>
+              <Icon size={16} />
+            </span>
+            <span>{label}</span>
+            <input
+              type="checkbox"
+              checked={layers[key]}
+              onChange={() => toggleLayer(key as Layer)}
+            />
+          </label>
+        ))}
+      </section>
+      <section
+        id="panel-content"
+        className="panel-content"
+        tabIndex={-1}
+        aria-label="Portfolio content"
+      >
+        {panelView === "overview" ? (
+          <Overview />
+        ) : panelView === "buildings" ? (
+          <Buildings search={search} city={scenario?.city} />
+        ) : panelView === "building" ? (
+          <BuildingDetail />
+        ) : (
+          <>
+            <h2>{titles[panelView]}</h2>
+            <p className="panel-empty">
+              This view will be available when its response module connects.
+            </p>
+          </>
+        )}
+      </section>
+      <footer className="panel-footer">
+        Operation Storm
+        <span>
+          {buildings.data ? `${buildings.data.length} buildings` : "Portfolio"}{" "}
+          · {scenario?.city ?? "All cities"}
+        </span>
+      </footer>
+    </>
+  );
 }

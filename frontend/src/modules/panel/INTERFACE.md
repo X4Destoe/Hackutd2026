@@ -1,4 +1,5 @@
 # Panel public interface
+
 Default export `Panel({onClose?})` renders the contents of the app's portfolio aside. Import from the module root only. UIProvider and QueryClientProvider are required above it.
 
 Shared useUIStore controls panelView, selectedBuildingId, and layers. Map selection calls selectBuilding(id); the panel renders the selected building. API data comes from shared query hooks. This task owns overview/building list/building detail. Other views remain explicit placeholders for TASK-032/033.
