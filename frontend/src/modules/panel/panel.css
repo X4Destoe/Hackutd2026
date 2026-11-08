@@ -362,3 +362,6 @@ td small {
 .panel-hero .hero-copy { padding: 16px 20px; }
 .building-search { margin-bottom: 12px; }
 .hero-metrics { margin-top: 10px; }
+
+.layer-section { padding: 8px 22px; }
+.layer-heading { align-items: center; margin-bottom: 0; }

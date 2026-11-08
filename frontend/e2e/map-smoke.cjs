@@ -37,7 +37,7 @@ async function main() {
       0,
       "The live map is still a placeholder",
     );
-    const marker = map.getByRole("button", { name: /Bayou Plaza/i });
+    const marker = map.locator('[data-building-id="BLD-HOU-01"]');
     await marker.waitFor();
     await marker.click();
     await page
@@ -122,6 +122,7 @@ async function main() {
     await dallas.waitFor();
     await dallas.click();
     await page
+      .getByRole("region", { name: "Portfolio content" })
       .getByRole("heading", { name: "Lone Star Data Center", exact: true })
       .waitFor();
     assert.equal((await api("/demo/state")).scenario_id, "uri_dallas");
@@ -134,6 +135,7 @@ async function main() {
     await dallas.waitFor();
     await dallas.click();
     await page
+      .getByRole("region", { name: "Portfolio content" })
       .getByRole("heading", { name: "Lone Star Data Center", exact: true })
       .waitFor();
     await page.screenshot({ path: path.join(OUT, "offline-basemap.png") });
