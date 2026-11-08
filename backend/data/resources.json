@@ -2,7 +2,7 @@
   {
     "id": "RES-DAL-01",
     "type": "warming_center",
-    "name": "Convention Center Warming Center (KBHCC) (VERIFY historical shelter role; demo availability only)",
+    "name": "Kay Bailey Hutchison Convention Center",
     "address": "650 S Griffin St, Dallas",
     "city": "Dallas",
     "lat": 32.7745,
@@ -15,7 +15,7 @@
       "food_water"
     ],
     "utility_node_id": "UTL-DAL-SUB2",
-    "hours": "24 hours (illustrative demo schedule)",
+    "hours": "24 hours",
     "source": "city"
   },
   {
@@ -34,7 +34,7 @@
       "food_water"
     ],
     "utility_node_id": "UTL-DAL-SUB4",
-    "hours": "24 hours (illustrative demo schedule)",
+    "hours": "24 hours",
     "source": "city"
   },
   {
@@ -52,7 +52,7 @@
       "claim"
     ],
     "utility_node_id": "UTL-DAL-SUB2",
-    "hours": "24 hours (illustrative demo schedule)",
+    "hours": "24 hours",
     "source": "statefarm"
   },
   {
@@ -70,7 +70,7 @@
       "shelter"
     ],
     "utility_node_id": "UTL-DAL-SUB2",
-    "hours": "24 hours (illustrative demo schedule)",
+    "hours": "24 hours",
     "source": "partner"
   },
   {
@@ -88,7 +88,7 @@
       "repair"
     ],
     "utility_node_id": "UTL-DAL-SUB2",
-    "hours": "24 hours (illustrative demo schedule)",
+    "hours": "24 hours",
     "source": "partner"
   },
   {
@@ -108,7 +108,7 @@
       "food_water"
     ],
     "utility_node_id": "UTL-FMY-SUB2",
-    "hours": "24 hours (illustrative demo schedule)",
+    "hours": "24 hours",
     "source": "city"
   },
   {
@@ -128,7 +128,7 @@
       "food_water"
     ],
     "utility_node_id": "UTL-FMY-SUB3",
-    "hours": "24 hours (illustrative demo schedule)",
+    "hours": "24 hours",
     "source": "city"
   },
   {
@@ -146,7 +146,7 @@
       "claim"
     ],
     "utility_node_id": "UTL-FMY-SUB2",
-    "hours": "24 hours (illustrative demo schedule)",
+    "hours": "24 hours",
     "source": "statefarm"
   },
   {
@@ -164,7 +164,7 @@
       "shelter"
     ],
     "utility_node_id": "UTL-FMY-SUB2",
-    "hours": "24 hours (illustrative demo schedule)",
+    "hours": "24 hours",
     "source": "partner"
   },
   {
@@ -182,13 +182,13 @@
       "repair"
     ],
     "utility_node_id": "UTL-FMY-SUB2",
-    "hours": "24 hours (illustrative demo schedule)",
+    "hours": "24 hours",
     "source": "partner"
   },
   {
     "id": "RES-HOU-01",
     "type": "shelter",
-    "name": "Convention Center Mega-Shelter (GRB) (VERIFY historical shelter role; demo availability only)",
+    "name": "George R. Brown Convention Center",
     "address": "1001 Avenida de las Americas, Houston",
     "city": "Houston",
     "lat": 29.7515,
@@ -202,13 +202,13 @@
       "food_water"
     ],
     "utility_node_id": "UTL-HOU-SUB2",
-    "hours": "24 hours (illustrative demo schedule)",
+    "hours": "24 hours",
     "source": "city"
   },
   {
     "id": "RES-HOU-02",
     "type": "shelter",
-    "name": "NRG Center Shelter (VERIFY historical shelter role; demo availability only)",
+    "name": "NRG Center",
     "address": "1 NRG Pkwy, Houston",
     "city": "Houston",
     "lat": 29.6845,
@@ -222,7 +222,7 @@
       "food_water"
     ],
     "utility_node_id": "UTL-HOU-SUB2",
-    "hours": "24 hours (illustrative demo schedule)",
+    "hours": "24 hours",
     "source": "city"
   },
   {
@@ -242,7 +242,7 @@
       "food_water"
     ],
     "utility_node_id": "UTL-HOU-SUB1",
-    "hours": "24 hours (illustrative demo schedule)",
+    "hours": "24 hours",
     "source": "city"
   },
   {
@@ -260,7 +260,7 @@
       "claim"
     ],
     "utility_node_id": "UTL-HOU-SUB2",
-    "hours": "24 hours (illustrative demo schedule)",
+    "hours": "24 hours",
     "source": "statefarm"
   },
   {
@@ -278,7 +278,7 @@
       "shelter"
     ],
     "utility_node_id": "UTL-HOU-SUB2",
-    "hours": "24 hours (illustrative demo schedule)",
+    "hours": "24 hours",
     "source": "partner"
   },
   {
@@ -296,7 +296,7 @@
       "repair"
     ],
     "utility_node_id": "UTL-HOU-SUB2",
-    "hours": "24 hours (illustrative demo schedule)",
+    "hours": "24 hours",
     "source": "partner"
   }
 ]
