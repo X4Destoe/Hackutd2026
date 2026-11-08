@@ -1,3 +1,4 @@
+import VisualGuide from "../../shared/VisualGuide";
 import { cityPhoto } from "../../shared/city-photos";
 import HelpSites from "./views/community/HelpSites";
 import Reports from "./views/community/Reports";
@@ -48,6 +49,12 @@ export default function Panel({ onClose }: { onClose?: () => void }) {
     toggleLayer,
     setAllLayers,
   } = useUIStore();
+  const [layersOpen, setLayersOpen] = useState(false);
+  useEffect(() => {
+    const open = () => setLayersOpen(true);
+    window.addEventListener("storm:open-layers", open);
+    return () => window.removeEventListener("storm:open-layers", open);
+  }, []);
   const [loadedPhoto, setLoadedPhoto] = useState("");
   const [failedPhoto, setFailedPhoto] = useState("");
   const state = useDemoState();
@@ -184,14 +191,14 @@ export default function Panel({ onClose }: { onClose?: () => void }) {
       </nav>
       <section className="layer-section" aria-label="Map layers">
         <div className="layer-heading">
-          <span>Map layers</span>
-          <div>
+          <button className="layer-disclosure" aria-expanded={layersOpen} aria-controls="map-layer-options" onClick={() => setLayersOpen(!layersOpen)}>Map layers <span aria-hidden="true">{layersOpen ? "−" : "+"}</span></button>
+          {layersOpen && <div>
             <button onClick={() => setAllLayers(true)}>Select all</button>
             <span> / </span>
             <button onClick={() => setAllLayers(false)}>Clear</button>
-          </div>
+          </div>}
         </div>
-        {rows.map(([key, label, Icon]) => (
+        {layersOpen && <div id="map-layer-options">{rows.map(([key, label, Icon]) => (
           <label key={key} className="layer-row">
             <span className={`layer-icon layer-${key}`}>
               <Icon size={16} />
@@ -203,7 +210,7 @@ export default function Panel({ onClose }: { onClose?: () => void }) {
               onChange={() => toggleLayer(key as Layer)}
             />
           </label>
-        ))}
+        ))}</div>}
       </section>
       <section
         id="panel-content"
@@ -211,6 +218,7 @@ export default function Panel({ onClose }: { onClose?: () => void }) {
         tabIndex={-1}
         aria-label="Portfolio content"
       >
+        <VisualGuide view={panelView} />
         {panelView === "overview" ? (
           <Overview />
         ) : panelView === "buildings" ? (

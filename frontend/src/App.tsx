@@ -158,6 +158,7 @@ export default function App() {
               aria-label="Open map layers in portfolio panel"
               onClick={() => {
                 setDrawerOpen(true);
+                window.dispatchEvent(new Event("storm:open-layers"));
               }}
             >
               <Layers size={20} />

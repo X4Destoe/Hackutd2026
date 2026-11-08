@@ -27,6 +27,7 @@ async function main() {
     return response.json();
   };
   try {
+    assert.equal((await api("/messaging/status")).mode, "sim");
     await api("/demo/reset", "POST", { scenario_id: "harvey_houston" });
     await page.goto(BASE);
     const map = page.getByRole("main", { name: "Map workspace" });
@@ -40,6 +41,7 @@ async function main() {
     await marker.waitFor();
     await marker.click();
     await page
+      .getByRole("region", { name: "Portfolio content" })
       .getByRole("heading", { name: "Bayou Plaza", exact: true })
       .waitFor();
     await page
@@ -75,6 +77,7 @@ async function main() {
       "Approval did not reduce net exposure",
     );
     await page.screenshot({ path: path.join(OUT, "harvey-approved.png") });
+    await page.getByRole("button", { name: "Map layers", exact: true }).click();
     const buildingToggle = page.getByRole("checkbox", {
       name: "Buildings by $ at risk",
       exact: true,

@@ -43,6 +43,7 @@ const BASE = process.env.STORM_URL || 'http://127.0.0.1:5173';
     }
     // Visible layer controls must change visible map output.
     const layers = page.getByRole('region', { name: 'Map layers' });
+    await layers.getByRole('button', { name: 'Map layers', exact: true }).click();
     await layers.getByRole('button', { name: 'Clear', exact: true }).click();
     assert.equal(await page.locator('.map-activity button').count(), 0);
     await layers.getByRole('checkbox', { name: 'Help sites and residents' }).check();
