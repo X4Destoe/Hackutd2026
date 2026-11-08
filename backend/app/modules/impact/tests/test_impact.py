@@ -21,7 +21,7 @@ def test_flood_curve_interpolates():
     assert interp(C.FLOOD_CURVE, -1) == 0 and interp(C.FLOOD_CURVE, 12) == 0.42
 
 
-def test_bayou_plaza_severe_and_barriers_plus_relocation_halve_it():
+def test_bayou_plaza_severe_and_barriers_plus_relocation_halve_gross_loss_with_10x_net_roi():
     sc.load("harvey_houston")
     base = im.impact_for("BLD-HOU-01", 0)
     assert base.risk in ("high", "severe")
