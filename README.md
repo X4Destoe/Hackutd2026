@@ -13,5 +13,13 @@ buildings offered to the community.
 - **Product spec (reference pack for the team and AI agents):** [`docs/prd/`](docs/prd/README.md)
 - **Team / agent coordination:** [Agent-Communication-](https://github.com/X4Destoe/Agent-Communication-)
 
-## Run
-Coming in TASK-002 (see [`docs/prd/01-architecture.md`](docs/prd/01-architecture.md) §5 for the target commands).
+## Run (backend)
+```bash
+cd backend
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"            # add ".[ai]" for Claude/OpenAI/Gemini
+uvicorn app.main:app --reload --port 8000     # API docs at http://localhost:8000/docs
+pytest                              # all module tests + end-to-end smoke
+```
+Configuration: copy `.env.example` to `backend/.env` (optional, everything works blank).
+Frontend: see `docs/prd/modules/web-shell.md` (React + Vite, `npm run dev`).
