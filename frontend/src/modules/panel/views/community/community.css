@@ -1,0 +1,121 @@
+.community-list {
+  list-style: none;
+  margin: 12px 0;
+  padding: 0;
+}
+.community-card {
+  border: 1px solid var(--border);
+  padding: 15px;
+  margin: 10px 0;
+  background: white;
+}
+.community-card h3 {
+  font-size: 13px;
+  font-weight: 600;
+}
+.community-card p {
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 8px 0;
+  color: var(--muted);
+}
+.community-card-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 8px;
+}
+.community-card-heading strong {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.community-card .badge {
+  font-size: 9px;
+  white-space: nowrap;
+}
+.community-view a {
+  font-size: 12px;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.community-card.site-unsafe,
+.needs-attention {
+  border-color: #d49a91;
+  background: #fff8f6;
+}
+.site-unsafe .badge,
+.needs-attention .badge {
+  background: #f9dfd9;
+  color: #922e20;
+}
+.site-closed,
+.site-full {
+  background: #f7f7f5;
+}
+.community-card .community-meta {
+  font-size: 10px;
+}
+.attention-label {
+  color: #a33224 !important;
+  font-size: 12px;
+}
+.community-card ol {
+  list-style: decimal;
+  font-size: 10px;
+  color: var(--muted);
+  padding-left: 16px;
+}
+.report-controls,
+.phone-simulator {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  margin: 18px 0;
+}
+.community-view label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.community-view select,
+.community-view input,
+.community-view textarea {
+  width: 100%;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  padding: 9px;
+  background: white;
+  color: #20342b;
+  font-size: 12px;
+}
+.phone-simulator {
+  border: 1px solid var(--border);
+  padding: 15px;
+  background: #f4f8f3;
+}
+.phone-simulator h3 {
+  font-size: 14px;
+  font-weight: 600;
+}
+.phone-simulator p {
+  font-size: 11px;
+  line-height: 1.6;
+}
+.message-body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.message-inbound {
+  border-left: 3px solid #5c819d;
+}
+.message-outbound {
+  border-left: 3px solid var(--accent);
+}
+.media-link {
+  display: inline-block;
+  margin: 4px 8px 4px 0;
+}

@@ -26,6 +26,7 @@ export const api = {
   reset: (scenario_id?: string) => request<Model<'DemoState'>>('/demo/reset', 'POST', scenario_id ? { scenario_id } : {}),
   loadScenario: (scenarioId: string) => request<Model<'DemoState'>>(`/scenarios/${id(scenarioId)}/load`, 'POST'),
   demoState: (signal?: AbortSignal) => request<Model<'DemoState'>>('/demo/state', 'GET', undefined, signal),
+  timeline: (signal?: AbortSignal) => request<Model<'TimelineStepInfo'>[]>('/timeline', 'GET', undefined, signal),
   setHour: (hour: number) => request<Model<'DemoState'>>('/timeline', 'POST', { hour }),
   overlays: (hour?: number, signal?: AbortSignal) => request<GeoJSONCollection>(`/overlays${query({ hour })}`, 'GET', undefined, signal),
   buildings: (signal?: AbortSignal) => request<Model<'Building'>[]>('/buildings', 'GET', undefined, signal),

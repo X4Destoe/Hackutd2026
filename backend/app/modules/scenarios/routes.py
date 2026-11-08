@@ -26,6 +26,15 @@ class UtilityStatus(schemas.UtilityNode):
     down: bool
 
 
+class TimelineStepInfo(schemas.Model):
+    """A TimelineStep without its overlay geometry (that comes from /overlays)."""
+    hour: int
+    phase: schemas.Phase
+    label: str
+    narrative: str
+    utility_outages: list[schemas.UtilityOutage]
+
+
 @router.get("/scenarios", response_model=list[schemas.ScenarioMeta])
 def list_scenarios():
     return sc.scenarios_meta()
@@ -44,6 +53,12 @@ def reset(body: Optional[ResetBody] = None):
 @router.get("/demo/state", response_model=schemas.DemoState)
 def state():
     return sc.current()
+
+
+@router.get("/timeline", response_model=list[TimelineStepInfo])
+def timeline_steps():
+    """Steps of the loaded scenario for the timeline control and the hero card's narrative."""
+    return [TimelineStepInfo(**st.model_dump(exclude={"overlays"})) for st in sc.scenario().steps]
 
 
 @router.post("/timeline", response_model=schemas.DemoState)
