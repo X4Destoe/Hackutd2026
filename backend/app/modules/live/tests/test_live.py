@@ -71,6 +71,7 @@ def test_each_feed_fails_independently():
 
 
 def test_snapshot_never_waits_for_the_network(monkeypatch, tmp_path):
+    monkeypatch.setenv("LIVE_FETCH", "1")  # Exercise the mocked background fetch even in offline CI/demo environments.
     monkeypatch.setattr(live, "CACHE_FILE", tmp_path / "last.json")
     monkeypatch.setattr(live, "_state", fresh_state())
     monkeypatch.setattr(live, "_portfolio", lambda: BUILDINGS)
