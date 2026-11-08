@@ -24,6 +24,7 @@ function BuildingResponse({ id }: { id: string }) {
   const bodyId = useId();
   const close = () => {
     setSelectedBuildingId(null);
+    setPanelView("overview");
     document.querySelector<HTMLButtonElement>(`[data-building-id="${CSS.escape(id)}"]`)?.focus();
   };
   const buildings = useBuildings();

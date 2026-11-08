@@ -39,13 +39,18 @@ const BASE = process.env.STORM_URL || 'http://127.0.0.1:5173';
     await card.getByRole('button', { name: 'Close building response card' }).focus();
     await page.keyboard.press('Escape'); await card.waitFor({ state: 'hidden' });
     // The same marker can reopen the card; a mobile drawer can be closed independently.
-    await page.setViewportSize({ width: 800, height: 1000 }); await marker.click();
-    await page.getByRole('button', { name: 'Close portfolio panel', exact: true }).click();
+    await page.setViewportSize({ width: 800, height: 1000 });
+    const panel = page.getByRole('complementary', { name: 'Portfolio panel' });
+    const closePanel = panel.getByRole('button', { name: 'Close portfolio panel', exact: true });
+    if (await closePanel.isVisible()) await closePanel.click();
+    await marker.click();
+    await closePanel.click();
     await card.getByRole('button', { name: 'Minimize building response card' }).click();
     await card.getByRole('button', { name: 'Restore building response card' }).click();
     await card.getByRole('button', { name: 'Close building response card' }).click();
     await card.waitFor({ state: 'hidden' });
     assert.equal((await api('/workorders')).length, orders.length);
+    assert.equal(await panel.evaluate(el => el.classList.contains('drawer-open')), false, 'Closing card must not reopen mobile drawer over the map');
     assert.deepEqual(errors, []);
     console.log('PASS response card minimizes/restores with draft intact, closes/Escape and reopens; approved work retained on desktop/mobile');
   } finally {
