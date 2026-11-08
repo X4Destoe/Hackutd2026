@@ -6,6 +6,8 @@ Sends never raise: a channel failure is stored on the message and `status().last
 
 from __future__ import annotations
 
+import json
+import hashlib
 import logging
 import re
 import threading
@@ -47,7 +49,8 @@ def _mode() -> str:
 
 
 def _channel_for(party: schemas.Party) -> str:
-    if _mode() == "photon" and party.demo_live:
+    """Photon only in photon mode, and only for real demo phones (DEMO_PHONES or a resident who texted the Photon line)."""
+    if _mode() == "photon" and (party.demo_live or party.id in settings.demo_phone_map()):
         return "photon"
     return "sim"
 
@@ -123,16 +126,21 @@ def send(
     )
     with _lock:
         store.messages.put(message)
-        try:
-            if channel == "photon":
-                _photon_send(party.phone, body, message.media_urls)
-            delivered = message.model_copy(update={"status": "sent", "error": None})
-            _last_error = None
-        except Exception as exc:
-            error = str(exc) or exc.__class__.__name__
-            _remember_error(error)
-            log.warning("outbound message %s failed on %s", message.id, channel)
-            delivered = message.model_copy(update={"status": "failed", "error": error[:300]})
+    # Network I/O must not prevent incoming DONE replies from acquiring the messaging lock.
+    try:
+        if channel == "photon":
+            _photon_send(party.phone, body, message.media_urls)
+        delivered = message.model_copy(update={"status": "sent", "error": None})
+    except Exception as exc:
+        error = str(exc) or exc.__class__.__name__
+        log.warning("outbound message %s failed on %s", message.id, channel)
+        delivered = message.model_copy(update={"status": "failed", "error": error[:300]})
+    with _lock:
+        # Reset can reuse MSG identifiers; object identity distinguishes the old queued record.
+        # An already-started provider send cannot be recalled, but it must not overwrite a new scene.
+        if store.messages.get(message.id) is not message:
+            return delivered
+        _last_error = delivered.error
         store.messages.put(delivered)
     if delivered.status == "sent":
         bus.emit("message.sent", {"message_id": delivered.id, "party_id": delivered.party_id, "kind": _type(delivered.kind)})
@@ -140,12 +148,11 @@ def send(
 
 
 def _photon_send(phone: str, body: str, media_urls: list[str]) -> None:
-    """Live Photon send belongs to TASK-022. Without that channel, fail soft."""
-    if not settings.photon_api_key or not phone:
-        raise RuntimeError("Photon is not configured")
-    if media_urls:
-        raise RuntimeError("Photon photo send is not available yet")
-    raise RuntimeError("PhotonChannel is not installed; use MESSAGING_MODE=sim")
+    """Real send through the loopback Spectrum bridge (photon.py). Raises on refusal; send() stores it as failed."""
+    from .photon import PhotonChannel
+    if not phone:
+        raise RuntimeError("party has no phone number")
+    PhotonChannel().send_text(phone, body, media_urls)
 
 
 def receive(party: schemas.Party, text: str, media_urls: list[str] | None = None, kind: MessageKind | None = None) -> schemas.Message:
@@ -249,9 +256,9 @@ def parse_webhook(payload: dict) -> tuple[str, str, list[str]] | None:
 
 
 def accept_webhook(payload: dict, headers: dict | None = None) -> dict:
-    # Signature verification is TASK-022. Until then, live mode must not trust an unsigned body.
+    # In photon mode only signed raw bodies are accepted (accept_photon_webhook); a parsed dict cannot be verified.
     if _mode() == "photon":
-        _remember_error("Photon webhook verification is not installed")
+        _remember_error("unsigned webhook ignored in photon mode")
         return {"ok": True}
     event_id = ""
     if isinstance(payload, dict):
@@ -273,6 +280,33 @@ def accept_webhook(payload: dict, headers: dict | None = None) -> dict:
     return {"ok": True}
 
 
+def accept_photon_webhook(raw: bytes, headers: dict) -> dict:
+    """Verified native Spectrum webhook (exact raw bytes). Bad signature -> PermissionError (HTTP 401). Dedupes deliveries."""
+    from .photon import PhotonChannel
+    lower = {k.lower(): v for k, v in (headers or {}).items()}
+    parsed = PhotonChannel().parse_inbound(raw, lower)  # raises PermissionError before anything is trusted
+    try:
+        message_id = str((json.loads(raw).get("message") or {}).get("id") or "")
+    except ValueError:
+        message_id = ""
+    delivery_id = lower.get("x-spectrum-webhook-id", "")
+    keys = ([f"delivery:{delivery_id}"] if delivery_id else []) + (
+        [f"message:{message_id}"] if message_id else ["body:" + hashlib.sha256(raw).hexdigest()])
+    with _lock:
+        if any(k in _seen_webhook_ids for k in keys):
+            return {"ok": True, "duplicate": True}
+        _seen_webhook_ids.extend(keys)
+        del _seen_webhook_ids[:-1000]
+    if parsed is None:
+        return {"ok": True, "ignored": True}
+    phone, text, media = parsed
+    party = party_for_phone(phone)
+    if not party.demo_live:  # they reached us over Photon, so replies go back over Photon
+        party = store.parties.put(party.model_copy(update={"demo_live": True}))
+    receive(party, text, media)
+    return {"ok": True}
+
+
 def register() -> None:
     global _defaults
     if not _defaults:
@@ -286,5 +320,5 @@ def register() -> None:
 from .routes import router  # noqa: E402
 
 __all__ = [
-    "register", "router", "send", "on_inbound", "party_for_phone", "status", "receive", "accept_webhook",
+    "register", "router", "send", "on_inbound", "party_for_phone", "status", "receive", "accept_webhook", "accept_photon_webhook",
 ]
