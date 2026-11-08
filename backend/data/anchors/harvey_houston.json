@@ -1,0 +1,206 @@
+{
+ "_comment": "Hand-placed hazard anchors for make_overlays.py. Footprints are APPROXIMATE (illustrative, not official). Hazard model: water depth (ft) at a point = peak * (1 - d/half_width) within half_width miles of a river line; pools: peak * (1 - 0.6 d/radius). 'present' = share of the peak physically present at each step (forecast steps show the predicted peak). Same model as demo/model.js.",
+ "id": "harvey_houston",
+ "name": "Hurricane Harvey",
+ "real_event": "Hurricane Harvey",
+ "date_label": "Aug 25–30, 2017",
+ "city": "Houston",
+ "center": {
+  "lat": 29.75,
+  "lon": -95.47
+ },
+ "zoom": 10.3,
+ "kind": "flood",
+ "hazards": [
+  "flood",
+  "wind"
+ ],
+ "present": {
+  "0": 0.7,
+  "12": 1,
+  "48": 0.5,
+  "168": 0.1,
+  "-48": 0,
+  "-24": 0,
+  "-12": 0
+ },
+ "narrative": {
+  "0": "Impact: Buffalo, Brays and White Oak bayous out of their banks. Substations flooding.",
+  "12": "Peak flooding. Reservoir releases flood the Energy Corridor.",
+  "48": "Water receding slowly. Power restoration begins in dry areas.",
+  "168": "Recovery: most water gone. Demand surge for contractors and materials.",
+  "-48": "Forecast: Harvey expected to stall over Houston. NWS warns of catastrophic, life-threatening rainfall.",
+  "-24": "Forecast: 30–40 in. of rain possible. Bayous and reservoirs projected to overtop.",
+  "-12": "Final window for pre-storm actions. Rain bands arriving."
+ },
+ "rivers": [
+  {
+   "name": "Buffalo Bayou",
+   "peak_ft": 8,
+   "half_width_mi": 0.55,
+   "coords": [
+    [
+     -95.7,
+     29.785
+    ],
+    [
+     -95.64,
+     29.772
+    ],
+    [
+     -95.59,
+     29.762
+    ],
+    [
+     -95.54,
+     29.76
+    ],
+    [
+     -95.48,
+     29.762
+    ],
+    [
+     -95.44,
+     29.764
+    ],
+    [
+     -95.4,
+     29.76
+    ],
+    [
+     -95.375,
+     29.762
+    ],
+    [
+     -95.355,
+     29.76
+    ],
+    [
+     -95.33,
+     29.752
+    ],
+    [
+     -95.29,
+     29.745
+    ]
+   ]
+  },
+  {
+   "name": "Brays Bayou",
+   "peak_ft": 10,
+   "half_width_mi": 0.9,
+   "coords": [
+    [
+     -95.6,
+     29.69
+    ],
+    [
+     -95.54,
+     29.69
+    ],
+    [
+     -95.49,
+     29.688
+    ],
+    [
+     -95.46,
+     29.69
+    ],
+    [
+     -95.43,
+     29.7
+    ],
+    [
+     -95.4,
+     29.708
+    ],
+    [
+     -95.37,
+     29.712
+    ],
+    [
+     -95.34,
+     29.715
+    ],
+    [
+     -95.3,
+     29.705
+    ]
+   ]
+  },
+  {
+   "name": "White Oak Bayou",
+   "peak_ft": 7,
+   "half_width_mi": 0.55,
+   "coords": [
+    [
+     -95.52,
+     29.83
+    ],
+    [
+     -95.47,
+     29.81
+    ],
+    [
+     -95.42,
+     29.79
+    ],
+    [
+     -95.38,
+     29.77
+    ],
+    [
+     -95.365,
+     29.763
+    ]
+   ]
+  }
+ ],
+ "pools": [
+  {
+   "name": "Addicks/Barker reservoir releases",
+   "center": [
+    -95.635,
+    29.775
+   ],
+   "radius_mi": 2.1,
+   "peak_ft": 5.4
+  }
+ ],
+ "wind": {
+  "peak_mph": 55,
+  "track": [
+   [
+    -97,
+    27.9
+   ],
+   [
+    -96.6,
+    28.6
+   ],
+   [
+    -96,
+    29.3
+   ],
+   [
+    -95.6,
+    29.6
+   ]
+  ],
+  "eye": [
+   -95.9,
+   29.4
+  ]
+ },
+ "outages": {
+  "UTL-HOU-SUB1": 96,
+  "UTL-HOU-SUB3": 120,
+  "UTL-HOU-SUB4": 144,
+  "UTL-HOU-SUB5": 72
+ },
+ "sources": [
+  "NWS / NOAA: Hurricane Harvey event summary (VERIFY before quoting)",
+  "Wikipedia: Hurricane Harvey (VERIFY figures)"
+ ],
+ "disclaimer": "Hazard footprints are approximate and illustrative, not official flood maps. Buildings and dollar figures are synthetic."
+}

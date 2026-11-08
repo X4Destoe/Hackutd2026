@@ -28,6 +28,10 @@ router   # /api/scenarios, /api/demo/*, /api/timeline, /api/overlays, /api/build
 Order on `set_hour`: update state → emit `timeline.changed`. `impact`, `actions` and `resources` subscribe and recompute (see their files).
 Reset (`POST /api/demo/reset`) = `load()` + clear approvals, work orders, messages, referrals and reports (store.reset covers it).
 
+**Implementation note (TASK-015):** compute `hazard_at` analytically from `data/anchors/<id>.json` (same formulas as
+`demo/model.js`: smooth depth by distance to river lines/pools, wind by distance to the track, ice/temperature inside the
+winter area). The banded overlay polygons in `data/scenarios/<id>.json` are for drawing and are coarser (3 bands).
+
 ## Data work (this is the biggest part of the module)
 1. `make_overlays.py` (generic) reads `backend/data/anchors/<scenario_id>.json` (hand-placed polylines for bayous/coast, points for
    low spots, per step: intensity bands + buffer distances) and writes the overlay GeoJSON into `scenarios/<scenario_id>.json`,
