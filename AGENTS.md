@@ -1,6 +1,6 @@
 # AGENTS.md - this repo is CODE ONLY
 
-**What we're building:** Lifeline. The full spec is in [`docs/prd/`](docs/prd/README.md). Read `docs/prd/README.md` first.
+**What we're building:** Operation Storm. The full spec is in [`docs/prd/`](docs/prd/README.md). Read `docs/prd/README.md` first.
 It tells you exactly which files to read for your task (the overview, the contracts, and your one module file).
 To see what we're building, open `demo/operation-storm-demo.html` (clickable prototype = visual reference).
 Ignore `docs/archive/` (superseded plans).
