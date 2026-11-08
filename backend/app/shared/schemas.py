@@ -190,6 +190,7 @@ class PortfolioSummary(Model):
     avoided_cents: int
     actions_approved: int
     worst_building_ids: list[str] = Field(default_factory=list)
+    insurance_recovery_cents: int = 0  # added 2026-11-08 (comms DECISIONS): KPI grid without client-side money math
 
 
 # ---------- Actions (owned by actions) ----------

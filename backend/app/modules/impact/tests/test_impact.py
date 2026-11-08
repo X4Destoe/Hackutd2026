@@ -106,4 +106,5 @@ def test_routes_and_events():
         s = c.get("/api/portfolio/summary").json()
         assert s["scenario_id"] == "harvey_houston" and s["worst_building_ids"][0].startswith("BLD-HOU")
         assert s["avoided_cents"] == 0 and s["actions_approved"] == 0
+        assert s["gross_loss_cents"] - s["insurance_recovery_cents"] == s["net_exposure_cents"]
         assert c.get("/api/impact/BLD-NOPE").status_code == 404

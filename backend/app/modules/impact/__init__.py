@@ -117,7 +117,8 @@ def summary(impacts: list[schemas.Impact] | None = None) -> schemas.PortfolioSum
         buildings_at_risk=sum(1 for i in impacts if i.risk != "none"),
         gross_loss_cents=sum(x.property_damage_cents + x.rent_abatement_cents + x.sla_penalty_cents + x.operations_cents for x in m),
         net_exposure_cents=sum(x.net_exposure_cents for x in m), avoided_cents=avoided, actions_approved=approved_count,
-        worst_building_ids=[i.building_id for i in worst[:5]])
+        worst_building_ids=[i.building_id for i in worst[:5]],
+        insurance_recovery_cents=sum(x.insurance_recovery_cents for x in m))
 
 
 def site_safe(lat: float, lon: float, utility_node_id: str | None = None, hour: int | None = None) -> bool:

@@ -72,7 +72,8 @@ MoneyBreakdown: property_damage_cents, downtime_days: float, rent_abatement_cent
 Impact:        building_id, step_hour, risk: RiskLevel, damage_ratio: float, money: MoneyBreakdown,
                drivers: [str], exposure: Exposure, with_approved_actions: bool
 PortfolioSummary: scenario_id, step_hour, buildings_at_risk: int, gross_loss_cents, net_exposure_cents,
-               avoided_cents, actions_approved: int, worst_building_ids: [str]
+               avoided_cents, actions_approved: int, worst_building_ids: [str],
+               insurance_recovery_cents: int = 0   # added 2026-11-08, see comms DECISIONS
 ```
 
 ### Actions (owned by actions)
