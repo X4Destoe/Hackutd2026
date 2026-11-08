@@ -31,6 +31,7 @@ import Legend from "./Legend";
 import ResponseCard from "./ResponseCard";
 import ActivityLayers from "./ActivityLayers";
 import HazardMotion from "./overlays/HazardMotion";
+import LiveStatus from "./LiveStatus";
 import "./map.css";
 
 type FC = { type: "FeatureCollection"; features: unknown[] };
@@ -181,6 +182,15 @@ export default function MapView() {
     map.on("mouseleave", "buildings", leave);
     map.on("mousemove", "power", hover);
     map.on("mouseleave", "power", leave);
+    for (const id of ["water-fill", "snow-fill", "wind-fill"]) {
+      map.on("mousemove", id, (event: MapLayerMouseEvent) => {
+        const properties = event.features?.[0]?.properties as Record<string, string> | undefined;
+        if (!properties?.event) return;
+        map.getCanvas().style.cursor = "help";
+        popup.setLngLat(event.lngLat).setDOMContent(tooltip({ ...properties, kind: "alert" })).addTo(map);
+      });
+      map.on("mouseleave", id, leave);
+    }
     return () => {
       window.clearTimeout(fallback);
       controller.abort();
@@ -453,7 +463,8 @@ export default function MapView() {
       <TimelineControl />
       <HazardMotion map={ready ? mapRef.current : null} data={overlays.data as FC | undefined} enabled={layers.hazard} />
       <ActivityLayers map={ready ? mapRef.current : null} city={city} />
-      <div className="storm-scenario-strip">
+      <LiveStatus city={city} />
+      {!state.data?.scenario_id.startsWith("live") && <div className="storm-scenario-strip">
         <span
           className={`scenario-phase phase-${state.data?.phase ?? "forecast"}`}
         >
@@ -482,7 +493,7 @@ export default function MapView() {
             })}
           </small>
         </div>
-      </div>
+      </div>}
       <ResponseCard />
       <div className="storm-map-tools">
         <button
@@ -536,7 +547,12 @@ function tooltip(p: Record<string, string>): HTMLElement {
     d.textContent = text;
     root.append(d);
   };
-  if (p.kind === "building") {
+  if (p.kind === "alert") {
+    title.textContent = p.event;
+    if (p.headline) line(p.headline);
+    if (p.severity) line(`NWS severity: ${p.severity}`);
+    line("Modeled intensity is a proxy, not an observed depth.");
+  } else if (p.kind === "building") {
     line(`${p.risk} risk · estimated loss ${p.net}`);
     if (p.driver) line(p.driver);
   } else {
