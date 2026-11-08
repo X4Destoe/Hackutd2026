@@ -31,3 +31,14 @@ Values come from the analytic model over `data/anchors/<id>.json` (see `hazard.p
 ## Events
 `scenario.loaded` and `timeline.changed`, payload `DemoState`. `store.reset()` on load clears plans, work orders, messages,
 resources, referrals and reports: modules that seed data (e.g. `resources`) re-seed on `scenario.loaded`.
+
+## Live scenarios (TASK-050)
+`live_houston`, `live_dallas`, `live_fort_myers` appear in `GET /scenarios`. Built from `app.modules.live.snapshot()` (real NWS
+alerts + hourly forecast; never blocks): steps `-24` "Now · act before the window" (forecast) and `0` "Next 48 h" (impact).
+- Overlays = NWS alert polygons near the city, mapped by event (`live_scenario.py` table): flood -> `flood_water`, coastal/surge ->
+  `surge_water`, hurricane/tropical/high wind -> `wind_swirl`, winter/ice/freeze -> `snow_ice`. Feature properties add
+  `proxy: true, event, severity, headline, ends`.
+- `hazard_at` = strongest containing alert's **proxy** value (depth/wind) + the city's forecast min temp / max wind, plus
+  `sources` naming the alert; impact appends "— NWS Flood Warning (proxy)" to the matching driver.
+- No utility outages (no free real-time feed). Stale/missing feeds are named in the "Now" narrative as unknown, not safe.
+- On `live.updated` while a live scenario is shown: rebuilt and `timeline.changed` is emitted (everything recomputes).
