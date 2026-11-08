@@ -15,39 +15,44 @@ buildings offered to the community.
 
 ## Run it (VS Code terminal)
 
-You need **Python 3.11+** and **Node.js 20+** (check with `python3 --version` / `node --version`; on Windows use `py --version`).
-The app is two processes, so use **two terminals** in VS Code (Terminal → New Terminal, then the split button).
+You need **Python 3.11+**, **Node.js 20+** and **git** (check with `python3 --version`, `node --version`; on Windows use
+`py --version`). No Node? macOS: `brew install node`, or download the LTS installer from nodejs.org.
+
+### Step 0 - get the code and open it in VS Code (once)
+
+```bash
+cd ~
+git clone https://github.com/X4Destoe/Hackutd2026.git
+code Hackutd2026        # or: VS Code → File → Open Folder… → Hackutd2026
+```
+Every command below runs **from inside the `Hackutd2026` folder**. VS Code's terminal starts there when you open the folder;
+check with `pwd` (it should end in `/Hackutd2026`). Already cloned? `cd` into it and run `git pull`.
+If your prompt starts with `(base)` (Anaconda), run `conda deactivate` first so the project uses its own Python environment.
+
+The app is two processes, so use **two terminals** (Terminal → New Terminal, then the split button). Paste each block as a whole:
+the lines are joined with `&&`, so if one step fails the rest stop instead of running in the wrong folder.
 
 ### Terminal 1 - backend (API on http://localhost:8000)
 
 macOS / Linux:
 ```bash
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
-uvicorn app.main:app --reload --port 8000
+cd backend && python3 -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]" && uvicorn app.main:app --reload --port 8000
 ```
+Next time (already installed): `cd backend && source .venv/bin/activate && uvicorn app.main:app --reload --port 8000`
 
 Windows (PowerShell):
 ```powershell
-cd backend
-py -m venv .venv
-.venv\Scripts\Activate.ps1
-pip install -e ".[dev]"
-uvicorn app.main:app --reload --port 8000
+cd backend; py -m venv .venv; .venv\Scripts\Activate.ps1; pip install -e ".[dev]"; uvicorn app.main:app --reload --port 8000
 ```
 If PowerShell says running scripts is disabled, run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once, then activate again.
 
 You should see `Uvicorn running on http://127.0.0.1:8000`. Check http://localhost:8000/api/health (`{"ok":true}`) or the API
-docs at http://localhost:8000/docs. The first two lines (venv + install) are only needed once; next time just activate and run uvicorn.
+docs at http://localhost:8000/docs.
 
 ### Terminal 2 - frontend (app on http://localhost:5173)
 
 ```bash
-cd frontend
-npm install
-npm run dev
+cd frontend && npm install && npm run dev
 ```
 Open **http://localhost:5173**. The frontend forwards `/api` to the backend, so keep Terminal 1 running.
 
@@ -63,6 +68,8 @@ Open **http://localhost:5173**. The frontend forwards `/api` to the backend, so 
 ### Troubleshooting
 | Problem | Fix |
 |---|---|
+| `cd: no such file or directory: backend` | You are not in the project folder: `cd ~/Hackutd2026` (or wherever you cloned it), then retry |
+| `does not appear to be a Python project` | Same cause: run it from `Hackutd2026/backend`, not your home folder |
 | `python3: command not found` (Windows) | Use `py` instead of `python3` |
 | `uvicorn: command not found` | The venv is not active: run the `activate` line again (prompt shows `(.venv)`) |
 | `Address already in use` / port 8000 or 5173 busy | Stop the other server (Ctrl+C in its terminal) or change `--port` |
