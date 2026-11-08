@@ -181,7 +181,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Timeline Steps
+         * @description Steps of the loaded scenario for the timeline control and the hero card's narrative.
+         */
+        get: operations["timeline_steps_api_timeline_get"];
         put?: never;
         /** Timeline */
         post: operations["timeline_api_timeline_post"];
@@ -899,6 +903,21 @@ export interface components {
             /** Narrative */
             narrative: string;
         };
+        /**
+         * TimelineStepInfo
+         * @description A TimelineStep without its overlay geometry (that comes from /overlays).
+         */
+        TimelineStepInfo: {
+            /** Hour */
+            hour: number;
+            phase: components["schemas"]["Phase"];
+            /** Label */
+            label: string;
+            /** Narrative */
+            narrative: string;
+            /** Utility Outages */
+            utility_outages: components["schemas"]["UtilityOutage"][];
+        };
         /** UtilityNode */
         UtilityNode: {
             /** Id */
@@ -1239,6 +1258,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DemoState"];
+                };
+            };
+        };
+    };
+    timeline_steps_api_timeline_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimelineStepInfo"][];
                 };
             };
         };
