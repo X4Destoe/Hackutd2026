@@ -68,3 +68,43 @@ def test_bad_requests_are_rejected(c):
     assert c.post("/api/reports", json={"kind": "nonsense"}).status_code == 422
     assert c.get("/api/reports/RPT-999/html").status_code == 404
     assert c.get("/api/reports").json() == []
+
+
+def test_unapproved_plan_instructions_are_not_presented_as_tenant_asks(c):
+    from app.modules import actions
+    plan = store.plans.list(building_id="BLD-HOU-01", status="proposed")[0]
+    texts = [actions.catalog[action.code].tenant_notice_text for action in plan.actions if actions.catalog[action.code].tenant_notice_text]
+    assert texts
+    notice = c.post("/api/reports", json={"kind": "tenant_notice", "building_id": plan.building_id}).json()["markdown"]
+    assert "No approved response actions are recorded" in notice
+    for text in texts:
+        # Compare the meaningful instruction independently of placeholders/deadline formatting.
+        assert text.split("{", 1)[0].strip() not in notice
+
+
+def test_sent_text_includes_approved_instructions_and_a_usable_public_link(c, monkeypatch):
+    from app.shared.config import settings
+    plan = store.plans.list(building_id="BLD-HOU-01", status="proposed")[0]
+    c.post(f"/api/plans/{plan.id}/approve", json={"by": "MGR-01"})
+    # Only count the manually requested report send, independently of approval notices.
+    before = {message.id for message in store.messages.list()}
+    monkeypatch.setattr(settings, "app_base_url", "https://storm.example")
+    report = c.post("/api/reports", json={"kind": "tenant_notice", "building_id": plan.building_id, "send": True}).json()
+    asks = [line[2:] for line in report["markdown"].split("## What you need to do\n", 1)[1].split("\n## ", 1)[0].splitlines() if line.startswith("- ")]
+    sent = [message for message in store.messages.list() if message.id not in before and str(getattr(message.kind, "value", message.kind)) == "tenant_notice"]
+    assert sent and len(sent) == len({message.party_id for message in sent})
+    for message in sent:
+        assert all(ask in message.body for ask in asks)
+        assert "https://storm.example/api/reports/" + report["id"] + "/html" in message.body
+        assert "{deadline}" not in message.body and "localhost" not in message.body
+
+
+def test_unknown_live_finances_cannot_generate_misleading_reports(c, monkeypatch):
+    from app.modules import live
+    monkeypatch.setattr(live, "snapshot", lambda: {"fetched_at": None, "alerts": None, "conditions": {}, "gauges": []})
+    monkeypatch.setattr(live, "status", lambda: {"feeds": {}})
+    assert c.post("/api/scenarios/live_houston/load").status_code == 200
+    for kind in ("executive_summary", "tenant_notice"):
+        result = c.post("/api/reports", json={"kind": kind, "building_id": "BLD-HOU-01", "send": True})
+        assert result.status_code == 422 and "unknown" in result.json()["detail"]
+    assert store.reports.list() == [] and store.messages.list() == []

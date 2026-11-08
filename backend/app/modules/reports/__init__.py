@@ -6,9 +6,11 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
+from urllib.parse import urlsplit
 
 from app.modules import impact, scenarios
 from app.shared import ids, schemas
+from app.shared.config import settings
 from app.shared.events import bus
 from app.shared.store import store
 
@@ -78,7 +80,7 @@ def _executive_summary() -> tuple[str, str]:
     lines = [f"# {title}", "",
              f"*{sc.real_event} ({sc.date_label}) · step {step.label} · generated {datetime.now(timezone.utc):%Y-%m-%d %H:%M} UTC*", "",
              "## Bottom line", "",
-             f"- **Net exposure {money(s.net_exposure_cents)}** across {s.buildings_at_risk} buildings at risk "
+             f"- **Estimated loss {money(s.net_exposure_cents)}** across {s.buildings_at_risk} buildings at risk "
              f"(gross loss {money(s.gross_loss_cents)}, insurance recovery {money(s.insurance_recovery_cents)}).",
              f"- **Avoided by approved actions: {money(s.avoided_cents)}** ({s.actions_approved} actions approved).",
              f"- **Missed:** {len(missed)} plan(s) passed their deadline unapproved and would have saved "
@@ -87,7 +89,7 @@ def _executive_summary() -> tuple[str, str]:
     worst = [impacts[b] for b in s.worst_building_ids if b in impacts]
     if worst:
         lines += ["## Top at-risk buildings", ""]
-        lines += _table(["Building", "Risk", "Net exposure", "Gross loss", "Main driver"], [
+        lines += _table(["Building", "Risk", "Estimated loss", "Gross loss", "Main driver"], [
             [store.buildings.require(i.building_id).name, _v(i.risk), money(i.money.net_exposure_cents),
              money(i.money.property_damage_cents + i.money.rent_abatement_cents + i.money.sla_penalty_cents + i.money.operations_cents),
              i.drivers[0] if i.drivers else ""] for i in worst]) + [""]
@@ -138,25 +140,32 @@ def _tenant_notice(building_id: str) -> tuple[str, str]:
     b = store.buildings.require(building_id)
     sc, step = scenarios.scenario(), scenarios.step()
     i = impact.impact_for(building_id)
-    plans = [p for p in store.plans.list(building_id=building_id) if _v(p.status) in ACTIVE + ("proposed",)]
-    doing = [a for p in plans if _v(p.status) in ACTIVE for a in p.actions]
+    plans = [p for p in store.plans.list(building_id=building_id) if _v(p.status) in ACTIVE]
+    doing = [(a, _v(p.status)) for p in plans for a in p.actions]
     onsite = store.parties.get(b.onsite_party_id)
     title = f"Notice to tenants: {b.name}"
     lines = [f"# {title}", "", f"*{b.address} · {sc.name} · {step.label}*", "", "## What is happening", ""]
     if b.city != sc.city or _v(i.risk) == "none":
-        lines += [f"{sc.name} is not expected to affect {b.name} at this time. We are monitoring and will update you.", ""]
+        lines += [f"No impact on {b.name} is identified by the selected {sc.name} scenario. This is not a verified assessment of local safety or power availability.", ""]
     else:
         lines += [f"{step.narrative}", ""] + [f"- {d}" for d in i.drivers if not d.startswith("Insurance")] + [""]
         if i.money.downtime_days:
             lines += [f"Current estimate: the building may be unusable for about **{i.money.downtime_days:g} days**.", ""]
     lines += ["## What management is doing", ""]
-    lines += [f"- {a.title} (by {hour_label(a.act_by_hour)})" for a in doing] or ["- Assessing the building and preparing a response plan."]
+    lines += [f"- {'Completed' if status == 'done' else 'Approved response'}: {a.title} (by {hour_label(a.act_by_hour)} relative to impact)" for a, status in doing] or ["- No approved response actions are recorded for this step."]
     lines += ["", "## What you need to do", ""]
-    asks = [catalog[a.code].tenant_notice_text for p in plans for a in p.actions
-            if a.code in catalog and catalog[a.code].tenant_notice_text]
-    asks = [t.replace("{building}", b.name).replace("{deadline}", hour_label(min(p.act_by_hour for p in plans))) for t in dict.fromkeys(asks)]
-    lines += [f"- {t}" for t in asks] or ["- Move critical equipment and records off the ground floor.",
-                                          "- Make sure your emergency contacts are current with building management."]
+    asks = []
+    for p in plans:
+        if _v(p.status) == "done":
+            continue
+        for action in p.actions:
+            if step.hour > action.act_by_hour:
+                continue
+            template = catalog.get(action.code)
+            if template and template.tenant_notice_text:
+                deadline = f"{abs(action.act_by_hour)} hours {'before' if action.act_by_hour < 0 else 'after'} impact" if action.act_by_hour else "at impact"
+                asks.append(template.tenant_notice_text.replace("{building}", b.name).replace("{deadline}", deadline))
+    lines += [f"- {text}" for text in dict.fromkeys(asks)] or ["- Follow official local emergency guidance and contact building management for site-specific instructions."]
     contact = f"{onsite.name}, {onsite.phone}" if onsite else "building management"
     lines += ["", "## Contact", "", f"Questions or urgent issues: **{contact}**.", "", f"*{sc.disclaimer}*", ""]
     return title, "\n".join(lines)
@@ -167,6 +176,8 @@ def _tenant_notice(building_id: str) -> tuple[str, str]:
 def generate(kind: str, building_id: str | None = None, send: bool = False) -> schemas.Report:
     """Build a report and store it; emits report.created. send=True also texts a short tenant notice to each tenant contact."""
     kind = _v(kind)
+    if impact.summary().data_quality == "unknown":
+        raise ValueError("Live financial inputs are unknown; report generation is unavailable until current sources are confirmed")
     if kind == "executive_summary":
         title, md = _executive_summary()
     elif kind == "tenant_notice":
@@ -187,15 +198,18 @@ def generate(kind: str, building_id: str | None = None, send: bool = False) -> s
 def _text_tenants(report: schemas.Report) -> None:
     from app.modules import messaging
     b = store.buildings.require(report.building_id)
-    short = f"Notice from {b.name} management: please read today's tenant notice (report {report.id}). Reply with questions."
-    try:
-        from app.modules import ai
-        short = ai.compose("tenant_notice", {"building_name": b.name, "notice": f"please read today's tenant notice ({report.id})."})
-    except Exception:  # noqa: BLE001
-        pass
-    for t in b.tenants:
-        if t.contact_party_id and store.parties.get(t.contact_party_id):
-            messaging.send(t.contact_party_id, short, "tenant_notice")
+    section = report.markdown.split("## What you need to do\n", 1)[1].split("\n## ", 1)[0]
+    asks = [line[2:].strip() for line in section.splitlines() if line.startswith("- ")]
+    short = f"Notice from {b.name} management: " + " ".join(asks)
+    onsite = store.parties.get(b.onsite_party_id)
+    if onsite:
+        short += f" Questions: {onsite.name}, {onsite.phone}."
+    parsed = urlsplit(settings.app_base_url)
+    if parsed.scheme in ("https", "http") and parsed.hostname and parsed.hostname not in ("localhost", "127.0.0.1", "::1", "0.0.0.0") and not parsed.username and not parsed.password:
+        short += f" Full notice: {parsed.scheme}://{parsed.netloc}/api/reports/{report.id}/html"
+    for contact in dict.fromkeys(t.contact_party_id or t.id for t in b.tenants):
+        if store.parties.get(contact):
+            messaging.send(contact, short, "tenant_notice")
 
 
 def html(report_id: str) -> str:
