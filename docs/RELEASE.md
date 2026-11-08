@@ -29,6 +29,7 @@ Use [DEMO.md](DEMO.md) for the three-track story, [PITCH.md](PITCH.md) for accur
 - Historical Harvey, Uri, and Ian; custom supported/random city and disaster effects; timeline changes and reset.
 - Building response cards can minimize, restore, or close (including Escape). Minimizing preserves unsaved work-order notes; dismissal leaves approved tasks intact and frees the map. Focused acceptance: `node frontend/e2e/response-card-smoke.cjs`.
 - Map selection, modeled financial impact, approval, technician work orders and replies, live UI invalidation, reports, and offline map fallback.
+- Work-order progress and blocker notes are saved with status changes; blocked tasks require a reason. Failed saves preserve drafts, and failed report-list loads can be retried.
 - Community-site activation, safety/capacity checks, resident routing, and waiting-request follow-up when a site becomes available. Modeled hurricane-force wind triggers shelter guidance; live forecast proxies never assert observed winds.
 - Resident claims requests receive an available modeled State Farm desk contact/map. This does not file a claim or guarantee coverage.
 - Circled information icons explain financial and hazard terms on hover, keyboard focus, and tap. Help-site load failures can be retried; only open sites with places expose directions.
