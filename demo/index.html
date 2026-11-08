@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Operation Storm · Demo</title>
+  <link rel="stylesheet" href="vendor/maplibre-gl.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header id="top">
+    <div class="logo">
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" fill="#1f7a45"/><path d="M7 20h18M10 14h12M13 8h6" stroke="#fff" stroke-width="2.4"/><path d="M16 24v4" stroke="#bfe6c9" stroke-width="2.4"/></svg>
+      <div><b>Operation Storm</b><small>Portfolio disaster impact</small></div>
+    </div>
+    <select id="scenario" class="tsel" title="Disaster scenario"></select>
+    <button class="tbtn" data-view="fixfirst"><span data-icon="list-checks"></span>Fix-First</button>
+    <button class="tbtn" data-view="workorders"><span data-icon="wrench"></span>Work Orders</button>
+    <button class="tbtn" data-view="help"><span data-icon="map-pin"></span>Help Sites</button>
+    <button class="tbtn" data-view="messages"><span data-icon="message-square"></span>Texts</button>
+    <button class="tbtn" data-view="reports"><span data-icon="file-text"></span>Reports</button>
+    <div class="tspacer"></div>
+    <div class="tstat"><div class="k">Net exposure</div><div class="v red num" id="t-net">$0</div></div>
+    <div class="tstat"><div class="k">Avoided</div><div class="v green num" id="t-avoided">$0</div></div>
+    <button class="ticon" id="reset" title="Reset demo"><span data-icon="rotate-ccw"></span></button>
+    <button class="ticon" id="print" title="Executive summary"><span data-icon="download"></span></button>
+  </header>
+  <div id="main">
+    <aside id="panel">
+      <div id="hero"></div>
+      <div class="layers" id="layers"></div>
+      <div class="content" id="content"></div>
+      <div class="foot"><b>Operation Storm</b> · demo portfolio of 12 buildings<br>Synthetic buildings and dollars · real historical disasters</div>
+    </aside>
+    <section id="mapwrap">
+      <div id="map"></div>
+      <canvas id="fx"></canvas>
+      <div id="timeline"></div>
+      <div id="tools">
+        <button id="home" title="Re-center"><span data-icon="house"></span></button>
+        <button id="tilt" title="3D view"><span data-icon="layers"></span></button>
+        <button id="zin" title="Zoom in"><span data-icon="plus"></span></button>
+        <button id="zout" title="Zoom out"><span data-icon="minus"></span></button>
+      </div>
+      <div id="legend"></div>
+      <div id="disclaimer">Disaster footprints approximate · illustrative, not official</div>
+      <div id="toast"></div>
+    </section>
+  </div>
+  <div id="modal"><div class="box" id="modalbox"></div></div>
+  <script src="vendor/maplibre-gl.js"></script>
+  <script src="icons.js"></script>
+  <script src="context.js"></script>
+  <script src="data.js"></script>
+  <script src="model.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
