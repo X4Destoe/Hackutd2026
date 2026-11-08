@@ -26,6 +26,12 @@ export default function Overview() {
             ["Net exposure", money(summary.data.net_exposure_cents)],
             ["Avoided", money(summary.data.avoided_cents)],
             ["Approved actions", String(summary.data.actions_approved)],
+            [
+              "Insurance recovery",
+              summary.data.insurance_recovery_cents == null
+                ? "—"
+                : money(summary.data.insurance_recovery_cents),
+            ],
           ].map(([label, value]) => (
             <div key={label}>
               <dt>{label}</dt>

@@ -12,6 +12,7 @@ import {
 import {
   useBuildings,
   useDemoState,
+  useTimeline,
   useScenarios,
   useSummary,
 } from "../../shared/queries";
@@ -41,6 +42,7 @@ export default function Panel({ onClose }: { onClose?: () => void }) {
     setAllLayers,
   } = useUIStore();
   const state = useDemoState();
+  const timeline = useTimeline();
   const scenarios = useScenarios();
   const summary = useSummary();
   const buildings = useBuildings();
@@ -118,9 +120,12 @@ export default function Panel({ onClose }: { onClose?: () => void }) {
           <p id="scenario-status">
             {state.isError
               ? "Scenario data is unavailable. Please retry when the service reconnects."
-              : state.data
-                ? `${state.data.phase === "forecast" ? "Review predicted exposure and act before impact." : state.data.phase === "impact" ? "Track building impact and coordinate response." : "Review losses and coordinate recovery."}`
-                : "Loading scenario…"}
+              : (timeline.data?.find(
+                  (step) => step.hour === state.data?.step_hour,
+                )?.narrative ??
+                (timeline.isError
+                  ? "Scenario narrative is unavailable."
+                  : "Loading scenario narrative…"))}
           </p>
           <div className="hero-metrics" aria-live="polite">
             <div>
