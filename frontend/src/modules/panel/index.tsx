@@ -51,7 +51,10 @@ export default function Panel({ onClose }: { onClose?: () => void }) {
   } = useUIStore();
   const [layersOpen, setLayersOpen] = useState(false);
   useEffect(() => {
-    const open = () => setLayersOpen(true);
+    const open = () => {
+      setLayersOpen(true);
+      document.querySelector(".layer-section")?.scrollIntoView({ block: "start" });
+    };
     window.addEventListener("storm:open-layers", open);
     return () => window.removeEventListener("storm:open-layers", open);
   }, []);
