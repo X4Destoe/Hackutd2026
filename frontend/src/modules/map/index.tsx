@@ -30,6 +30,7 @@ import TimelineControl from "./TimelineControl";
 import Legend from "./Legend";
 import ResponseCard from "./ResponseCard";
 import ActivityLayers from "./ActivityLayers";
+import HazardMotion from "./overlays/HazardMotion";
 import "./map.css";
 
 type FC = { type: "FeatureCollection"; features: unknown[] };
@@ -401,13 +402,11 @@ export default function MapView() {
     riseStart.current = performance.now();
   }, [state.data?.step_hour]);
   useEffect(() => {
-    if (
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
-      (!layers.hazard && !layers.power)
-    )
-      return;
+    if (!layers.hazard && !layers.power) return;
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let raf = 0;
     const tick = (t: number) => {
+      if (motion.matches) return;
       const map = mapRef.current;
       if (map?.getLayer("water-fill")) {
         const rise =
@@ -428,8 +427,13 @@ export default function MapView() {
       }
       raf = requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    const syncMotion = () => {
+      cancelAnimationFrame(raf);
+      if (!motion.matches) raf = requestAnimationFrame(tick);
+    };
+    motion.addEventListener("change", syncMotion);
+    syncMotion();
+    return () => { cancelAnimationFrame(raf); motion.removeEventListener("change", syncMotion); };
   }, [phase, ready, layers.hazard, layers.power]);
 
   return (
@@ -447,6 +451,7 @@ export default function MapView() {
         role="region"
       />
       <TimelineControl />
+      <HazardMotion map={ready ? mapRef.current : null} data={overlays.data as FC | undefined} enabled={layers.hazard} />
       <ActivityLayers map={ready ? mapRef.current : null} city={city} />
       <div className="storm-scenario-strip">
         <span
