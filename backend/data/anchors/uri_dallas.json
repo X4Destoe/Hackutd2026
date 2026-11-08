@@ -38,8 +38,8 @@
     "UTL-DAL-SUB4": 50
   },
   "sources": [
-    "FERC/NERC: February 2021 Cold Weather Outages in Texas and the South Central United States (VERIFY before quoting)",
-    "NWS Fort Worth: February 2021 historic winter storm and arctic outbreak (VERIFY event figures)"
+    "FERC and NERC: February 2021 Cold Weather Outages in Texas and the South Central United States",
+    "NWS Fort Worth: February 2021 winter storm and arctic outbreak"
   ],
   "disclaimer": "Hazard footprints are approximate and illustrative, not official hazard maps. Buildings, outages and dollar figures are synthetic.",
   "temps": {

@@ -49,3 +49,6 @@ def reject(plan_id: str, body: Optional[DecisionBody] = None):
 @router.get("/fix-first", response_model=list[schemas.FixFirstItem])
 def fix_first(limit: int = 10, community: int = 0):
     return ac.fix_first(limit, bool(community))
+
+from .execute import router as workorders_router
+router.include_router(workorders_router)

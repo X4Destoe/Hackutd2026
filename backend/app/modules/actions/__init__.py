@@ -5,6 +5,7 @@ Work orders, texts and technician replies on approval live in execute.py (TASK-0
 from __future__ import annotations
 
 import logging
+import importlib
 
 from app.modules import scenarios
 from app.shared import schemas
@@ -49,7 +50,7 @@ def _decide(plan_id: str, by: str, status: str) -> schemas.Plan:
         plan = store.plans.put(plan.model_copy(update=update))
         if status == "approved":
             try:
-                from . import execute  # TASK-021: work orders, task texts, tenant notices, help-site registration
+                execute = importlib.import_module(__name__ + ".execute")  # TASK-021 execution hook
             except ImportError:
                 execute = None
             if execute is not None and hasattr(execute, "on_approved"):
@@ -70,9 +71,12 @@ def reject(plan_id: str, by: str) -> schemas.Plan:
 def register() -> None:
     # impact.updated follows scenario.loaded, timeline.changed and plan.changed, so plans always see fresh impact
     bus.on("impact.updated", lambda _payload: refresh())
+    register_execution()
 
+
+from .execute import apply_task_reply, register_execution
 
 from .routes import router  # noqa: E402
 
 __all__ = ["catalog", "is_community", "register", "refresh", "approve", "reject", "approved_codes", "fix_first",
-           "plan_is_community", "PlanConflict", "router"]
+           "plan_is_community", "PlanConflict", "apply_task_reply", "router"]
