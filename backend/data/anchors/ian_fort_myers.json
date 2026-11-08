@@ -1,0 +1,147 @@
+{
+  "_comment": "Synthetic demo hazard model. Approximate hand-placed footprints, not official hazard maps. Event details and venue availability require verification before public claims.",
+  "id": "ian_fort_myers",
+  "name": "Hurricane Ian",
+  "real_event": "Hurricane Ian",
+  "date_label": "Sep 28, 2022",
+  "city": "Fort Myers",
+  "center": {
+    "lat": 26.55,
+    "lon": -81.88
+  },
+  "zoom": 10.2,
+  "kind": "surge",
+  "hazards": [
+    "surge",
+    "wind"
+  ],
+  "present": {
+    "0": 0.7,
+    "12": 1,
+    "48": 0.5,
+    "168": 0.1,
+    "-48": 0,
+    "-24": 0,
+    "-12": 0
+  },
+  "narrative": {
+    "0": "Impact: catastrophic surge on Fort Myers Beach. Hurricane-force winds inland.",
+    "12": "Peak surge and wind. Widespread outages.",
+    "48": "Surge recedes. Barrier islands cut off.",
+    "168": "Recovery: long rebuilds on the islands. Inland sites reopen.",
+    "-48": "Forecast: Ian rapidly intensifying. Track shifts toward Southwest Florida.",
+    "-24": "Forecast: Category 4 landfall likely. Life-threatening storm surge for Lee County.",
+    "-12": "Final window: shutters, barriers, move equipment, pre-book contractors."
+  },
+  "outages": {
+    "UTL-FMY-SUB1": 120,
+    "UTL-FMY-SUB3": 240
+  },
+  "sources": [
+    "NHC: Hurricane Ian tropical cyclone report, AL092022 (VERIFY before quoting)",
+    "NWS Tampa Bay: Hurricane Ian event summary (VERIFY local surge figures)"
+  ],
+  "disclaimer": "Hazard footprints are approximate and illustrative, not official hazard maps. Buildings, outages and dollar figures are synthetic.",
+  "rivers": [
+    {
+      "name": "Gulf coast (Estero Island)",
+      "peak_ft": 13,
+      "half_width_mi": 2.6,
+      "coords": [
+        [
+          -82,
+          26.5
+        ],
+        [
+          -81.97,
+          26.47
+        ],
+        [
+          -81.95,
+          26.455
+        ],
+        [
+          -81.92,
+          26.44
+        ],
+        [
+          -81.89,
+          26.42
+        ],
+        [
+          -81.86,
+          26.39
+        ],
+        [
+          -81.83,
+          26.36
+        ]
+      ]
+    },
+    {
+      "name": "Caloosahatchee River",
+      "peak_ft": 7,
+      "half_width_mi": 1,
+      "coords": [
+        [
+          -82,
+          26.52
+        ],
+        [
+          -81.95,
+          26.55
+        ],
+        [
+          -81.9,
+          26.6
+        ],
+        [
+          -81.87,
+          26.645
+        ],
+        [
+          -81.84,
+          26.66
+        ],
+        [
+          -81.8,
+          26.69
+        ],
+        [
+          -81.75,
+          26.71
+        ]
+      ]
+    }
+  ],
+  "pools": [],
+  "wind": {
+    "peak_mph": 150,
+    "track": [
+      [
+        -82.7,
+        25.6
+      ],
+      [
+        -82.45,
+        26.2
+      ],
+      [
+        -82.25,
+        26.69
+      ],
+      [
+        -81.95,
+        27.05
+      ],
+      [
+        -81.5,
+        27.6
+      ]
+    ],
+    "eye": [
+      -82.25,
+      26.69
+    ]
+  }
+}
