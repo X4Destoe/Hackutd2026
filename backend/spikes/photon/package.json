@@ -1,0 +1,19 @@
+{
+  "name": "operation-storm-photon-spike",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "start": "node --env-file-if-exists=../../.env --import tsx bridge.ts",
+    "test": "tsx --test tests/*.test.ts"
+  },
+  "dependencies": {
+    "spectrum-ts": "12.15.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.0.0",
+    "tsx": "4.20.5",
+    "typescript": "5.7.3"
+  }
+}
