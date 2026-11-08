@@ -1,5 +1,6 @@
 """Deterministic, local language support; financial facts are never recomputed."""
 import re
+from decimal import Decimal
 import unicodedata
 
 
@@ -64,8 +65,18 @@ def dollars(cents):
     return '${:,.2f}'.format(cents / 100)
 
 
+def compact_dollars(cents):
+    amount = Decimal(str(cents)) / 100
+    magnitude = abs(amount)
+    for scale, suffix in [(10**9, 'B'), (10**6, 'M'), (10**3, 'k')]:
+        if magnitude >= scale:
+            value = format(amount / scale, '.2f').rstrip('0').rstrip('.')
+            return '${}{}'.format(value, suffix)
+    return '${}'.format(format(amount, '.2f').rstrip('0').rstrip('.'))
+
+
 def rationale(facts):
-    return 'Cost {cost}; avoids {avoided} in estimated losses.'.format(cost=dollars(facts.get('cost_cents', 0)), avoided=dollars(facts.get('avoided_cents', 0)))
+    return 'Cost {cost}; avoids {avoided} in estimated losses.'.format(cost=compact_dollars(facts.get('cost_cents', 0)), avoided=compact_dollars(facts.get('avoided_cents', 0)))
 
 
 def report(kind, facts):

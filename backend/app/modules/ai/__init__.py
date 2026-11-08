@@ -1,6 +1,7 @@
 """Public AI gateway. Import this package, never an SDK from a consumer module."""
 import json
 import logging
+import re
 from queue import Queue, Empty
 from threading import BoundedSemaphore, Thread
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
@@ -75,14 +76,41 @@ def classify_need(text: str, language_hint: str = 'en') -> dict:
     return fallback
 
 
+def _report_requirements(facts):
+    """Only addresses and monetary leaf facts must be repeated in generated reports."""
+    required = []
+    def visit(value, key=''):
+        if isinstance(value, dict):
+            for child_key, child in value.items():
+                visit(child, str(child_key))
+        elif isinstance(value, (list, tuple)):
+            for child in value:
+                visit(child, key)
+        elif value is not None and value != '':
+            if key.endswith('_cents') and isinstance(value, (int, float)) and not isinstance(value, bool):
+                full = templates.dollars(value)
+                required.append((full, full[:-3] if full.endswith('.00') else full, templates.compact_dollars(value)))
+            elif key == 'address' or key.endswith('_address'):
+                required.append((str(value),))
+    visit(facts)
+    return required
+
+
+def _preserves_facts(result, facts, purpose):
+    if purpose in ('executive_summary', 'tenant_notice_report', 'rationale'):
+        required = _report_requirements(facts)
+        return all(any(re.search(re.escape(value) + r'(?!\w|[.,]\d)', result) for value in variants) for variants in required)
+    required = [templates.dollars(value) if key.endswith('_cents') and isinstance(value, (int, float)) else str(value) for key, value in facts.items() if value is not None and value != '']
+    return all(value in result for value in required)
+
+
 def _text(purpose, facts, fallback, max_chars, language='en'):
     provider = _provider()
     if provider:
         result = _attempt(lambda: provider.text('Write concise Operation Storm copy in ' + language + '. Use only supplied facts; no invented safety claims, addresses or dollar amounts. Maximum ' + str(max_chars) + ' characters.', json.dumps({'purpose': purpose, 'facts': facts}, default=str), max_chars, 5.5))
         if isinstance(result, str) and result.strip() and len(result) <= max_chars:
             # Required routing facts and numerical values must survive provider rewriting.
-            required = [templates.dollars(value) if key.endswith('_cents') and isinstance(value, (int, float)) else str(value) for key, value in facts.items() if value is not None and value != '']
-            if all(value in result for value in required):
+            if _preserves_facts(result, facts, purpose):
                 return result.strip()
     return fallback
 
@@ -97,4 +125,4 @@ def rationale(facts: dict) -> str:
 
 
 def write_report(kind: str, facts: dict) -> str:
-    return _text(kind, facts, templates.report(kind, facts), 12000)
+    return _text('tenant_notice_report' if kind == 'tenant_notice' else kind, facts, templates.report(kind, facts), 12000)
