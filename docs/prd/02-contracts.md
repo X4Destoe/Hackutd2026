@@ -59,6 +59,10 @@ TimelineStep:  hour: int, phase: Phase, label: str ("−48h · Forecast"), overl
 Scenario:      id, name, real_event: str, date_label: str, city: str, center: {lat, lon}, zoom: float,
                hazards: [HazardKind], steps: [TimelineStep], sources: [str], disclaimer: str
 ScenarioMeta:  id, name, real_event, date_label, city, hazards, step_hours: [int]
+               # Live scenarios (added 2026-11-08, TASK-050): ids live_houston | live_dallas | live_fort_myers, built from
+               # real NWS alerts/forecasts (app.modules.live); steps [-24 'Now', 0 'Next 48 h']; no utility outages.
+               # Their overlay features add properties: proxy: true, event, severity, headline, ends (NWS).
+               # hazard_at() may add 'sources': {water|wind|winter: 'NWS <event> (proxy)'}; impact appends it to drivers.
 DemoState:     scenario_id, step_hour: int, phase: Phase, messaging_mode: "sim"|"photon", llm_provider: str
 ```
 
@@ -171,3 +175,9 @@ The frontend uses events only to refresh queries (TanStack Query invalidation).
 
 **Circular imports:** `impact` and `actions` call each other (impact reads approved actions and the catalog; actions asks impact
 for what-if numbers). Import the other module *inside the function* (`from app.modules import actions`), never at the top of the file.
+
+### Runtime simulation and live data quality (additive)
+
+Custom supported-city simulation endpoints and validation are specified in `modules/simulation.md`. `scenarios.load_definition(Scenario, anchors)` registers at most16 in-memory `custom_` definitions, seeds the normal store and emits scenario.loaded; metadata and reset work normally without overwriting historical files.
+
+`Impact.data_quality` and `PortfolioSummary.data_quality` are `modeled | live_proxy | unknown` (default `modeled`). Unknown means the numeric/risk fields are compatibility placeholders, not zero loss or a safe condition; consumers must show unavailable/unknown and withhold financial reports. `live_proxy` means a screening estimate from fresh alert/forecast inputs, not verified flood depths or utility conditions. Gauge readings remain informational. `scenarios.data_quality()` exposes the current quality. Live help-site safety always fails closed until real-time power/operational verification exists; no automated site offer or resident routing may infer working power from the absence of an outage feed.

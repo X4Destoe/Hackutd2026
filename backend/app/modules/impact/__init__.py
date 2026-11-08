@@ -96,6 +96,11 @@ def recompute(hour: int | None = None) -> list[schemas.Impact]:
 def latest() -> list[schemas.Impact]:
     """Cached impacts at the current step (recomputed on timeline.changed / plan.changed)."""
     cur = scenarios.current().step_hour
+    if _latest and scenarios.current().scenario_id.startswith("live"):
+        quality = scenarios.data_quality()
+        city = scenarios.scenario().city
+        if any(i.data_quality != quality for i in _latest.values() if store.buildings.require(i.building_id).city == city):
+            return recompute()
     if not _latest or next(iter(_latest.values())).step_hour != cur:
         return recompute()
     return list(_latest.values())
@@ -118,11 +123,14 @@ def summary(impacts: list[schemas.Impact] | None = None) -> schemas.PortfolioSum
         gross_loss_cents=sum(x.property_damage_cents + x.rent_abatement_cents + x.sla_penalty_cents + x.operations_cents for x in m),
         net_exposure_cents=sum(x.net_exposure_cents for x in m), avoided_cents=avoided, actions_approved=approved_count,
         worst_building_ids=[i.building_id for i in worst[:5]],
-        insurance_recovery_cents=sum(x.insurance_recovery_cents for x in m))
+        insurance_recovery_cents=sum(x.insurance_recovery_cents for x in m),
+        data_quality="unknown" if any(i.data_quality == "unknown" for i in impacts) else "live_proxy" if any(i.data_quality == "live_proxy" for i in impacts) else "modeled")
 
 
 def site_safe(lat: float, lon: float, utility_node_id: str | None = None, hour: int | None = None) -> bool:
     """Is a help site usable right now? Uses the PRESENT hazard (water recedes, power returns)."""
+    if scenarios.current().scenario_id.startswith("live"):
+        return False  # No real-time utility/power verification exists for automated live routing.
     hz = scenarios.hazard_at(lat, lon, hour, present=True)
     if hz["flood_depth_ft"] > constants.SAFE_MAX_WATER_FT or hz["wind_mph"] > constants.SAFE_MAX_WIND_MPH or hz["in_burn_zone"]:
         return False
