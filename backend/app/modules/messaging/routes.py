@@ -1,6 +1,7 @@
 """HTTP routes for messaging (docs/prd/02-contracts.md §4). Mounted under /api by app.main."""
-
 from __future__ import annotations
+
+import json
 
 from typing import Optional
 
@@ -49,11 +50,19 @@ def simulate_message(body: SimulateBody):
 
 @router.post("/webhooks/photon")
 async def photon_webhook(request: Request):
+    headers = {key.lower(): value for key, value in request.headers.items()}
+    raw = await request.body()
+    if messaging._mode() == "photon":
+        try:
+            return messaging.accept_photon_webhook(raw, headers)
+        except PermissionError:
+            raise HTTPException(status_code=401, detail="invalid signature")
+        except ValueError:
+            raise HTTPException(status_code=400, detail="malformed webhook")
     try:
-        payload = await request.json()
-    except Exception:
+        payload = json.loads(raw or b"{}")
+    except ValueError:
         payload = {}
     if not isinstance(payload, dict):
         payload = {}
-    headers = {key.lower(): value for key, value in request.headers.items()}
     return messaging.accept_webhook(payload, headers)
