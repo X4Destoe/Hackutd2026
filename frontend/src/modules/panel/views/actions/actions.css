@@ -1,0 +1,12 @@
+.response-card { margin: 12px 0; }
+.response-heading, .response-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.response-heading { justify-content: space-between; }
+.response-building { display: block; border: 0; background: transparent; color: var(--accent); padding: 0; margin: 12px 0 8px; font: inherit; font-weight: 600; text-align: left; cursor: pointer; }
+.response-view h3 { font-size: 13px; }
+.response-card p, .response-updates { font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.response-updates { padding-left: 18px; }
+.response-photos { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.response-photos img { width: 76px; height: 64px; object-fit: cover; border: 1px solid var(--border); }
+.order-done { color: #17603a; background: #e4f3e6; }
+.order-blocked { color: #9b3024; background: #fff0eb; }
+.response-controls .button { font-size: 11px; padding: 7px 10px; }
