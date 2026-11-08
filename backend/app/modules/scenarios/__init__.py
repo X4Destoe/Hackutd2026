@@ -16,7 +16,7 @@ from app.shared.config import DATA_DIR, settings
 from app.shared.events import bus
 from app.shared.store import store
 
-from . import hazard
+from . import hazard, live_scenario
 
 log = logging.getLogger(__name__)
 _lock = threading.RLock()
@@ -26,6 +26,26 @@ _runtime: OrderedDict[str, tuple[schemas.Scenario, dict]] = OrderedDict()
 
 
 # ---------- data files ----------
+
+_live_built: dict[str, tuple[str | None, schemas.Scenario]] = {}
+
+
+def _live_snapshot() -> dict:
+    from app.modules import live
+    return live.snapshot()
+
+
+def _live_scenario(scenario_id: str) -> schemas.Scenario:
+    """Built from the live snapshot; rebuilt only when new data arrives."""
+    from app.modules import live
+    snap = live.snapshot()
+    cached = _live_built.get(scenario_id)
+    if cached and cached[0] == snap.get("fetched_at"):
+        return cached[1]
+    built = live_scenario.build(scenario_id, snap, live.status())
+    _live_built[scenario_id] = (snap.get("fetched_at"), built)
+    return built
+
 
 @lru_cache(maxsize=None)
 def _file_scenario(scenario_id: str) -> schemas.Scenario:
@@ -42,6 +62,8 @@ def _file_anchors(scenario_id: str) -> dict:
 
 def _scenario(scenario_id: str) -> schemas.Scenario:
     with _lock:
+        if scenario_id in live_scenario.CITIES:
+            return _live_scenario(scenario_id)
         return _runtime[scenario_id][0] if scenario_id in _runtime else _file_scenario(scenario_id)
 
 
@@ -56,7 +78,7 @@ def _seed(name: str, model):
 
 def scenario_ids() -> list[str]:
     with _lock:
-        return sorted({p.stem for p in (DATA_DIR / "scenarios").glob("*.json")} | set(_runtime))
+        return sorted({p.stem for p in (DATA_DIR / "scenarios").glob("*.json")} | set(_runtime) | set(live_scenario.CITIES))
 
 
 def scenarios_meta() -> list[schemas.ScenarioMeta]:
@@ -104,7 +126,8 @@ def load(scenario_id: str) -> schemas.DemoState:
     """Reset/reseed a historical or registered custom scenario; emit the normal scenario.loaded event."""
     with _lock:
         s = _scenario(scenario_id)
-        _anchors(scenario_id)  # fail before resetting if data is missing
+        if scenario_id not in live_scenario.CITIES:
+            _anchors(scenario_id)  # fail before resetting if data is missing
         state = _seed_state(s)
     bus.emit("scenario.loaded", state.model_dump(mode="json"))
     return state
@@ -190,7 +213,10 @@ def hazard_at(lat: float, lon: float, hour: int | None = None, present: bool = F
     present=True: conditions physically there at that step (water receding, power back) - use for help-site safety.
     flood_depth_ft is storm surge when "surge" is in scenario().hazards. temp_f is None outside the winter area.
     """
-    return hazard.hazard_at(_anchors(current().scenario_id), lat, lon, _hour(hour), present)
+    sid = current().scenario_id
+    if sid in live_scenario.CITIES:  # labeled proxies from real NWS alerts + forecast (same reading now and in the window)
+        return live_scenario.hazard_at(_live_snapshot(), sid, lat, lon)
+    return hazard.hazard_at(_anchors(sid), lat, lon, _hour(hour), present)
 
 
 def outage_hours(node_id: str, hour: int | None = None) -> float:
@@ -218,8 +244,16 @@ def overlays(hour: int | None = None) -> dict:
     return {"type": "FeatureCollection", "features": feats}
 
 
+def _on_live_updated(_payload: dict) -> None:
+    """New real-time data while a live scenario is shown: rebuild it and let everyone recompute."""
+    state = store.state.get(STATE_KEY)
+    if state is not None and state.scenario_id in live_scenario.CITIES:
+        _live_built.pop(state.scenario_id, None)
+        bus.emit("timeline.changed", state.model_dump(mode="json"))
+
+
 def register() -> None:
-    """Nothing to subscribe to: scenarios is the source of scenario.loaded and timeline.changed."""
+    bus.on("live.updated", _on_live_updated)
 
 
 from .routes import router  # noqa: E402  (routes use the functions above)

@@ -59,6 +59,10 @@ TimelineStep:  hour: int, phase: Phase, label: str ("−48h · Forecast"), overl
 Scenario:      id, name, real_event: str, date_label: str, city: str, center: {lat, lon}, zoom: float,
                hazards: [HazardKind], steps: [TimelineStep], sources: [str], disclaimer: str
 ScenarioMeta:  id, name, real_event, date_label, city, hazards, step_hours: [int]
+               # Live scenarios (added 2026-11-08, TASK-050): ids live_houston | live_dallas | live_fort_myers, built from
+               # real NWS alerts/forecasts (app.modules.live); steps [-24 'Now', 0 'Next 48 h']; no utility outages.
+               # Their overlay features add properties: proxy: true, event, severity, headline, ends (NWS).
+               # hazard_at() may add 'sources': {water|wind|winter: 'NWS <event> (proxy)'}; impact appends it to drivers.
 DemoState:     scenario_id, step_hour: int, phase: Phase, messaging_mode: "sim"|"photon", llm_provider: str
 ```
 
