@@ -1,0 +1,3 @@
+.demo-reset-dialog > p { font-size: 13px; line-height: 1.65; margin: 12px 0; color: #496052; }
+.demo-reset-dialog > p[role=alert] { color: #922e20; }
+.demo-reset-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
