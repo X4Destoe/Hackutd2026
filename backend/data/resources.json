@@ -1,0 +1,302 @@
+[
+  {
+    "id": "RES-DAL-01",
+    "type": "warming_center",
+    "name": "Convention Center Warming Center (KBHCC) (VERIFY historical shelter role; demo availability only)",
+    "address": "650 S Griffin St, Dallas",
+    "city": "Dallas",
+    "lat": 32.7745,
+    "lon": -96.8005,
+    "capacity": 600,
+    "used": 150,
+    "status": "open",
+    "needs_served": [
+      "warmth",
+      "food_water"
+    ],
+    "utility_node_id": "UTL-DAL-SUB2",
+    "hours": "24 hours (illustrative demo schedule)",
+    "source": "city"
+  },
+  {
+    "id": "RES-DAL-02",
+    "type": "warming_center",
+    "name": "Oak Lawn Library Warming Center",
+    "address": "Oak Lawn Ave (generic)",
+    "city": "Dallas",
+    "lat": 32.812,
+    "lon": -96.808,
+    "capacity": 120,
+    "used": 20,
+    "status": "open",
+    "needs_served": [
+      "warmth",
+      "food_water"
+    ],
+    "utility_node_id": "UTL-DAL-SUB4",
+    "hours": "24 hours (illustrative demo schedule)",
+    "source": "city"
+  },
+  {
+    "id": "RES-DAL-03",
+    "type": "claim_site",
+    "name": "State Farm Claims Site – North Dallas",
+    "address": "LBJ Fwy lot (generic)",
+    "city": "Dallas",
+    "lat": 32.915,
+    "lon": -96.8,
+    "capacity": 300,
+    "used": 20,
+    "status": "open",
+    "needs_served": [
+      "claim"
+    ],
+    "utility_node_id": "UTL-DAL-SUB2",
+    "hours": "24 hours (illustrative demo schedule)",
+    "source": "statefarm"
+  },
+  {
+    "id": "RES-DAL-04",
+    "type": "hotel",
+    "name": "Love Field Hotel (ALE rooms)",
+    "address": "Mockingbird Ln (generic)",
+    "city": "Dallas",
+    "lat": 32.845,
+    "lon": -96.849,
+    "capacity": 60,
+    "used": 25,
+    "status": "open",
+    "needs_served": [
+      "shelter"
+    ],
+    "utility_node_id": "UTL-DAL-SUB2",
+    "hours": "24 hours (illustrative demo schedule)",
+    "source": "partner"
+  },
+  {
+    "id": "RES-DAL-05",
+    "type": "repair_vendor",
+    "name": "Metro Plumbing Emergency",
+    "address": "Dallas service area (generic, illustrative)",
+    "city": "Dallas",
+    "lat": 32.835,
+    "lon": -96.84,
+    "capacity": 20,
+    "used": 4,
+    "status": "open",
+    "needs_served": [
+      "repair"
+    ],
+    "utility_node_id": "UTL-DAL-SUB2",
+    "hours": "24 hours (illustrative demo schedule)",
+    "source": "partner"
+  },
+  {
+    "id": "RES-FMY-01",
+    "type": "shelter",
+    "name": "Lee County Inland Shelter",
+    "address": "Inland Fort Myers (generic)",
+    "city": "Fort Myers",
+    "lat": 26.6,
+    "lon": -81.78,
+    "capacity": 1500,
+    "used": 600,
+    "status": "open",
+    "needs_served": [
+      "shelter",
+      "warmth",
+      "food_water"
+    ],
+    "utility_node_id": "UTL-FMY-SUB2",
+    "hours": "24 hours (illustrative demo schedule)",
+    "source": "city"
+  },
+  {
+    "id": "RES-FMY-02",
+    "type": "shelter",
+    "name": "Beachside Rec Center",
+    "address": "Estero Blvd (generic)",
+    "city": "Fort Myers",
+    "lat": 26.4555,
+    "lon": -81.944,
+    "capacity": 200,
+    "used": 10,
+    "status": "open",
+    "needs_served": [
+      "shelter",
+      "warmth",
+      "food_water"
+    ],
+    "utility_node_id": "UTL-FMY-SUB3",
+    "hours": "24 hours (illustrative demo schedule)",
+    "source": "city"
+  },
+  {
+    "id": "RES-FMY-03",
+    "type": "claim_site",
+    "name": "State Farm Claims Site – Fort Myers",
+    "address": "Colonial Blvd lot (generic)",
+    "city": "Fort Myers",
+    "lat": 26.585,
+    "lon": -81.84,
+    "capacity": 300,
+    "used": 15,
+    "status": "open",
+    "needs_served": [
+      "claim"
+    ],
+    "utility_node_id": "UTL-FMY-SUB2",
+    "hours": "24 hours (illustrative demo schedule)",
+    "source": "statefarm"
+  },
+  {
+    "id": "RES-FMY-04",
+    "type": "hotel",
+    "name": "Daniels Parkway Hotel (ALE rooms)",
+    "address": "Daniels Pkwy (generic)",
+    "city": "Fort Myers",
+    "lat": 26.548,
+    "lon": -81.8,
+    "capacity": 70,
+    "used": 20,
+    "status": "open",
+    "needs_served": [
+      "shelter"
+    ],
+    "utility_node_id": "UTL-FMY-SUB2",
+    "hours": "24 hours (illustrative demo schedule)",
+    "source": "partner"
+  },
+  {
+    "id": "RES-FMY-05",
+    "type": "repair_vendor",
+    "name": "SWFL Roof & Dry-out",
+    "address": "Fort Myers service area (generic, illustrative)",
+    "city": "Fort Myers",
+    "lat": 26.57,
+    "lon": -81.8,
+    "capacity": 20,
+    "used": 4,
+    "status": "open",
+    "needs_served": [
+      "repair"
+    ],
+    "utility_node_id": "UTL-FMY-SUB2",
+    "hours": "24 hours (illustrative demo schedule)",
+    "source": "partner"
+  },
+  {
+    "id": "RES-HOU-01",
+    "type": "shelter",
+    "name": "Convention Center Mega-Shelter (GRB) (VERIFY historical shelter role; demo availability only)",
+    "address": "1001 Avenida de las Americas, Houston",
+    "city": "Houston",
+    "lat": 29.7515,
+    "lon": -95.3585,
+    "capacity": 10000,
+    "used": 7200,
+    "status": "open",
+    "needs_served": [
+      "shelter",
+      "warmth",
+      "food_water"
+    ],
+    "utility_node_id": "UTL-HOU-SUB2",
+    "hours": "24 hours (illustrative demo schedule)",
+    "source": "city"
+  },
+  {
+    "id": "RES-HOU-02",
+    "type": "shelter",
+    "name": "NRG Center Shelter (VERIFY historical shelter role; demo availability only)",
+    "address": "1 NRG Pkwy, Houston",
+    "city": "Houston",
+    "lat": 29.6845,
+    "lon": -95.4105,
+    "capacity": 3000,
+    "used": 900,
+    "status": "open",
+    "needs_served": [
+      "shelter",
+      "warmth",
+      "food_water"
+    ],
+    "utility_node_id": "UTL-HOU-SUB2",
+    "hours": "24 hours (illustrative demo schedule)",
+    "source": "city"
+  },
+  {
+    "id": "RES-HOU-03",
+    "type": "shelter",
+    "name": "Bayou Community Center Shelter",
+    "address": "Memorial Dr (generic)",
+    "city": "Houston",
+    "lat": 29.7635,
+    "lon": -95.445,
+    "capacity": 300,
+    "used": 40,
+    "status": "open",
+    "needs_served": [
+      "shelter",
+      "warmth",
+      "food_water"
+    ],
+    "utility_node_id": "UTL-HOU-SUB1",
+    "hours": "24 hours (illustrative demo schedule)",
+    "source": "city"
+  },
+  {
+    "id": "RES-HOU-04",
+    "type": "claim_site",
+    "name": "State Farm Catastrophe Claims Site – Galleria",
+    "address": "Post Oak Blvd lot (generic)",
+    "city": "Houston",
+    "lat": 29.7425,
+    "lon": -95.4585,
+    "capacity": 400,
+    "used": 60,
+    "status": "open",
+    "needs_served": [
+      "claim"
+    ],
+    "utility_node_id": "UTL-HOU-SUB2",
+    "hours": "24 hours (illustrative demo schedule)",
+    "source": "statefarm"
+  },
+  {
+    "id": "RES-HOU-05",
+    "type": "hotel",
+    "name": "Westside Hotel (ALE rooms)",
+    "address": "Westheimer Rd (generic)",
+    "city": "Houston",
+    "lat": 29.735,
+    "lon": -95.555,
+    "capacity": 80,
+    "used": 30,
+    "status": "open",
+    "needs_served": [
+      "shelter"
+    ],
+    "utility_node_id": "UTL-HOU-SUB2",
+    "hours": "24 hours (illustrative demo schedule)",
+    "source": "partner"
+  },
+  {
+    "id": "RES-HOU-06",
+    "type": "repair_vendor",
+    "name": "Gulf Restoration Crew",
+    "address": "Houston service area (generic, illustrative)",
+    "city": "Houston",
+    "lat": 29.74,
+    "lon": -95.48,
+    "capacity": 20,
+    "used": 4,
+    "status": "open",
+    "needs_served": [
+      "repair"
+    ],
+    "utility_node_id": "UTL-HOU-SUB2",
+    "hours": "24 hours (illustrative demo schedule)",
+    "source": "partner"
+  }
+]
