@@ -1,0 +1,27 @@
+# messaging public interface
+
+Import `from app.modules import messaging`. Spec: `docs/prd/modules/messaging.md` (Photon facts: `backend/spikes/photon/PHOTON_NOTES.md`).
+Written from the merged TASK-020 code (owner x4destoe-cursor); TASK-022 adds the real Photon channel.
+
+| Function | What |
+|---|---|
+| `send(party_id, body, kind, media_urls=None, work_order_id=None, referral_id=None) -> Message` | Stores and delivers a text. Sim channel delivers before returning (`status: sent`). Never raises on channel failure: the message is stored `failed` with `error`, and `status().last_error` is set. Unknown `party_id` -> `KeyError`. Emits `message.sent`. |
+| `on_inbound(party_type, handler)` | `handler(party_id, text, media_urls)` runs for every inbound message of that party type |
+| `party_for_phone(phone) -> Party` | match a seeded party (or a `DEMO_PHONES` mapping); unknown number -> creates `RESIDENT-<last4>` |
+| `receive(party, text, media_urls=None, kind=None) -> Message` | store an inbound message, emit `message.received`, run that type's handlers |
+| `status() -> MessagingStatus` | `{mode, live_parties, sent, received, last_error}` |
+| `accept_webhook(payload, headers=None) -> dict` | inbound provider webhook (dedupes by webhook/message id). **Signature verification arrives with TASK-022**; until then `MESSAGING_MODE=photon` refuses unsigned bodies |
+
+Routes: `GET /api/messages?party_id=`, `GET /api/messaging/status`, `POST /api/demo/simulate-message {phone | party_id, text, media_url?}`,
+`POST /api/webhooks/photon`.
+
+## Inbound routing (registered by `register()`)
+- technician -> `actions.apply_task_reply` (DONE / BLOCKED / photo closes or updates work orders, TASK-021)
+- tenant -> stored, replied "Noted. We have your message."
+- resident (any unknown number) -> `resources.route(party_id, text)`. **Do not register another resident handler**: resources relies on this one.
+- manager -> "YES <plan_id>" approves that plan
+
+## Channels
+`MESSAGING_MODE=sim` (default): everything is stored and emitted, nothing leaves the machine; the panel's phone simulator drives inbound.
+`MESSAGING_MODE=photon` + a party with `demo_live=True`: Photon Spectrum via the loopback Node bridge (TASK-022). Credentials
+`SPECTRUM_PROJECT_ID`, `SPECTRUM_PROJECT_SECRET`, `SPECTRUM_WEBHOOK_SECRET` live in `backend/.env` only.
