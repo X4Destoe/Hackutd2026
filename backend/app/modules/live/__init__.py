@@ -20,6 +20,7 @@ from . import feeds
 log = logging.getLogger(__name__)
 CACHE_SECONDS = 300          # refresh at most every 5 minutes (NWS asks clients not to hammer)
 STALE_SECONDS = 900          # older than 15 minutes = stale (shown in the UI)
+RETRY_SECONDS = 60           # after a failed refresh, wait this long before trying again (no retry storm)
 GAUGE_RADIUS_MI = 5.0
 LIVE_DIR = DATA_DIR / "live"
 CACHE_FILE = LIVE_DIR / "cache" / "last.json"   # git-ignored
@@ -28,7 +29,7 @@ NOTES = ["No free real-time power-outage feed exists, so live mode shows no util
          "NWS alerts give areas and severity, not depths: hazard intensities in live mode are labeled proxies."]
 
 _lock = threading.Lock()
-_state: dict = {"snapshot": None, "loaded_at": 0.0, "refreshing": False, "errors": [], "hourly_urls": {}}
+_state: dict = {"snapshot": None, "loaded_at": 0.0, "last_attempt": 0.0, "refreshing": False, "errors": [], "hourly_urls": {}}
 
 
 def states() -> list[str]:
@@ -52,48 +53,66 @@ def _cities(buildings: list[dict]) -> dict[str, dict]:
     return out
 
 
-def build_snapshot(c, buildings: list[dict], hourly_urls: dict[str, str] | None = None) -> tuple[dict, list[str]]:
-    """Fetch everything once. Each source fails independently; errors are returned, never raised."""
+def build_snapshot(c, buildings: list[dict], hourly_urls: dict[str, str] | None = None,
+                   previous: dict | None = None) -> tuple[dict, list[str]]:
+    """Fetch every feed once. Feeds fail independently: a failed feed keeps its last good value and as-of time from
+    `previous` and records the error, so a partial outage never wipes good data or looks fresh."""
     errors: list[str] = []
     hourly_urls = hourly_urls if hourly_urls is not None else {}
-    try:
-        alerts = feeds.fetch_alerts(c, states())
-    except Exception as e:  # noqa: BLE001 - one feed failing must not stop the others
-        errors.append(f"NWS alerts: {type(e).__name__}")
-        alerts = None
-    conditions, gauges = {}, []
+    prev = previous or {}
+    prev_feeds, now = prev.get("feeds", {}), feeds.now_iso()
+    feed_state: dict[str, dict] = {}
+
+    def run(key: str, label: str, fetch, keep):
+        try:
+            value = fetch()
+            feed_state[key] = {"as_of": now, "error": None}
+            return value
+        except Exception as e:  # noqa: BLE001 - one feed failing must not stop the others
+            errors.append(f"{label}: {type(e).__name__}")
+            feed_state[key] = {"as_of": (prev_feeds.get(key) or {}).get("as_of"), "error": type(e).__name__}
+            return keep
+
+    alerts = run("alerts", "NWS alerts", lambda: feeds.fetch_alerts(c, states()), prev.get("alerts"))
+    conditions: dict[str, dict] = {}
+    gauges_by_city: dict[str, list] = {}
     for city, spec in _cities(buildings).items():
-        try:
-            conditions[city], hourly_urls[city] = feeds.fetch_forecast(c, spec["lat"], spec["lon"], hourly_urls.get(city))
-        except Exception as e:  # noqa: BLE001
-            errors.append(f"NWS forecast {city}: {type(e).__name__}")
-        try:
-            gauges += feeds.fetch_gauges(c, spec["bbox"])
-        except Exception as e:  # noqa: BLE001
-            errors.append(f"USGS gauges {city}: {type(e).__name__}")
+        def forecast(city=city, spec=spec):
+            summary, hourly_urls[city] = feeds.fetch_forecast(c, spec["lat"], spec["lon"], hourly_urls.get(city))
+            return summary
+        value = run(f"forecast:{city}", f"NWS forecast {city}", forecast, (prev.get("conditions") or {}).get(city))
+        if value is not None:
+            conditions[city] = value
+        value = run(f"gauges:{city}", f"USGS gauges {city}", lambda spec=spec: feeds.fetch_gauges(c, spec["bbox"]),
+                    (prev.get("gauges_by_city") or {}).get(city))
+        if value is not None:
+            gauges_by_city[city] = value
+    gauges = [g for city in sorted(gauges_by_city) for g in gauges_by_city[city]]
     nearest = {}
     for b in buildings:
         best = min(gauges, key=lambda g: feeds.miles((b["lat"], b["lon"]), (g["lat"], g["lon"])), default=None)
         if best and (d := feeds.miles((b["lat"], b["lon"]), (best["lat"], best["lon"]))) <= GAUGE_RADIUS_MI:
             nearest[b["id"]] = {**best, "distance_mi": round(d, 1)}
-    snap = {"fetched_at": feeds.now_iso(), "states": states(), "alerts": alerts, "conditions": conditions,
-            "gauges": gauges, "building_gauges": nearest,
+    snap = {"fetched_at": now, "states": states(), "alerts": alerts, "conditions": conditions, "gauges": gauges,
+            "gauges_by_city": gauges_by_city, "building_gauges": nearest, "feeds": feed_state,
             "sources": ["NWS api.weather.gov (alerts, hourly forecast)", "USGS Water Services (gage height)"]}
     return snap, errors
 
 
 def _usable(snap: dict | None) -> bool:
-    return bool(snap and snap.get("alerts") is not None and snap.get("conditions"))
+    return bool(snap and (snap.get("alerts") is not None or snap.get("conditions") or snap.get("gauges")))
 
 
 def _refresh_worker() -> None:
     try:
         with feeds.client() as c:
-            snap, errors = build_snapshot(c, _portfolio(), dict(_state["hourly_urls"]))
+            snap, errors = build_snapshot(c, _portfolio(), dict(_state["hourly_urls"]), previous=_state["snapshot"])
         with _lock:
             _state["errors"] = errors
             if _usable(snap):
-                _state["snapshot"], _state["loaded_at"] = snap, time.time()
+                _state["snapshot"] = snap
+                if not errors:
+                    _state["loaded_at"] = time.time()
                 CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
                 CACHE_FILE.write_text(json.dumps(snap))
         if _usable(snap):
@@ -113,6 +132,7 @@ def refresh(block: bool = False) -> None:
         if _state["refreshing"]:
             return
         _state["refreshing"] = True
+        _state["last_attempt"] = time.time()
     if block:
         _refresh_worker()
     else:
@@ -135,7 +155,10 @@ def snapshot() -> dict:
     with _lock:
         if _state["snapshot"] is None:
             _load_from_disk()
-        due = time.time() - _state["loaded_at"] > CACHE_SECONDS
+        t = time.time()
+        ok_due = t - _state["loaded_at"] > CACHE_SECONDS            # last full success is old
+        retry_ok = t - _state.get("last_attempt", 0.0) > (CACHE_SECONDS if not _state["errors"] else RETRY_SECONDS)
+        due = ok_due and retry_ok
         snap = _state["snapshot"]
     if due and os.environ.get("LIVE_FETCH", "1") != "0":
         refresh()
@@ -151,14 +174,22 @@ def _age_seconds(fetched_at: str | None) -> float | None:
 
 
 def status() -> dict:
+    """Overall and per-feed freshness. A feed with no data or older than 15 minutes is stale: consumers treat it as
+    UNKNOWN, never as 'no hazard'."""
     snap = _state["snapshot"] or {}
+    per_feed = {}
+    for key, f in (snap.get("feeds") or {}).items():
+        age = _age_seconds(f.get("as_of"))
+        per_feed[key] = {"as_of": f.get("as_of"), "age_seconds": None if age is None else round(age),
+                         "stale": age is None or age > STALE_SECONDS, "error": f.get("error")}
     age = _age_seconds(snap.get("fetched_at"))
     alerts = (snap.get("alerts") or {}).get("features", [])
     return {"fetched_at": snap.get("fetched_at"), "age_seconds": None if age is None else round(age),
-            "stale": age is None or age > STALE_SECONDS, "refreshing": _state["refreshing"], "states": snap.get("states", states()),
-            "alert_count": len(alerts), "alerts_without_area": (snap.get("alerts") or {}).get("without_area", 0),
-            "gauge_count": len(snap.get("gauges", [])), "cities": sorted(snap.get("conditions", {})),
-            "sources": snap.get("sources", []), "errors": list(_state["errors"]), "notes": NOTES}
+            "stale": not per_feed or any(f["stale"] for f in per_feed.values()), "refreshing": _state["refreshing"],
+            "states": snap.get("states", states()), "feeds": per_feed, "alert_count": len(alerts),
+            "alerts_without_area": (snap.get("alerts") or {}).get("without_area", 0), "gauge_count": len(snap.get("gauges", [])),
+            "cities": sorted(snap.get("conditions", {})), "sources": snap.get("sources", []), "errors": list(_state["errors"]),
+            "notes": NOTES}
 
 
 def register() -> None:

@@ -16,6 +16,10 @@ BUILDINGS = [
 ]
 
 
+def fresh_state():
+    return {"snapshot": None, "loaded_at": 0.0, "last_attempt": 0.0, "refreshing": False, "errors": [], "hourly_urls": {}}
+
+
 def fixture(name):
     return json.loads((FX / name).read_text())
 
@@ -68,7 +72,7 @@ def test_each_feed_fails_independently():
 
 def test_snapshot_never_waits_for_the_network(monkeypatch, tmp_path):
     monkeypatch.setattr(live, "CACHE_FILE", tmp_path / "last.json")
-    monkeypatch.setattr(live, "_state", {"snapshot": None, "loaded_at": 0.0, "refreshing": False, "errors": [], "hourly_urls": {}})
+    monkeypatch.setattr(live, "_state", fresh_state())
     monkeypatch.setattr(live, "_portfolio", lambda: BUILDINGS)
     monkeypatch.setattr(feeds, "client", lambda timeout=15.0: _SlowClient())
     t = time.perf_counter()
@@ -98,3 +102,38 @@ def test_status_route_is_honest_about_outages(monkeypatch):
         s = c.get("/api/live/status").json()
         assert "power-outage" in " ".join(s["notes"]) and s["sources"]
         assert c.get("/api/live/alerts").json()["type"] == "FeatureCollection"
+
+
+def test_a_failed_feed_keeps_its_last_good_data_and_reports_it():
+    warm, _ = live.build_snapshot(mock_client(), BUILDINGS)
+    snap, errors = live.build_snapshot(mock_client(fail=("waterservices",)), BUILDINGS, previous=warm)
+    assert len(snap["gauges"]) == 4 and snap["building_gauges"]  # last good readings retained
+    assert snap["feeds"]["gauges:Houston"] == {"as_of": warm["feeds"]["gauges:Houston"]["as_of"], "error": "HTTPStatusError"}
+    assert snap["feeds"]["alerts"]["error"] is None
+    cold, _ = live.build_snapshot(mock_client(fail=("waterservices",)), BUILDINGS)
+    assert cold["feeds"]["gauges:Houston"]["as_of"] is None  # never fetched = unknown, not 'no gauges'
+
+
+def test_status_marks_failed_or_missing_feeds_stale(monkeypatch):
+    snap, _ = live.build_snapshot(mock_client(fail=("waterservices",)), BUILDINGS)
+    monkeypatch.setattr(live, "_state", {**fresh_state(), "snapshot": snap})
+    s = live.status()
+    assert s["stale"] is True and s["feeds"]["gauges:Houston"]["stale"] is True and s["feeds"]["alerts"]["stale"] is False
+
+
+def test_total_failure_backs_off_instead_of_retrying_every_request(monkeypatch, tmp_path):
+    monkeypatch.setattr(live, "CACHE_FILE", tmp_path / "last.json")
+    monkeypatch.setattr(live, "SEED_FILE", tmp_path / "none.json")
+    monkeypatch.setattr(live, "_state", fresh_state())
+    monkeypatch.setattr(live, "_portfolio", lambda: BUILDINGS)
+    monkeypatch.setenv("LIVE_FETCH", "1")
+    starts = []
+    real = live._refresh_worker
+    monkeypatch.setattr(live, "_refresh_worker", lambda: (starts.append(1), real()))
+    monkeypatch.setattr(feeds, "client", lambda timeout=15.0: mock_client(fail=("api.weather.gov", "waterservices")))
+    live.refresh(block=True)
+    assert len(starts) == 1 and live._state["errors"]
+    for _ in range(5):
+        live.snapshot()
+    time.sleep(0.1)
+    assert len(starts) == 1  # no retry storm: next attempt only after RETRY_SECONDS
