@@ -1,3 +1,4 @@
+import DemoReset from "./shared/DemoReset";
 import TermHelp from "./shared/TermHelp";
 import MapView from "./modules/map";
 import SimulationBuilder from "./modules/simulation";
@@ -90,6 +91,7 @@ export default function App() {
           </select>
         </label>
         <SimulationBuilder />
+        <DemoReset />
         <nav aria-label="Portfolio tools">
           {navigation.map(([view, label, Icon]) => (
             <Button
