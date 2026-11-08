@@ -28,3 +28,10 @@ Routes: `GET /actions/catalog`, `GET /plans?building_id=&status=`, `POST /plans/
 `approve()` imports `.execute` if it exists and calls `execute.on_approved(plan) -> Plan | None` after setting `approved`, before
 emitting `plan.changed`. Create work orders there, set `executing`, send texts, register help sites (OFFER_HELP_SITE). Add
 `/workorders` routes in your own router and include it from `routes.py` with one line.
+
+## Work-order execution (TASK-021)
+`apply_task_reply(party_id, text, media_urls=[]) -> WorkOrder | None` is exported by actions. Messaging's existing technician handler invokes it once; actions does not add a second technician subscription. `DONE WO-001` / `DONE 1`, `BLOCKED WO-001 reason`, `ACCEPTED WO-001` target an owned order; an untargeted reply applies to that technician's latest open order. Other technicians cannot update it. HTTP(S) photos attach without duplicate URLs. All orders done moves the plan to done; blocked orders remain visible while the plan is executing.
+
+`POST /plans/{id}/approve` creates one work order per selected action and tenant notices where catalog text exists. SimChannel sends inline; real-channel dispatch is off the approval request path (at most four dispatch workers, no automatic send retries). Pending dispatch is created, acknowledged send is sent, failure is blocked with coordinator follow-up. Approval/avoided dollars are modeled intent, not proof of physical mitigation or phone delivery. Scenario resets invalidate queued work; an already-started external send cannot be recalled.
+
+`GET /workorders?building_id=` and `POST /workorders/{id}/update {status,note?}` expose response state. Completed work cannot silently reopen through that endpoint. Workorder/plan changes emit their contract events for SSE refresh. OFFER_HELP_SITE calls the resources public register_site interface; missing/unavailable service blocks that order and never routes residents to an unregistered site.
