@@ -1,6 +1,6 @@
 # 02 - Contracts (shared types, IDs, API, events)
 
-Status: DRAFT. TASK-001 sets this to `Status: FROZEN`. After that, changes need a line in comms `docs/DECISIONS.md`
+Status: FROZEN (TASK-001, 2026-11-08). Changes need a DECISIONS.md line + all consumers updated. After that, changes need a line in comms `docs/DECISIONS.md`
 and every consumer updated in the same PR. In code: `backend/app/shared/` (owned by core). Frontend: generated
 `frontend/src/shared/api-types.ts`. **A field or route that isn't here doesn't exist. Ask instead of inventing.**
 
