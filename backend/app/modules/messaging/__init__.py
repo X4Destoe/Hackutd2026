@@ -93,6 +93,60 @@ def party_for_phone(phone: str) -> schemas.Party:
     return created
 
 
+_MANAGER_REPLY = re.compile(r"(?i)^\s*yes\s+\S+")
+_TASK_REPLY = re.compile(r"(?i)^\s*(DONE|BLOCKED|ACCEPTED|ACCEPT)\b(?:\s+(?:WO-)?(\d+))?")
+
+
+def party_for_message(phone: str, text: str) -> schemas.Party:
+    """Who a real inbound text is from when one demo phone plays several people (DEMO_PHONES may map one phone to a
+    manager, a technician and tenants). Routed by what the text says:
+      YES PLAN-x            -> that phone's manager
+      DONE/BLOCKED [WO-x]   -> that phone's technician (the one owning WO-x when several share the phone)
+      a request for help    -> a resident on that phone (shelter, medical, State Farm claims adjuster), decided by the
+                               same need classifier the resident flow uses, so routing and reply always agree
+      anything else         -> the phone's first role: manager, else technician (progress note), else tenant.
+    A phone that plays nobody keeps the old behaviour (party_for_phone)."""
+    normalized = _normalize(phone)
+    mine = [p for p in store.parties.list() if _normalize(p.phone) == normalized and _type(p.type) != "resident"]
+    if not mine:
+        return party_for_phone(phone)
+    by_type = lambda kind: [p for p in mine if _type(p.type) == kind]  # noqa: E731
+    if _MANAGER_REPLY.match(text) and by_type("manager"):
+        return by_type("manager")[0]
+    task = _TASK_REPLY.match(text)
+    if task and by_type("technician"):
+        techs = by_type("technician")
+        if task.group(2):
+            wanted = f"WO-{int(task.group(2)):03d}"
+            owner = next((t for t in techs if any(w.id == wanted for w in store.workorders.list(party_id=t.id))), None)
+            if owner is not None:
+                return owner
+        return techs[0]
+    if _asks_for_help(text):
+        return _resident_on(normalized)
+    return mine[0]  # progress notes and photos -> technician; questions -> manager; other chatter -> tenant
+
+
+def _asks_for_help(text: str) -> bool:
+    try:
+        from app.modules import ai
+        needs = {_type(n) for n in ai.classify_need(text, "en").get("needs", [])}
+    except Exception:  # noqa: BLE001 - routing must never fail; fall back to the phone's own role
+        return False
+    return bool(needs - {"info"})
+
+
+def _resident_on(phone: str) -> schemas.Party:
+    """The resident identity of a demo phone that also plays staff/tenants (RESIDENT-<last4>, replies over Photon)."""
+    digits = re.sub(r"\D", "", phone)
+    party_id = f"RESIDENT-{digits[-4:] if digits else '0000'}"
+    existing = store.parties.get(party_id)
+    if existing is not None:
+        return existing
+    return store.parties.put(schemas.Party(id=party_id, type=PartyType.resident, name=f"Resident {party_id[-4:]}",
+                                           phone=phone, language="en", demo_live=True))
+
+
 def _normalize(phone: str) -> str:
     raw = (phone or "").strip().replace(" ", "").replace("-", "")
     if raw.startswith("00"):
@@ -325,7 +379,7 @@ def accept_photon_webhook(raw: bytes, headers: dict) -> dict:
     if parsed is None:
         return {"ok": True, "ignored": True}
     phone, text, media = parsed
-    party = party_for_phone(phone)
+    party = party_for_message(phone, text)
     if not party.demo_live:  # they reached us over Photon, so replies go back over Photon
         party = store.parties.put(party.model_copy(update={"demo_live": True}))
     receive(party, text, media)
@@ -376,5 +430,5 @@ def register() -> None:
 from .routes import router  # noqa: E402
 
 __all__ = [
-    "register", "router", "send", "on_inbound", "party_for_phone", "status", "receive", "accept_webhook", "accept_photon_webhook",
+    "register", "router", "send", "on_inbound", "party_for_phone", "party_for_message", "status", "receive", "accept_webhook", "accept_photon_webhook",
 ]
