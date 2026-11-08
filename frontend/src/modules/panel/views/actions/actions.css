@@ -10,3 +10,6 @@
 .order-done { color: #17603a; background: #e4f3e6; }
 .order-blocked { color: #9b3024; background: #fff0eb; }
 .response-controls .button { font-size: 11px; padding: 7px 10px; }
+
+.order-note-field label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--muted); }
+.order-note-field textarea { width: 100%; resize: vertical; min-height: 70px; padding: 9px; border: 1px solid var(--border); font: inherit; color: #20342b; background: #fff; }
