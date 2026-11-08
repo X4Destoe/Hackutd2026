@@ -5,6 +5,7 @@ import { useApprovePlan, useBuildings, useFixFirst, usePlans } from '../../../..
 import { useUIStore } from '../../../../shared/ui-store';
 import { Badge, Button, Card } from '../../../../shared/ui';
 import './actions.css';
+import EmergencyNotice from './EmergencyNotice';
 
 function RankedPlan({ item }: { item: Model<'FixFirstItem'> }) {
   const approve = useApprovePlan();
@@ -41,6 +42,7 @@ export default function FixFirst() {
   return <div className="response-view"><h2>Fix-First</h2>
     <p className="panel-caption">Prioritized by deadline and money saved per dollar. Countdown follows the scenario timeline.</p>
     <Button variant="outline" onClick={() => setPanelView('workorders')}>View Work Orders</Button>
+    <EmergencyNotice />
     <RankedList />
     <h3 className="section-title">Community actions</h3><RankedList community />
     <h3 className="section-title">Missed opportunities</h3>
