@@ -44,7 +44,14 @@ const BASE = process.env.STORM_URL || 'http://127.0.0.1:5173';
     for (const [scenario, styles] of [['ian_fort_myers', ['surge_water', 'wind_swirl']], ['harvey_houston', ['wind_swirl']]]) {
       await api(`/scenarios/${scenario}/load`, {}); await api('/timeline', { hour: 0 });
       await page.waitForFunction(expected => expected.every(style => document.querySelector('.storm-hazard-motion')?.dataset.motionStyles.includes(style)), styles);
-      await page.waitForTimeout(400);
+      await page.waitForFunction(() => {
+        if (document.querySelector('.storm-map')?.dataset.mapMoving !== 'false') return false;
+        const canvas = document.querySelector('.storm-hazard-motion');
+        if (!canvas) return false;
+        const bytes = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+        for (let i = 3; i < bytes.length; i += 4) if (bytes[i]) return true;
+        return false;
+      }, undefined, { polling: 100 });
       const state = await pixels(); assert(state.count > 0 && state.particles <= 300);
       assert.equal(await page.locator('.storm-hazard-motion').count(), 1, 'Scenario switches must not leak canvases');
       if (scenario === 'ian_fort_myers') await page.screenshot({ path: '/tmp/storm-surge-motion.png' });
