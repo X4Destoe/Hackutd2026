@@ -34,7 +34,7 @@ def envelope(phone: str, text: str = "", content: dict | None = None, mid: str =
 
 @pytest.fixture
 def cfg(monkeypatch):
-    conf = photon.PhotonSettings(spectrum_webhook_secret=SECRET, photon_bridge_url="http://bridge.test")
+    conf = photon.PhotonSettings(photon_api_key="", spectrum_webhook_secret=SECRET, photon_bridge_url="http://bridge.test")
     monkeypatch.setattr(photon, "settings", lambda: conf)
     return conf
 

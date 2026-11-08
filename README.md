@@ -123,6 +123,26 @@ Terminal 2 `cd $HOME\Hackutd2026\frontend; npm install; npm run dev`.
 | Page opens but numbers say "unavailable" | The backend is not running or crashed: look at Terminal 1 |
 | Map is empty or looks old | Run the "Next time" commands (pull, restart both terminals), then reload the page |
 
+### Real Photon messaging locally
+
+Keep your Photon key, project ID, and authorized `DEMO_PHONES` mappings in private `backend/.env`. Settings prepared in a cloud workspace must also exist on your laptop; Git deliberately does not transfer them. Each test phone must be assigned in Photon and must first text its Photon agent number (required for shared iMessage lines).
+
+With the backend Python environment active, stop the ordinary API and run from `Hackutd2026/backend`:
+
+```sh
+python -m app.modules.messaging.live
+```
+
+This verifies Photon access, enables real messages, and starts the API plus reply polling. **No tunnel or separate Node bridge is needed.** The frontend can be open or closed. A failed check stops with an error rather than silently simulating texts.
+
+To send one test in another terminal (same backend folder/environment):
+
+```sh
+python -m app.modules.messaging.live --test-party MGR-01
+```
+
+That sends once to the mapped manager and exits. Other configured party IDs can be tested the same way. A provider acknowledgement is not a delivery receipt; check the actual phone. See the [current Photon runbook](backend/app/modules/messaging/HTTP_API.md) for role mappings, claims alerts, troubleshooting and optional signed HTTPS webhooks (`--webhook`). No paid sending resource is provisioned automatically.
+
 ### Optional
 - **Just want to look?** Open `demo/operation-storm-demo.html` in a browser. No install needed.
 - **Settings:** copy `.env.example` (repo root) to `backend/.env`. Everything works with it blank: texts are simulated and AI
@@ -137,7 +157,7 @@ Terminal 2 `cd $HOME\Hackutd2026\frontend; npm install; npm run dev`.
 
 The React app includes a map, modeled loss estimates, approvals, technician updates, resident routing, help-site activation, printable reports, and a custom simulation builder. Choose Houston, Dallas, or Fort Myers (or randomize among them), then set a disaster and its effects.
 
-Start with **simulated messaging** and `LIVE_FETCH=0` for a repeatable offline rehearsal. Buildings, money, capacities, and custom effects are illustrative; live alerts and forecasts are proxies, and missing inputs display Unknown. Real phone delivery requires a configured Photon bridge and credentials.
+Start with **simulated messaging** and `LIVE_FETCH=0` for a repeatable offline rehearsal. Buildings, money, capacities, and custom effects are illustrative; live alerts and forecasts are proxies, and missing inputs display Unknown. Real phone delivery requires the current Photon API configuration or the legacy Spectrum bridge, plus a verified sending line.
 
 - [Measured demo walkthrough](docs/DEMO.md) and [rehearsal checklist](docs/REHEARSAL.md)
 - [Track pitch and honest limitations](docs/PITCH.md)
