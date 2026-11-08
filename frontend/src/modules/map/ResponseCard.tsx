@@ -10,7 +10,7 @@ import {
 } from "../../shared/queries";
 import { useUIStore } from "../../shared/ui-store";
 import { hours, money } from "../../shared/format";
-import { crewVerb, jobLine, taskName, whatsWrong, CREW_STATUS } from "../../shared/plain";
+import { shownPhotos, crewVerb, jobLine, taskName, whatsWrong, CREW_STATUS } from "../../shared/plain";
 import { Button } from "../../shared/ui";
 export default function ResponseCard() {
   const { selectedBuildingId } = useUIStore();
@@ -42,6 +42,16 @@ function BuildingResponse({ id }: { id: string }) {
       className="storm-response-card"
       aria-label="Building response actions"
     >
+      {impact.data && shownPhotos(impact.data.exposure, impact.data.risk, orders.data).length > 0 && (
+        <div className="response-photos">
+          {shownPhotos(impact.data.exposure, impact.data.risk, orders.data).map((shot) => (
+            <figure key={shot.kind} className={shot.kind === "power" ? "is-outage" : undefined}>
+              <img src={shot.src} alt="" />
+              <figcaption>{shot.caption}</figcaption>
+            </figure>
+          ))}
+        </div>
+      )}
       <div className="response-eyebrow">
         <ListChecks size={14} />
         <span>{building.tenants?.length ? `${building.tenants.length} tenants` : "This building"}</span>

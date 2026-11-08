@@ -24,6 +24,7 @@ export default function Legend() {
       {hazards.includes('winter') && <div className="storm-legend-row"><span style={{ background: '#bcd6f2', borderColor: '#8fb8e0' }} />Snow and ice area</div>}
       <div className="storm-legend-row"><span className="dash" />Forecast (predicted)</div>
       <div className="storm-legend-row"><span className="dot" />Substation · red = down</div>
+      <div className="storm-legend-row"><span className="photo" />Crew photo · red label means the power is out</div>
     </aside>
   );
 }

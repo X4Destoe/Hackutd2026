@@ -244,6 +244,55 @@
   outline: 3px solid #257bc0;
   outline-offset: 2px;
 }
+.storm-photo-strip {
+  display: flex;
+  gap: 4px;
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  z-index: 3;
+}
+.storm-photo {
+  display: flex;
+  flex-direction: column;
+  width: 78px;
+  background: #173024;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px #173a2c66;
+  pointer-events: none;
+}
+.storm-photo img {
+  width: 74px;
+  height: 54px;
+  object-fit: cover;
+  display: block;
+}
+.storm-photo span {
+  color: #fff;
+  font-size: 10px;
+  line-height: 1.2;
+  padding: 3px 4px;
+  text-align: center;
+}
+.storm-photo.is-outage span {
+  background: #9f1239;
+}
+.storm-photo-strip.is-selected .storm-photo {
+  outline: 3px solid #153e2b;
+  outline-offset: 2px;
+}
+.storm-photo-strip:focus-visible {
+  outline: 3px solid #257bc0;
+  outline-offset: 3px;
+}
+.storm-legend-row span.photo {
+  width: 16px;
+  height: 11px;
+  background:
+    linear-gradient(#9f1239, #9f1239) bottom / 100% 4px no-repeat,
+    #8aa0b5;
+}
 .storm-building-button:focus-visible {
   outline: 3px solid #257bc0;
   outline-offset: 5px;
@@ -337,6 +386,31 @@
 }
 .response-eyebrow > svg:last-child {
   margin-left: auto;
+}
+.response-photos {
+  display: flex;
+  gap: 6px;
+  margin: -17px -17px 12px;
+}
+.response-photos figure {
+  flex: 1;
+  margin: 0;
+  background: #173024;
+}
+.response-photos img {
+  width: 100%;
+  height: 72px;
+  object-fit: cover;
+  display: block;
+}
+.response-photos figcaption {
+  color: #fff;
+  font-size: 10px;
+  text-align: center;
+  padding: 3px 4px 4px;
+}
+.response-photos figure.is-outage figcaption {
+  background: #9f1239;
 }
 .storm-response-card h2 {
   font-size: 18px;

@@ -9,7 +9,7 @@ import {
 } from "../../../shared/queries";
 import { useUIStore } from "../../../shared/ui-store";
 import { money, riskColor } from "../../../shared/format";
-import { crewVerb, jobLine, taskName, whatsWrong, CREW_STATUS } from "../../../shared/plain";
+import { shownPhotos, crewVerb, jobLine, taskName, whatsWrong, CREW_STATUS } from "../../../shared/plain";
 import { Badge, Button } from "../../../shared/ui";
 import PlanCard from "./PlanCard";
 export default function BuildingDetail() {
@@ -78,6 +78,16 @@ export default function BuildingDetail() {
         <p className="panel-empty">No tenants on file.</p>
       )}
       <h3 className="section-title">Damage</h3>
+      {!!i && shownPhotos(i.exposure, i.risk, orders.data).length > 0 && (
+        <div className="damage-photos">
+          {shownPhotos(i.exposure, i.risk, orders.data).map((shot) => (
+            <figure key={shot.kind} className={shot.kind === "power" ? "is-outage" : undefined}>
+              <img src={shot.src} alt="" />
+              <figcaption>{shot.caption}</figcaption>
+            </figure>
+          ))}
+        </div>
+      )}
       {impact.isPending ? (
         <p role="status">Checking damage…</p>
       ) : impact.isError ? (
