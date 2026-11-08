@@ -1,0 +1,8 @@
+{
+ "properties": {
+  "forecastHourly": "https://api.weather.gov/gridpoints/HGX/63,94/forecast/hourly",
+  "gridId": "HGX",
+  "gridX": 63,
+  "gridY": 94
+ }
+}
