@@ -1,3 +1,5 @@
+import DemoReset from "./shared/DemoReset";
+import TermHelp from "./shared/TermHelp";
 import MapView from "./modules/map";
 import SimulationBuilder from "./modules/simulation";
 import { useEffect, useState } from "react";
@@ -89,6 +91,7 @@ export default function App() {
           </select>
         </label>
         <SimulationBuilder />
+        <DemoReset />
         <nav aria-label="Portfolio tools">
           {navigation.map(([view, label, Icon]) => (
             <Button
@@ -103,13 +106,13 @@ export default function App() {
         </nav>
         <div className="portfolio-totals" aria-label="Portfolio totals">
           <div>
-            <small title="Estimated financial loss after insurance and approved actions">Estimated loss</small>
+            <small><TermHelp term="Estimated loss" /></small>
             <strong>
               {summary.data?.data_quality === "unknown" ? "Unknown" : summary.data ? money(summary.data.net_exposure_cents) : "—"}
             </strong>
           </div>
           <div>
-            <small>Avoided</small>
+            <small><TermHelp term="Avoided" /></small>
             <strong>
               {summary.data?.data_quality === "unknown" ? "Unknown" : summary.data ? money(summary.data.avoided_cents) : "—"}
             </strong>
@@ -158,6 +161,7 @@ export default function App() {
               aria-label="Open map layers in portfolio panel"
               onClick={() => {
                 setDrawerOpen(true);
+                window.dispatchEvent(new Event("storm:open-layers"));
               }}
             >
               <Layers size={20} />

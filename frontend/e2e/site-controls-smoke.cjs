@@ -43,6 +43,7 @@ const BASE = process.env.STORM_URL || 'http://127.0.0.1:5173';
     }
     // Visible layer controls must change visible map output.
     const layers = page.getByRole('region', { name: 'Map layers' });
+    await layers.getByRole('button', { name: 'Map layers', exact: true }).click();
     await layers.getByRole('button', { name: 'Clear', exact: true }).click();
     assert.equal(await page.locator('.map-activity button').count(), 0);
     await layers.getByRole('checkbox', { name: 'Help sites and residents' }).check();
@@ -120,8 +121,38 @@ const BASE = process.env.STORM_URL || 'http://127.0.0.1:5173';
     await panel.getByRole('button', { name: 'Close portfolio panel', exact: true }).click();
     await activity.getByRole('button', { name: /Help sites/ }).click();
     await panel.getByRole('heading', { name: 'Help Sites', exact: true }).waitFor();
+    // The presenter can restart without an API console; cancellation and failure preserve the exercise.
+    await page.setViewportSize({ width: 1600, height: 1100 });
+    const beforeRestart = await api('/demo/state');
+    const ordersBeforeRestart = (await api('/workorders')).length;
+    assert(ordersBeforeRestart > 0, 'Approval must leave tasks for the restart test');
+    let restartPosts = 0;
+    await page.route('**/api/demo/reset', route => {
+      restartPosts++;
+      return route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
+    });
+    await page.getByRole('button', { name: 'Restart current scenario', exact: true }).click();
+    const restartDialog = page.getByRole('dialog', { name: 'Restart scenario?', exact: true });
+    await restartDialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+    assert.equal(restartPosts, 0, 'Cancel must not issue a reset request');
+    await page.getByRole('button', { name: 'Restart current scenario', exact: true }).click();
+    await restartDialog.getByRole('button', { name: 'Restart scenario', exact: true }).click();
+    await restartDialog.getByRole('alert').filter({ hasText: 'Could not confirm the restart' }).waitFor();
+    assert.equal((await api('/demo/state')).step_hour, beforeRestart.step_hour);
+    assert.equal((await api('/workorders')).length, ordersBeforeRestart);
+    await page.unroute('**/api/demo/reset');
+    await restartDialog.getByRole('button', { name: 'Restart scenario', exact: true }).click();
+    await restartDialog.waitFor({ state: 'hidden' });
+    assert.equal((await api('/demo/state')).scenario_id, beforeRestart.scenario_id);
+    assert.equal((await api('/demo/state')).step_hour, -48);
+    assert.equal((await api('/workorders')).length, 0);
+    assert.equal((await api('/messages')).length, 0);
+    assert.equal((await api('/referrals')).length, 0);
+    assert.equal((await api('/reports')).length, 0);
+    assert.equal((await api('/portfolio/summary')).actions_approved, 0);
+    await content.getByRole('heading', { name: 'Portfolio overview', exact: true }).waitFor();
     assert.deepEqual(errors, []);
-    console.log('PASS navigation, layer output, operational record links, timeline failure/retry, repeated mobile panel opening; no page errors');
+    console.log('PASS navigation, layer output, operational record links, timeline failure/retry, repeated mobile panel opening, restart cancellation/failure/recovery and cleared workspace; no page errors');
   } finally {
     if (resetAllowed) await api('/demo/reset', { scenario_id: 'harvey_houston' }).catch(() => {});
     await browser.close();

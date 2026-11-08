@@ -26,7 +26,10 @@ async function main() {
     assert(response.ok(), `${method} ${route}: HTTP ${response.status()}`);
     return response.json();
   };
+  let resetAllowed = false;
   try {
+    assert.equal((await api("/messaging/status")).mode, "sim");
+    resetAllowed = true;
     await api("/demo/reset", "POST", { scenario_id: "harvey_houston" });
     await page.goto(BASE);
     const map = page.getByRole("main", { name: "Map workspace" });
@@ -36,10 +39,11 @@ async function main() {
       0,
       "The live map is still a placeholder",
     );
-    const marker = map.getByRole("button", { name: /Bayou Plaza/i });
+    const marker = map.locator('[data-building-id="BLD-HOU-01"]');
     await marker.waitFor();
     await marker.click();
     await page
+      .getByRole("region", { name: "Portfolio content" })
       .getByRole("heading", { name: "Bayou Plaza", exact: true })
       .waitFor();
     await page
@@ -75,6 +79,7 @@ async function main() {
       "Approval did not reduce net exposure",
     );
     await page.screenshot({ path: path.join(OUT, "harvey-approved.png") });
+    await page.getByRole("button", { name: "Map layers", exact: true }).click();
     const buildingToggle = page.getByRole("checkbox", {
       name: "Buildings by $ at risk",
       exact: true,
@@ -119,6 +124,7 @@ async function main() {
     await dallas.waitFor();
     await dallas.click();
     await page
+      .getByRole("region", { name: "Portfolio content" })
       .getByRole("heading", { name: "Lone Star Data Center", exact: true })
       .waitFor();
     assert.equal((await api("/demo/state")).scenario_id, "uri_dallas");
@@ -131,6 +137,7 @@ async function main() {
     await dallas.waitFor();
     await dallas.click();
     await page
+      .getByRole("region", { name: "Portfolio content" })
       .getByRole("heading", { name: "Lone Star Data Center", exact: true })
       .waitFor();
     await page.screenshot({ path: path.join(OUT, "offline-basemap.png") });
@@ -149,7 +156,7 @@ async function main() {
       .catch(() => {});
     throw error;
   } finally {
-    await api("/demo/reset", "POST", { scenario_id: "harvey_houston" }).catch(
+    if (resetAllowed) await api("/demo/reset", "POST", { scenario_id: "harvey_houston" }).catch(
       () => {},
     );
     await browser.close();

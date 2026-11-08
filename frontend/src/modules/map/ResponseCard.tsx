@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ArrowRight, CheckCircle2, ListChecks } from "lucide-react";
+import { useId, useState } from "react";
+import { ArrowRight, CheckCircle2, ListChecks, Minus, Maximize2, X } from "lucide-react";
 import {
   useApprovePlan,
   useBuildings,
@@ -19,7 +19,14 @@ export default function ResponseCard() {
   ) : null;
 }
 function BuildingResponse({ id }: { id: string }) {
-  const { setPanelView } = useUIStore();
+  const { setPanelView, setSelectedBuildingId } = useUIStore();
+  const [minimized, setMinimized] = useState(false);
+  const bodyId = useId();
+  const close = () => {
+    setSelectedBuildingId(null);
+    setPanelView("overview");
+    document.querySelector<HTMLButtonElement>(`[data-building-id="${CSS.escape(id)}"]`)?.focus();
+  };
   const buildings = useBuildings();
   const impact = useImpactFor(id);
   const plans = usePlans({ building_id: id });
@@ -39,15 +46,29 @@ function BuildingResponse({ id }: { id: string }) {
   if (!building) return null;
   return (
     <section
-      className="storm-response-card"
+      className={`storm-response-card${minimized ? " is-minimized" : ""}`}
+      onKeyDown={event => { if (event.key === "Escape") { event.stopPropagation(); close(); } }}
       aria-label="Building response actions"
     >
+      <div className="response-card-header">
+      <div className="response-card-title">
       <div className="response-eyebrow">
         <ListChecks size={14} />
         <span>Decision → response</span>
         {committed && <CheckCircle2 size={15} />}
       </div>
-      <h2>{building.name}</h2>
+      <h2 title={building.name}>{building.name}</h2>
+      </div>
+      <div className="response-card-controls">
+        <button type="button" aria-label={minimized ? "Restore building response card" : "Minimize building response card"}
+          title={minimized ? "Restore" : "Minimize"} aria-expanded={!minimized} aria-controls={bodyId}
+          onClick={() => setMinimized(value => !value)}>
+          {minimized ? <Maximize2 size={16} /> : <Minus size={16} />}
+        </button>
+        <button type="button" aria-label="Close building response card" title="Close" onClick={close}><X size={17} /></button>
+      </div>
+      </div>
+      <div className="response-card-body" id={bodyId} hidden={minimized}>
       <p className="response-exposure" title="After insurance and approved actions">
         Estimated loss{" "}
         <strong>
@@ -152,6 +173,7 @@ function BuildingResponse({ id }: { id: string }) {
       >
         Inspect drivers and financial breakdown <ArrowRight size={13} />
       </button>
+      </div>
     </section>
   );
 }

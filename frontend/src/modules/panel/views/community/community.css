@@ -125,3 +125,7 @@
 .activation-task { display: grid; gap: 4px; border-top: 1px solid var(--border); padding: 10px 0; margin-top: 10px; font-size: 11px; }
 .activation-task span { color: var(--muted); font-size: 10px; }
 .help-activation .button { margin: 6px 0; }
+
+.site-contact-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+.site-routing-unavailable { flex-basis: 100%; font-size: 11px; line-height: 1.5; color: var(--muted); }
+.community-view .panel-empty .button { margin-top: 10px; display: flex; }
