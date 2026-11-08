@@ -223,3 +223,227 @@
   padding: 4px 7px;
   pointer-events: none;
 }
+.storm-building-square {
+  flex-shrink: 0;
+  min-width: 8px;
+  min-height: 8px;
+}
+.storm-building-button.label-left .storm-building-label {
+  left: auto;
+  right: calc(100% - 1px);
+}
+.storm-scenario-strip {
+  position: absolute;
+  top: 18px;
+  left: 130px;
+  max-width: calc(100% - 205px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  background: #fffffff2;
+  border: 1px solid #d6e0d5;
+  box-shadow: 0 2px 8px #1a2e2312;
+  pointer-events: none;
+}
+.storm-scenario-strip strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+}
+.storm-scenario-strip small {
+  display: block;
+  font-size: 9px;
+  color: var(--muted);
+  margin-top: 3px;
+  font-variant-numeric: tabular-nums;
+}
+.scenario-phase {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-left: 3px solid #7c3aed;
+  background: #f3eff9;
+  padding: 5px 7px;
+  color: #654696;
+}
+.scenario-phase.phase-impact {
+  border-color: #c75343;
+  background: #faeeea;
+  color: #a43e30;
+}
+.scenario-phase.phase-recovery {
+  border-color: #16834a;
+  background: #eaf4eb;
+  color: #17603a;
+}
+.storm-response-card {
+  position: absolute;
+  left: 130px;
+  bottom: 45px;
+  width: 315px;
+  max-width: calc(100% - 330px);
+  background: #fffffffa;
+  border: 1px solid #c8d8c8;
+  border-top: 3px solid #17603a;
+  box-shadow: 0 5px 24px #163d2521;
+  padding: 17px;
+  z-index: 4;
+}
+.response-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 9px;
+  color: #17603a;
+  margin-bottom: 9px;
+}
+.response-eyebrow > svg:last-child {
+  margin-left: auto;
+}
+.storm-response-card h2 {
+  font-size: 18px;
+  line-height: 1.25;
+}
+.response-exposure {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #627269;
+  margin: 8px 0 14px;
+}
+.response-exposure strong {
+  font-size: 14px;
+  color: #8c493b;
+  font-variant-numeric: tabular-nums;
+}
+.storm-response-card h3 {
+  font-size: 12px;
+  line-height: 1.65;
+  font-weight: 500;
+}
+.response-economics {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr 0.6fr;
+  gap: 8px;
+  border-top: 1px solid #e1e9de;
+  margin-top: 12px;
+  padding-top: 12px;
+}
+.response-economics span {
+  display: block;
+  font-size: 9px;
+  color: #627269;
+}
+.response-economics strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  color: #17603a;
+}
+.response-deadline {
+  font-size: 10px;
+  color: #9b5a26;
+  margin: 12px 0;
+}
+.storm-response-card > .button {
+  width: 100%;
+  font-size: 12px;
+  justify-content: space-between;
+}
+.response-details {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 10px;
+  color: #17603a;
+  padding: 10px 0 0;
+  margin-top: 9px;
+  border: 0;
+  border-top: 1px solid #e1e9de;
+  background: none;
+  text-align: left;
+}
+.response-progress {
+  margin-top: 12px;
+  border: 1px solid #cfe0ce;
+  padding: 10px;
+  background: #f2f8ef;
+  font-size: 11px;
+}
+.response-progress p,
+.response-unavailable,
+.response-notice {
+  font-size: 10px;
+  color: #627269;
+  line-height: 1.6;
+  margin: 8px 0;
+}
+.response-progress ul {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.response-progress li {
+  display: flex;
+  gap: 7px;
+  justify-content: space-between;
+  padding: 5px 0;
+  border-top: 1px solid #d8e4d4;
+  font-size: 10px;
+}
+.response-progress b {
+  font-weight: 500;
+  color: #17603a;
+}
+.response-notice {
+  color: #17603a;
+}
+@media (max-width: 1400px) {
+  .storm-response-card {
+    left: 125px;
+    width: 290px;
+    max-width: calc(100% - 310px);
+    padding: 13px;
+  }
+  .response-economics strong {
+    font-size: 16px;
+  }
+}
+@media (max-width: 800px) {
+  .storm-response-card {
+    left: 100px;
+    right: 65px;
+    width: auto;
+    max-width: none;
+    bottom: 40px;
+  }
+  .storm-scenario-strip {
+    left: 100px;
+  }
+  .storm-response-card h3 {
+    max-height: 50px;
+    overflow: auto;
+  }
+  .storm-legend {
+    display: none;
+  }
+}
+@media (max-height: 750px) {
+  .storm-response-card {
+    padding: 11px;
+    bottom: 32px;
+  }
+  .response-economics {
+    padding-top: 8px;
+    margin-top: 8px;
+  }
+  .storm-response-card h3 {
+    max-height: 44px;
+    overflow: auto;
+  }
+}

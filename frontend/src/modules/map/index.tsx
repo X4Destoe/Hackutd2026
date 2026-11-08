@@ -28,6 +28,7 @@ import {
 } from "./style";
 import TimelineControl from "./TimelineControl";
 import Legend from "./Legend";
+import ResponseCard from "./ResponseCard";
 import "./map.css";
 
 type FC = { type: "FeatureCollection"; features: unknown[] };
@@ -35,6 +36,8 @@ type FC = { type: "FeatureCollection"; features: unknown[] };
 export default function MapView() {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
+  const layerData = useRef<Record<string, FC>>({});
+  const visibility = useRef<Record<string, boolean>>({});
   const markers = useRef(new Map<string, maplibregl.Marker>());
   const [basemap, setBasemap] = useState("local");
   const [moving, setMoving] = useState(false);
@@ -42,6 +45,7 @@ export default function MapView() {
   const { selectedBuildingId, selectBuilding, layers } = useUIStore();
   const selectRef = useRef(selectBuilding);
   selectRef.current = selectBuilding;
+  visibility.current = layers;
 
   const state = useDemoState();
   const scenarios = useScenarios();
@@ -69,11 +73,25 @@ export default function MapView() {
     const addOurLayers = () => {
       for (const id of SOURCES)
         if (!map.getSource(id))
-          map.addSource(id, { type: "geojson", data: empty() });
+          map.addSource(id, {
+            type: "geojson",
+            data: (layerData.current[id] ?? empty()) as any,
+          });
       const glyphs = Boolean(map.getStyle().glyphs);
       for (const layer of LAYERS)
         if (!map.getLayer(layer.id) && (glyphs || layer.type !== "symbol"))
           map.addLayer(layer);
+      for (const [toggle, ids] of Object.entries(TOGGLES)) {
+        for (const id of ids)
+          if (map.getLayer(id))
+            map.setLayoutProperty(
+              id,
+              "visibility",
+              visibility.current[toggle] === false ? "none" : "visible",
+            );
+      }
+      for (const id of ["buildings", "buildings-approved", "buildings-label"])
+        if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", "none");
       setReady((n) => n + 1);
     };
     map.on("style.load", addOurLayers);
@@ -86,7 +104,7 @@ export default function MapView() {
       })
       .then((style) => {
         if (!controller.signal.aborted) {
-          map.setStyle(style);
+          map.setStyle(style, { diff: false });
           setBasemap("remote");
         }
       })
@@ -100,9 +118,40 @@ export default function MapView() {
             id !== "context",
         )
       ) {
-        map.setStyle(offlineStyle);
+        map.setStyle(offlineStyle, { diff: false });
         setBasemap("local");
       }
+    });
+    let lastInspection = 0;
+    const alignLabels = () => {
+      const width = map.getContainer().clientWidth;
+      for (const marker of markers.current.values()) {
+        const button = marker.getElement();
+        const point = map.project(marker.getLngLat());
+        const label = button.querySelector<HTMLElement>(
+          ".storm-building-label",
+        );
+        button.classList.toggle(
+          "label-left",
+          point.x + (label?.offsetWidth ?? 180) + 25 > width - 15,
+        );
+      }
+    };
+    map.on("move", alignLabels);
+    map.on("render", () => {
+      const now = performance.now();
+      if (now - lastInspection < 200) return;
+      lastInspection = now;
+      alignLabels();
+      const root = container.current?.parentElement;
+      if (!root || !map.getLayer("water-fill") || !map.getSource("hazard"))
+        return;
+      root.dataset.waterRendered = String(
+        map.queryRenderedFeatures({ layers: ["water-fill"] }).length,
+      );
+      root.dataset.powerRendered = map.getLayer("power")
+        ? String(map.queryRenderedFeatures({ layers: ["power"] }).length)
+        : "0";
     });
     map.on("click", "buildings", (e: MapLayerMouseEvent) => {
       const id = e.features?.[0]?.properties?.id;
@@ -217,6 +266,13 @@ export default function MapView() {
     };
   }, [buildings.data, utilities.data, selectedBuildingId]);
 
+  layerData.current = {
+    buildings: buildingFC,
+    power: powerFC,
+    link: linkFC,
+    hazard: (overlays.data as FC | undefined) ?? empty(),
+  };
+
   useEffect(() => {
     setData(mapRef.current, "buildings", buildingFC);
   }, [buildingFC, ready]);
@@ -281,7 +337,9 @@ export default function MapView() {
       const square = document.createElement("span");
       square.className = "storm-building-square";
       square.style.backgroundColor = p.color;
-      square.style.width = square.style.height = `${p.r * 1.4}px`;
+      square.style.width =
+        square.style.height = `${Math.max(8, Math.min(22, p.r))}px`;
+      square.style.flex = `0 0 ${Math.max(8, Math.min(22, p.r))}px`;
       if (p.approved) square.textContent = "✓";
       const label = document.createElement("span");
       label.className = "storm-building-label";
@@ -376,6 +434,7 @@ export default function MapView() {
   return (
     <div
       className="storm-map"
+      data-style-generation={ready}
       data-map-ready={ready > 0}
       data-map-moving={moving}
       data-basemap={basemap}
@@ -387,6 +446,35 @@ export default function MapView() {
         role="region"
       />
       <TimelineControl />
+      <div className="storm-scenario-strip">
+        <span
+          className={`scenario-phase phase-${state.data?.phase ?? "forecast"}`}
+        >
+          {state.data?.phase ?? "Loading"}
+        </span>
+        <div>
+          <strong>
+            {state.data?.scenario_id === "live"
+              ? "Live inputs · modeled impact"
+              : "Historical scenario · simulated impact"}
+          </strong>
+          <small>
+            View synced{" "}
+            {new Date(
+              Math.max(
+                state.dataUpdatedAt,
+                impacts.dataUpdatedAt,
+                overlays.dataUpdatedAt,
+              ) || Date.now(),
+            ).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            })}
+          </small>
+        </div>
+      </div>
+      <ResponseCard />
       <div className="storm-map-tools">
         <button
           type="button"
