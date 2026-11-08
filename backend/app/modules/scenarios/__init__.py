@@ -58,12 +58,12 @@ def _file_scenario(scenario_id: str) -> schemas.Scenario:
     path = DATA_DIR / "scenarios" / f"{scenario_id}.json"
     if not path.exists():
         raise KeyError(f"scenario {scenario_id} not found")
-    return schemas.Scenario.model_validate_json(path.read_text())
+    return schemas.Scenario.model_validate_json(path.read_text(encoding="utf-8"))
 
 
 @lru_cache(maxsize=None)
 def _file_anchors(scenario_id: str) -> dict:
-    return json.loads((DATA_DIR / "anchors" / f"{scenario_id}.json").read_text())
+    return json.loads((DATA_DIR / "anchors" / f"{scenario_id}.json").read_text(encoding="utf-8"))
 
 
 def _scenario(scenario_id: str) -> schemas.Scenario:
@@ -79,7 +79,7 @@ def _anchors(scenario_id: str) -> dict:
 
 
 def _seed(name: str, model):
-    return [model.model_validate(x) for x in json.loads((DATA_DIR / f"{name}.json").read_text())]
+    return [model.model_validate(x) for x in json.loads((DATA_DIR / f"{name}.json").read_text(encoding="utf-8"))]
 
 
 def scenario_ids() -> list[str]:

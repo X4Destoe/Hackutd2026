@@ -1,0 +1,111 @@
+// Requires a production preview and an isolated simulator; never sends real texts.
+const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const os = require('node:os');
+const path = require('node:path');
+const { chromium, webkit, devices } = require('playwright');
+const BASE = process.env.STORM_URL || 'http://127.0.0.1:5173';
+(async () => {
+  const browser = process.env.STORM_BROWSER === 'webkit' ? await webkit.launch({ headless: true }) : await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', headless: true, args: ['--no-sandbox', '--enable-unsafe-swiftshader'] });
+  const context = await browser.newContext({ ...devices['iPhone 13'] });
+  const api = async (route, data) => {
+    const r = await context.request.fetch(BASE + '/api' + route, { method: data ? 'POST' : 'GET', data });
+    assert(r.ok(), `${route}: ${r.status()}`); return r.json();
+  };
+  let simulator = false;
+  const output = process.env.STORM_TEST_OUTPUT || await fs.mkdtemp(path.join(os.tmpdir(), 'storm-mobile-'));
+  await fs.mkdir(output, { recursive: true });
+  const errors = [];
+  try {
+    assert.equal((await api('/messaging/status')).mode, 'sim', 'Simulator required before any demo mutation');
+    simulator = true;
+    await api('/demo/reset', { scenario_id: 'harvey_houston' });
+    await context.route('https://**/*', r => r.abort());
+    const page = await context.newPage();
+    page.on('pageerror', error => errors.push(error.message));
+    await page.goto(BASE);
+    const nav = page.getByRole('navigation', { name: 'Mobile response tools' });
+    const panel = page.getByRole('complementary', { name: 'Portfolio panel' });
+    const noOverflow = async () => assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Page must fit phone width');
+    await nav.waitFor();
+    assert.equal(await nav.getByRole('button').count(), 4);
+    assert.equal(await page.getByRole('button', { name: 'Texts', exact: true }).count(), 0);
+    await noOverflow();
+    const map = page.getByRole('main', { name: 'Map workspace' });
+    await map.getByRole('button', { name: 'Map key', exact: true }).click();
+    await map.getByRole('complementary', { name: 'Map legend' }).waitFor();
+    await map.getByRole('button', { name: 'Map key', exact: true }).click();
+    await map.locator('[data-building-id="BLD-HOU-01"]').click();
+    await panel.getByRole('heading', { name: 'Bayou Plaza', exact: true }).waitFor();
+    await panel.getByRole('button', { name: 'Back to map' }).click();
+    await map.waitFor();
+    await map.getByRole('navigation', { name: 'Disaster timeline' }).getByRole('button', { name: /24h/ }).click();
+    await page.waitForFunction(async () => (await fetch('/api/demo/state').then(r => r.json())).step_hour === -24);
+    await page.screenshot({ path: path.join(output, 'iphone-map.png') });
+    await nav.getByRole('button', { name: 'Fix-First', exact: true }).click();
+    await panel.getByRole('heading', { name: 'Fix-First', exact: true }).waitFor();
+    assert.equal(await panel.getByRole('heading', { name: 'Customer emergency notice' }).count(), 0);
+    const card = panel.locator('.response-card').filter({ has: page.getByRole('button', { name: 'Approve plan', exact: true }) }).first();
+    await card.getByRole('button', { name: 'Approve plan', exact: true }).click();
+    await nav.getByRole('button', { name: 'Work Orders', exact: true }).click();
+    const order = panel.locator('.response-card').first();
+    await order.waitFor();
+    await order.getByRole('textbox').fill('Need equipment at the south entrance');
+    await order.getByRole('button', { name: 'Mark blocked', exact: true }).click();
+    await order.getByText('Work order marked blocked.', { exact: true }).waitFor();
+    await page.screenshot({ path: path.join(output, 'iphone-orders.png') });
+    await order.getByRole('button', { name: 'Mark done', exact: true }).click();
+    await order.locator('.order-done').waitFor();
+    await nav.getByRole('button', { name: 'Help Sites', exact: true }).click();
+    await panel.locator('.site-open').first().waitFor();
+    assert(await panel.getByRole('link', { name: /Directions to/ }).count() > 0);
+    await page.screenshot({ path: path.join(output, 'iphone-help.png') });
+    await nav.getByRole('button', { name: 'Map', exact: true }).click();
+    await page.getByRole('button', { name: 'Add to Home Screen instructions' }).click();
+    await page.getByRole('heading', { name: 'Keep Storm on your Home Screen' }).waitFor();
+    await page.getByRole('button', { name: 'Close dialog' }).click();
+    for (const viewport of [{ width: 320, height: 568 }, { width: 844, height: 390 }, { width: 932, height: 430 }]) {
+      await page.setViewportSize(viewport);
+      await noOverflow();
+      assert((await map.boundingBox()).height >= 150, 'Map needs usable height in portrait and landscape');
+      const target = await nav.getByRole('button', { name: 'Map', exact: true }).boundingBox();
+      assert(target.height >= 44 && target.width >= 44, 'Touch targets at least44px');
+      await nav.getByRole('button', { name: 'Fix-First', exact: true }).click();
+      await noOverflow();
+      await nav.getByRole('button', { name: 'Map', exact: true }).click();
+    }
+    await page.setViewportSize({ width: 390, height: 844 });
+    const manifest = await (await context.request.get(BASE + '/manifest.webmanifest')).json();
+    assert.equal(manifest.display, 'standalone');
+    assert.equal(await page.locator('meta[name="apple-mobile-web-app-capable"]').getAttribute('content'), 'yes');
+    for (const icon of manifest.icons) {
+      const r = await context.request.get(BASE + icon.src); assert(r.ok());
+      assert.equal((await r.body()).readUInt32BE(16), parseInt(icon.sizes));
+    }
+    await page.evaluate(() => navigator.serviceWorker.ready);
+    await page.waitForFunction(() => !!navigator.serviceWorker.controller);
+    await nav.getByRole('button', { name: 'Fix-First', exact: true }).click();
+    await context.setOffline(true);
+    await page.getByText('Offline. Displayed information', { exact: false }).waitFor();
+    await panel.getByRole('button', { name: 'Approve plan', exact: true }).first().click();
+    await panel.getByRole('alert').filter({ hasText: 'Approval failed' }).waitFor();
+    const beforeReconnect = (await api('/plans')).filter(p => p.status !== 'proposed' && p.status !== 'missed').length;
+    await context.setOffline(false);
+    assert.equal((await api('/plans')).filter(p => p.status !== 'proposed' && p.status !== 'missed').length, beforeReconnect, 'No deferred offline approval');
+    const cached = await page.evaluate(async () => (await Promise.all((await caches.keys()).filter(k => k.startsWith('storm-offline-')).map(async k => (await (await caches.open(k)).keys()).map(r => new URL(r.url).pathname)))).flat());
+    assert.deepEqual(cached, ['/offline.html']);
+    await context.setOffline(true);
+    await page.goto(BASE);
+    await page.getByRole('heading', { name: 'Reconnect for current information' }).waitFor();
+    await context.setOffline(false);
+    await page.goto(BASE);
+    await page.setViewportSize({ width: 1600, height: 1000 });
+    await page.getByRole('navigation', { name: 'Portfolio tools' }).getByRole('button', { name: 'Texts', exact: true }).waitFor();
+    assert.deepEqual(errors, []);
+    console.log(`PASS: mobile map/timeline, approval, work orders, help sites, portrait/landscape, hidden Texts, install assets, offline and desktop regression. Screenshots: ${output}`);
+  } finally {
+    await context.setOffline(false);
+    if (simulator && (await api('/messaging/status')).mode === 'sim') await api('/demo/reset', { scenario_id: 'harvey_houston' });
+    await browser.close();
+  }
+})().catch(error => { console.error(error); process.exitCode = 1; });
