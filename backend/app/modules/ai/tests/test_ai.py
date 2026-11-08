@@ -35,7 +35,7 @@ def test_task_and_report():
     message = ai.compose('task', {'work_order_id': 'WO-001', 'building_name': 'Bayou Plaza', 'task_text': 'Deploy barriers by 18:00.'})
     assert all(s in message for s in ['WO-001', 'Bayou Plaza', '18:00', 'DONE', 'BLOCKED'])
     facts = {'building_name': 'Bayou Plaza', 'cost_cents': 2400000, 'avoided_cents': 98000000}
-    assert '$24,000.00' in ai.rationale(facts)
+    assert '$24k' in ai.rationale(facts) and '$980k' in ai.rationale(facts)
     report = ai.write_report('executive_summary', facts)
     assert 'Bayou Plaza' in report and '$980,000.00' in report and 'synthetic' in report
 
@@ -103,3 +103,42 @@ def test_valid_provider_text_used(monkeypatch):
         def text(self, *args): return 'Please go to 123 Main.'
     monkeypatch.setattr(ai, '_provider', lambda: Valid())
     assert ai.compose('redirect', {'address': '123 Main'}) == 'Please go to 123 Main.'
+
+
+@pytest.mark.parametrize('cents,expected', [(0, '$0'), (1, '$0.01'), (125050, '$1.25k'), (2400000, '$24k'), (98000000, '$980k'), (165000000, '$1.65M'), (-2400000, '$-24k')])
+def test_compact_dollars(cents, expected):
+    assert ai.templates.compact_dollars(cents) == expected
+
+
+def test_nested_report_facts_allow_prose_without_dict_repr(monkeypatch):
+    class Valid(Fake):
+        def text(self, *args):
+            return 'At 123 Main, the portfolio has $980k exposure. Prioritize response.'
+    monkeypatch.setattr(ai, '_provider', lambda: Valid())
+    facts = {'portfolio': {'net_exposure_cents': 98000000}, 'buildings': [{'address': '123 Main', 'drivers': ['grid down', 'generator empty']}]}
+    assert ai.write_report('executive_summary', facts).startswith('At 123 Main')
+
+
+@pytest.mark.parametrize('output', ['Exposure is $24k.', 'Exposure is $980k0 at 123 Main.', 'Exposure is $980k.'])
+def test_report_missing_or_changed_money_address_falls_back(monkeypatch, output):
+    class Wrong(Fake):
+        def text(self, *args): return output
+    monkeypatch.setattr(ai, '_provider', lambda: Wrong())
+    facts = {'rows': [{'address': '123 Main', 'net_exposure_cents': 98000000}]}
+    assert ai.write_report('executive_summary', facts).startswith('# Executive summary')
+
+
+def test_tenant_report_checks_nested_money(monkeypatch):
+    class Valid(Fake):
+        def text(self, *args): return 'Estimated loss $24,000 at 123 Main.'
+    monkeypatch.setattr(ai, '_provider', lambda: Valid())
+    assert ai.write_report('tenant_notice', {'nested': {'cost_cents': 2400000, 'address': '123 Main'}}).startswith('Estimated loss')
+
+
+def test_team_default_and_model_override(monkeypatch):
+    monkeypatch.setattr(ai.config.settings, 'llm_provider', 'anthropic')
+    monkeypatch.setattr(ai.config.settings, 'anthropic_api_key', 'dummy-not-used')
+    monkeypatch.setattr(ai.config.settings, 'llm_model', '')
+    assert ai.provider_name() == 'anthropic:claude-sonnet-5-5'
+    monkeypatch.setattr(ai.config.settings, 'llm_model', 'team-override')
+    assert ai.provider_name() == 'anthropic:team-override'

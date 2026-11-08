@@ -2,7 +2,7 @@
 import json
 from typing import Protocol
 
-DEFAULT_MODELS = {'anthropic': 'claude-sonnet-4-5', 'openai': 'gpt-4.1-mini', 'gemini': 'gemini-2.5-flash'}
+DEFAULT_MODELS = {'anthropic': 'claude-sonnet-5-5', 'openai': 'gpt-4.1-mini', 'gemini': 'gemini-2.5-flash'}
 
 
 class Provider(Protocol):
