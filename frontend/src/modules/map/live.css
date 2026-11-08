@@ -1,0 +1,14 @@
+.storm-live-status { position: absolute; top: 18px; left: 130px; width: min(320px,calc(100% - 205px)); max-height: calc(100% - 100px); overflow-y: auto; background: #fffffff5; border: 1px solid #c8d8c8; border-left: 3px solid #17603a; box-shadow: 0 2px 8px #1a2e2312; padding: 10px 12px; z-index: 4; }
+.storm-live-status.live-unknown { border-left-color: #ad7426; }
+.storm-live-status > strong { font-size: 12px; }
+.storm-live-status p { font-size: 11px; line-height: 1.5; margin: 5px 0; }
+.storm-live-status small { font-size: 10px; color: #735c30; }
+.storm-live-status summary { font-size: 10px; margin-top: 8px; cursor: pointer; color: #17603a; }
+.storm-live-status ul { list-style: none; padding: 0; margin: 8px 0; }
+.storm-live-status li { display: grid; gap: 4px; padding: 7px 0; border-top: 1px solid #d8e5db; font-size: 10px; }
+.storm-live-status span { color: #627269; }
+@media (max-width:1100px) {
+  .storm-live-status { left: 100px; width: calc(100% - 165px); max-height: 110px; }
+  .storm-map:has(.storm-live-status) .map-activity { top: 145px; }
+  .storm-map:has(.storm-live-status) .storm-response-card { max-height: calc(100% - 250px); overflow-y: auto; }
+}

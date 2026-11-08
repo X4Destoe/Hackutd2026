@@ -147,15 +147,15 @@ export default function Panel({ onClose }: { onClose?: () => void }) {
           </p>
           <div className="hero-metrics" aria-live="polite">
             <div>
-              <span>Net exposure</span>
+              <span title="After insurance and approved actions">Estimated loss</span>
               <strong key={`net-${summary.data?.net_exposure_cents}`}>
-                {summary.data ? money(summary.data.net_exposure_cents) : "—"}
+                {summary.data?.data_quality === "unknown" ? "Unknown" : summary.data ? money(summary.data.net_exposure_cents) : "—"}
               </strong>
             </div>
             <div>
               <span>Avoided</span>
               <strong key={`avoided-${summary.data?.avoided_cents}`}>
-                {summary.data ? money(summary.data.avoided_cents) : "—"}
+                {summary.data?.data_quality === "unknown" ? "Unknown" : summary.data ? money(summary.data.avoided_cents) : "—"}
               </strong>
             </div>
           </div>

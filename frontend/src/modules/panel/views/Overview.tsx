@@ -11,6 +11,7 @@ export default function Overview() {
   return (
     <>
       <h2>Portfolio overview</h2>
+      <p className="panel-caption">Estimated loss accounts for insurance and approved actions. Figures are modeled.</p>
       {summary.isPending ? (
         <p role="status">Loading portfolio impact…</p>
       ) : summary.isError ? (
@@ -18,12 +19,12 @@ export default function Overview() {
           Portfolio impact is unavailable. Building records are still
           accessible.
         </p>
-      ) : (
+      ) : summary.data.data_quality === "unknown" ? <p role="status" className="panel-empty">Financial impact is unknown because live inputs are unavailable or stale. This does not mean zero loss or safe conditions.</p> : (
         <dl className="kpi-grid">
           {[
             ["Buildings at risk", String(summary.data.buildings_at_risk)],
             ["Gross loss", money(summary.data.gross_loss_cents)],
-            ["Net exposure", money(summary.data.net_exposure_cents)],
+            ["Estimated loss", money(summary.data.net_exposure_cents)],
             ["Avoided", money(summary.data.avoided_cents)],
             ["Approved actions", String(summary.data.actions_approved)],
             [

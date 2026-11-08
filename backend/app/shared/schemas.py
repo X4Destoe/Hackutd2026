@@ -179,6 +179,7 @@ class Impact(Model):
     drivers: list[str] = Field(default_factory=list)
     exposure: Exposure
     with_approved_actions: bool
+    data_quality: Literal["modeled", "live_proxy", "unknown"] = "modeled"
 
 
 class PortfolioSummary(Model):
@@ -191,6 +192,7 @@ class PortfolioSummary(Model):
     actions_approved: int
     worst_building_ids: list[str] = Field(default_factory=list)
     insurance_recovery_cents: int = 0  # added 2026-11-08 (comms DECISIONS): KPI grid without client-side money math
+    data_quality: Literal["modeled", "live_proxy", "unknown"] = "modeled"
 
 
 # ---------- Actions (owned by actions) ----------

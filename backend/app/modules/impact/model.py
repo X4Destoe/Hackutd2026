@@ -65,10 +65,20 @@ def zero_impact(b: schemas.Building, hour: int, driver: str) -> schemas.Impact:
                           exposure=exposure, with_approved_actions=False)
 
 
+def _tag(text: str, sources: dict, tags: dict) -> str:
+    for key, words in tags.items():
+        if key in sources and any(w in text for w in words):
+            return f"{text} — {sources[key]}"
+    return text
+
+
 def compute(b: schemas.Building, s: Site, with_approved_actions: bool = False) -> schemas.Impact:
     if not s.in_scenario:
         return zero_impact(b, s.hour, "Not in the hazard area")
     hz, sysm = s.hazard, b.systems
+    quality = hz.get("data_quality", "modeled")
+    if quality == "unknown":
+        return zero_impact(b, s.hour, "Live data unavailable or stale: financial impact is unknown, not zero or safe.").model_copy(update={"data_quality": "unknown"})
     actions = [a for a in s.actions if _applies(a.effect, sysm.has_generator)]
 
     # power cascade: grid -> generator -> unpowered hours
@@ -164,6 +174,10 @@ def compute(b: schemas.Building, s: Site, with_approved_actions: bool = False) -
     if sla > 0:
         n = sum(1 for t in b.tenants if t.sla_penalty_per_hour_cents)
         ranked.append((sla, f"{n} critical tenant{'s' if n != 1 else ''}: SLA {money_fmt(sla_hour)}/h → {money_fmt(sla)}"))
+    src = hz.get("sources") or {}  # live scenarios: which NWS alert a proxy value came from (shown, never hidden)
+    if src:
+        tags = {"water": ("water", "storm surge"), "wind": ("mph wind",), "winter": ("°F", "ice on the roof")}
+        ranked = [(w, _tag(text, src, tags)) for w, text in ranked]
     drivers = [text for _, text in sorted(ranked, key=lambda x: -x[0])][:4]
     if recovery > 0:
         drivers.append(f"Insurance ({ins.carrier}) recovers {money_fmt(recovery)} after a {money_fmt(ins.deductible_cents)} deductible")
@@ -190,4 +204,4 @@ def compute(b: schemas.Building, s: Site, with_approved_actions: bool = False) -
         on_generator=s.grid_down and gen_hours > since_landfall,
         generator_hours_left=max(0.0, gen_hours - since_landfall) if gen_hours > 0 else None, cause_chain=chain)
     return schemas.Impact(building_id=b.id, step_hour=s.hour, risk=risk_for(net), damage_ratio=round(ratio, 4), money=money,
-                          drivers=drivers, exposure=exposure, with_approved_actions=with_approved_actions)
+                          drivers=drivers, exposure=exposure, with_approved_actions=with_approved_actions, data_quality=quality)

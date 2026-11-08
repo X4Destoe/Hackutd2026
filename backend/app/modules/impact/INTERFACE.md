@@ -25,3 +25,5 @@ Recomputes on `scenario.loaded`, `timeline.changed`, `plan.changed`.
 - `exposure.cause_chain` e.g. `["Downtown substation down (96h)", "generator covers 18h", "78h unpowered", "3.0 ft above first floor", "tenants out 53 days"]`.
 - `drivers`: up to 4 ranked by dollar contribution, then the insurance line.
 - A building with `systems.flood_barriers_installed` counts FLOOD_BARRIERS as permanent (also in the baseline).
+
+Live reliability: impact and summary carry data_quality (`modeled`, `live_proxy`, `unknown`). Unknown records have numeric placeholders solely for compatibility: never render them as zero-loss/safe or issue a financial report from them. Stale/missing alerts or city forecasts produce unknown, including cache transitions without a new snapshot. `site_safe` returns False for live scenarios because no real-time power verification exists. Historical and synthetic exercises retain their normal modeled behavior.

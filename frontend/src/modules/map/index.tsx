@@ -29,6 +29,9 @@ import {
 import TimelineControl from "./TimelineControl";
 import Legend from "./Legend";
 import ResponseCard from "./ResponseCard";
+import ActivityLayers from "./ActivityLayers";
+import HazardMotion from "./overlays/HazardMotion";
+import LiveStatus from "./LiveStatus";
 import "./map.css";
 
 type FC = { type: "FeatureCollection"; features: unknown[] };
@@ -179,6 +182,15 @@ export default function MapView() {
     map.on("mouseleave", "buildings", leave);
     map.on("mousemove", "power", hover);
     map.on("mouseleave", "power", leave);
+    for (const id of ["water-fill", "snow-fill", "wind-fill"]) {
+      map.on("mousemove", id, (event: MapLayerMouseEvent) => {
+        const properties = event.features?.[0]?.properties as Record<string, string> | undefined;
+        if (!properties?.event) return;
+        map.getCanvas().style.cursor = "help";
+        popup.setLngLat(event.lngLat).setDOMContent(tooltip({ ...properties, kind: "alert" })).addTo(map);
+      });
+      map.on("mouseleave", id, leave);
+    }
     return () => {
       window.clearTimeout(fallback);
       controller.abort();
@@ -201,8 +213,8 @@ export default function MapView() {
       type: "FeatureCollection",
       features: list.map((b, k) => {
         const i = byId.get(b.id);
-        const risk = i?.risk as RiskLevel | undefined;
-        const net = i?.money.net_exposure_cents;
+        const risk = (i?.data_quality === "unknown" ? undefined : i?.risk) as RiskLevel | undefined;
+        const net = i?.data_quality === "unknown" ? undefined : i?.money.net_exposure_cents;
         return {
           type: "Feature",
           geometry: { type: "Point", coordinates: [b.lon, b.lat] },
@@ -210,7 +222,7 @@ export default function MapView() {
             id: b.id,
             name: b.name,
             risk: risk ?? "unknown",
-            color: riskColor(risk ?? "none"),
+            color: risk == null ? "#64748b" : riskColor(risk),
             r: 8 + (hi > lo ? (14 * (roots[k] - lo)) / (hi - lo) : 7),
             label: `${b.name} · ${net == null ? "impact unavailable" : money(net)}`,
             net: net == null ? "impact unavailable" : money(net),
@@ -400,13 +412,11 @@ export default function MapView() {
     riseStart.current = performance.now();
   }, [state.data?.step_hour]);
   useEffect(() => {
-    if (
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
-      (!layers.hazard && !layers.power)
-    )
-      return;
+    if (!layers.hazard && !layers.power) return;
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let raf = 0;
     const tick = (t: number) => {
+      if (motion.matches) return;
       const map = mapRef.current;
       if (map?.getLayer("water-fill")) {
         const rise =
@@ -427,8 +437,13 @@ export default function MapView() {
       }
       raf = requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    const syncMotion = () => {
+      cancelAnimationFrame(raf);
+      if (!motion.matches) raf = requestAnimationFrame(tick);
+    };
+    motion.addEventListener("change", syncMotion);
+    syncMotion();
+    return () => { cancelAnimationFrame(raf); motion.removeEventListener("change", syncMotion); };
   }, [phase, ready, layers.hazard, layers.power]);
 
   return (
@@ -446,7 +461,10 @@ export default function MapView() {
         role="region"
       />
       <TimelineControl />
-      <div className="storm-scenario-strip">
+      <HazardMotion map={ready ? mapRef.current : null} data={overlays.data as FC | undefined} enabled={layers.hazard} />
+      <ActivityLayers map={ready ? mapRef.current : null} city={city} />
+      <LiveStatus city={city} />
+      {!state.data?.scenario_id.startsWith("live") && <div className="storm-scenario-strip">
         <span
           className={`scenario-phase phase-${state.data?.phase ?? "forecast"}`}
         >
@@ -454,7 +472,9 @@ export default function MapView() {
         </span>
         <div>
           <strong>
-            {state.data?.scenario_id === "live"
+            {state.data?.scenario_id.startsWith("custom_")
+              ? "Custom simulation · hypothetical effects"
+              : state.data?.scenario_id.startsWith("live")
               ? "Live inputs · modeled impact"
               : "Historical scenario · simulated impact"}
           </strong>
@@ -473,7 +493,7 @@ export default function MapView() {
             })}
           </small>
         </div>
-      </div>
+      </div>}
       <ResponseCard />
       <div className="storm-map-tools">
         <button
@@ -527,8 +547,13 @@ function tooltip(p: Record<string, string>): HTMLElement {
     d.textContent = text;
     root.append(d);
   };
-  if (p.kind === "building") {
-    line(`${p.risk} risk · net ${p.net}`);
+  if (p.kind === "alert") {
+    title.textContent = p.event;
+    if (p.headline) line(p.headline);
+    if (p.severity) line(`NWS severity: ${p.severity}`);
+    line("Modeled intensity is a proxy, not an observed depth.");
+  } else if (p.kind === "building") {
+    line(`${p.risk} risk · estimated loss ${p.net}`);
     if (p.driver) line(p.driver);
   } else {
     line(`Substation · ${p.driver}`);

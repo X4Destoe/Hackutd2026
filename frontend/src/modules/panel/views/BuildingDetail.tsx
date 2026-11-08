@@ -34,7 +34,7 @@ export default function BuildingDetail() {
         ["Tenant SLA", i.money.sla_penalty_cents, false],
         ["Operations", i.money.operations_cents, false],
         ["Insurance recovery", i.money.insurance_recovery_cents, true],
-        ["Net exposure", i.money.net_exposure_cents, false],
+        ["Estimated loss", i.money.net_exposure_cents, false],
       ]
     : [];
   const max = Math.max(1, ...waterfall.map(([, v]) => Math.abs(v)));
@@ -55,7 +55,7 @@ export default function BuildingDetail() {
             color: i.risk === "moderate" ? "#20342b" : "#fff",
           }}
         >
-          {i.risk} risk
+          {i.data_quality === "unknown" ? "Risk unknown" : `${i.risk}${i.data_quality === "live_proxy" ? " proxy" : ""} risk`}
         </Badge>
       )}
       <h3 className="section-title">Fragmented data → one record</h3>
@@ -70,10 +70,11 @@ export default function BuildingDetail() {
         <p className="panel-empty">
           Financial impact is unavailable for this building.
         </p>
-      ) : (
+      ) : i?.data_quality === "unknown" ? <p role="status" className="panel-empty">Live hazard and financial impact are unknown. No verified power status is available; zero-loss or safe conditions cannot be inferred.</p> : (
         i && (
           <>
             <h3 className="section-title">Hazard and power</h3>
+            {i.data_quality === "live_proxy" && <p className="panel-caption">Alert-based proxy estimates, not measured flood depths. Utility conditions are unverified.</p>}
             <dl className="panel-facts">
               <div>
                 <dt>Flood / surge depth</dt>
@@ -97,16 +98,16 @@ export default function BuildingDetail() {
               </div>
               <div>
                 <dt>Grid</dt>
-                <dd>{i.exposure.grid_down ? "Down" : "Available"}</dd>
+                <dd>{i.data_quality === "live_proxy" ? "Unverified" : i.exposure.grid_down ? "Down" : "Available"}</dd>
               </div>
               <div>
                 <dt>Outage duration</dt>
-                <dd>{i.exposure.power_out_hours} h</dd>
+                <dd>{i.data_quality === "live_proxy" ? "Unverified" : `${i.exposure.power_out_hours} h`}</dd>
               </div>
               <div>
                 <dt>Generator remaining</dt>
                 <dd>
-                  {i.exposure.generator_hours_left == null
+                  {i.data_quality === "live_proxy" ? "Unverified" : i.exposure.generator_hours_left == null
                     ? "Not running"
                     : `${i.exposure.generator_hours_left} h`}
                 </dd>
@@ -202,7 +203,7 @@ export default function BuildingDetail() {
       )}
       <Button
         variant="outline"
-        disabled={report.isPending}
+        disabled={report.isPending || i?.data_quality === "unknown"}
         onClick={() =>
           report.mutate({ kind: "tenant_notice", building_id: b.id })
         }

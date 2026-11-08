@@ -1,0 +1,22 @@
+.activity-pin { border: 2px solid white; border-radius: 5px; background: #175e3a; color: white; padding: 4px 6px; font-family: inherit; font-size: 11px; font-weight: 600; line-height: 1.2; box-shadow: 0 2px 7px #163d2540; cursor: pointer; min-width: 26px; min-height: 26px; }
+.activity-pin.activity-workorders { background: #315f86; }
+.activity-pin { z-index: 1; }
+.storm-building-button { z-index: 2; }
+.activity-pin.activity-messages { background: #684e91; }
+.activity-pin.activity-unsafe, .activity-pin.activity-blocked { background: #a92d28; }
+.activity-pin.activity-full, .activity-pin.activity-closed { background: #626c68; }
+.activity-pin.activity-done { background: #175e3a; }
+.activity-pin:focus-visible, .map-activity button:focus-visible { outline: 3px solid #8b5cf6; outline-offset: 3px; }
+.map-activity { position: absolute; right: 70px; top: 18px; display: grid; gap: 6px; max-width: 225px; z-index: 3; }
+.map-activity button { display: grid; gap: 3px; border: 1px solid #c8d8c8; background: #fffffff2; padding: 9px 12px; text-align: left; color: #183c2a; cursor: pointer; box-shadow: 0 2px 6px #163d2510; }
+.map-activity strong { font-size: 11px; }
+.map-activity span { font-size: 10px; }
+.map-activity small { font-size: 9px; line-height: 1.4; color: #627269; }
+.timeline-error { position: absolute; left: 130px; top: 76px; z-index: 5; max-width: 270px; padding: 10px; background: #fff0eb; border: 1px solid #d99a8e; color: #84281f; font-size: 12px; }
+@media (max-width: 1100px) {
+  .map-activity { top: 76px; left: 100px; right: 65px; max-width: none; display: flex; }
+  .map-activity button { flex: 1; min-width: 0; padding: 7px; }
+  .map-activity span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .map-activity small { display: none; }
+  .storm-map:has(.map-activity button) .storm-response-card { max-height: calc(100% - 190px); overflow-y: auto; }
+}

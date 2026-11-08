@@ -8,6 +8,7 @@ export const eventQueries: Record<string, readonly string[]> = {
   'plan.changed': ['plans', 'fixFirst', 'summary'], 'workorder.changed': ['workOrders', 'plans'],
   'message.sent': ['messages', 'messagingStatus'], 'message.received': ['messages', 'messagingStatus'],
   'resources.changed': ['resources', 'referrals'], 'referral.changed': ['resources', 'referrals'], 'report.created': ['reports'],
+  'live.updated': ['liveStatus', 'liveAlerts', 'overlays', 'impact', 'summary', 'plans', 'fixFirst', 'resources'],
 };
 export type LiveEvent = { type: string; data: unknown; receivedAt: number };
 /** Mount once below QueryClientProvider. Native EventSource retries on disconnect. */

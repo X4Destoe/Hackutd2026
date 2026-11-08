@@ -27,25 +27,26 @@ export default function TimelineControl() {
     return () => window.removeEventListener('keydown', onKey);
   });
 
+  if (steps.isError) return <div role="alert" className="timeline-error">Timeline unavailable. <button onClick={() => void steps.refetch()}>Retry timeline</button></div>;
   if (!steps.data?.length) return null;
   return (
-    <nav className="storm-timeline" aria-label="Disaster timeline">
-      <button type="button" className="storm-timeline-arrow" aria-label="Earlier step" disabled={index <= 0} onClick={() => go(-1)}>
+    <><nav className="storm-timeline" aria-label="Disaster timeline" aria-busy={setHour.isPending}>
+      <button type="button" className="storm-timeline-arrow" aria-label="Earlier step" disabled={index <= 0 || setHour.isPending} onClick={() => go(-1)}>
         <ChevronUp size={16} />
       </button>
       {steps.data.map((s) => {
         const [time, label] = s.label.split(' · ');
         return (
-          <button key={s.hour} type="button" aria-pressed={s.hour === current} title={s.narrative}
+          <button key={s.hour} type="button" disabled={setHour.isPending} aria-pressed={s.hour === current} title={s.narrative}
             style={{ borderLeftColor: phaseColor(s.phase as Phase) }} onClick={() => !setHour.isPending && setHour.mutate(s.hour)}>
             <strong>{time}</strong>
             <span>{label ?? s.phase}</span>
           </button>
         );
       })}
-      <button type="button" className="storm-timeline-arrow" aria-label="Later step" disabled={index < 0 || index >= hours.length - 1} onClick={() => go(1)}>
+      <button type="button" className="storm-timeline-arrow" aria-label="Later step" disabled={setHour.isPending || index < 0 || index >= hours.length - 1} onClick={() => go(1)}>
         <ChevronDown size={16} />
       </button>
-    </nav>
+    </nav>{setHour.isError && <p role="alert" className="timeline-error">Could not confirm the timeline change. Select a step to retry.</p>}</>
   );
 }
