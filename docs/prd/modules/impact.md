@@ -1,49 +1,41 @@
 # Module: impact (`backend/app/modules/impact/`)
 
-**Skills:** backend, python, data · **Read also:** `00-overview.md` §8 (success criteria)
+**Skills:** backend, python, data · **Read also:** `03-data-and-scenarios.md` §3 (implement it exactly)
 
 ## Job
-Put numbers on everything: KPIs for the Command Center header and the closing demo beat, insured-loss estimates for State
-Farm, SLA exposure and cost avoided for CBRE. Every number traces to one constant or one stored field.
+The CBRE core: **for every building, what will this disaster cost the business, and why.** Joins the fragmented data
+(hazard at the site, utility outage → generator cascade, building systems, tenant leases/SLAs, insurance) into one
+`Impact` with a money breakdown and plain-English drivers.
 
 ## Owns
-`backend/app/modules/impact/**` (including `constants.py` with every dollar assumption)
+`backend/app/modules/impact/**` (including `constants.py` with every curve and constant from `03` §3).
 
-## Depends on
-core (reads store: cases, customers, reservations, buildings, actions). Consumes `case.updated`, `action.changed`,
-`clock.tick`.
-
-## Public interface (`__init__.py`)
+## Interface (`__init__.py`)
 ```python
-def register() -> None                    # clock order 80
-def kpis() -> Kpis
-def breakdown() -> ImpactBreakdown
-def claim_estimate_cents(case: Case) -> int
-router  # GET /api/kpis, GET /api/impact
+def register() -> None                 # bus.on("timeline.changed", recompute) and on("plan.changed", recompute)
+def recompute(hour: int | None = None) -> list[Impact]          # all buildings; caches; emits impact.updated
+def impact_for(building_id: str, hour: int | None = None, extra_actions: list[str] = []) -> Impact
+    # applies approved actions (actions.approved_codes) + extra_actions (what-if). Pure function of inputs
+def baseline_for(building_id: str, hour: int | None = None) -> Impact   # with NO actions (for 'avoided' math)
+def summary() -> PortfolioSummary
+def site_safe(lat: float, lon: float, utility_node_id: str | None = None, hour: int | None = None) -> bool
+    # False if flood/surge depth > 0.5 ft, wind > 74 mph, in burn zone, or the utility node is down (for help sites)
+router   # GET /api/impact, /api/impact/{id}, /api/portfolio/summary
 ```
-Emit `kpis.updated` every tick when any value changed (cheap: computed from the store in under 20 ms).
+Action effects come from `ActionTemplate.effect` (load the catalog via `from app.modules.actions import catalog`).
+`avoided_cents` in the summary = Σ (baseline net − current net) over buildings with approved actions.
 
-## Definitions
-- `customers_affected` = customers with a case. `customers_reached_pct` = cases with `first_contact_at` / affected.
-- `unreached` = cases in status `unreached`. `open_by_tier` = non-resolved cases by tier.
-- `median_minutes_to_contact` = median(`first_contact_at - alert_sent_at`).
-- `deadline_breaches` = cases with `deadline_breached`. `routed` = cases with an active reservation.
-  `p1_resolved` = resolved cases whose highest tier was P1 (keep `max_tier` in a dict here).
-- `est_insured_loss_cents` = Σ `claim_estimate_cents` over cases.
-- `cbre_exposure_cents` = Σ over buildings of `exposure_cents_per_hour × hours at risk or failed so far`.
-- `cbre_avoided_cents` = Σ `avoided_cents` of approved plans.
-- `sites_open`, `site_capacity_free` from resources.
+## Rules
+- Exposure: `scenarios.hazard_at(b.lat, b.lon, hour)`. Power: `power_out_hours = scenarios.outage_hours(b.utility_node_id, hour)`.
+  Generator hours = `systems.generator_fuel_hours` + any `add_generator_hours` from actions (RENTAL_GENERATOR gives a building without a generator 72h).
+- `cause_chain` examples: `["UTL-HOU-SUB3 down (96h)", "generator covers 18h", "78h unpowered"]`, `["3.1 ft above first floor"]`.
+- `drivers`: 2–5 short strings ordered by dollar contribution.
+- Buildings outside the scenario's city: risk `none`, all zeros, driver "not in the hazard area".
+- Performance: `recompute` for 12 buildings × 1 step in under 50 ms (no network calls).
 
-## Claim estimate (illustrative constants, `constants.py`, shown in the UI as "estimates")
-`burst_pipe 1_800_000` · `flooding 2_500_000` · `structure 4_000_000` · `roof 1_200_000` · `no_heat 0` ·
-`ALE per displaced household per night 15_000` (hotel/shelter reservation × 3 nights). Sum the damage values per case.
-`ImpactBreakdown.assumptions` lists every constant in words. The team should replace them with sourced figures if found
-(a FEMA/insurer report on the 2021 storm) and cite the source in that list.
-
-## Acceptance
-- With seeded data at minute 600 (sim), every KPI is non-null and `customers_reached_pct` is between 0 and 100.
-- Approving the BLD-07 plan increases `cbre_avoided_cents` by that plan's `avoided_cents`.
-- `GET /api/impact` lists its assumptions.
-
-## Not in scope
-Actuarial accuracy. These are demo-grade estimates with clearly labeled assumptions.
+## Acceptance (pytest)
+- The flood curve interpolates correctly (2.5 ft → 0.21).
+- Bayou Plaza at hour 0 (Harvey): net exposure is in the high/severe band. Approving FLOOD_BARRIERS + RELOCATE_EQUIPMENT lowers it by ≥ 50%.
+- Lone Star Data Center (Uri) without fuel: SLA dominates the drivers. Adding GENERATOR_FUEL cuts unpowered hours by 24.
+- `site_safe` is False for a point inside a flood band and for a site whose substation is down.
+- The money waterfall always balances: `net = damage + rent + sla + ops − recovery`.

@@ -1,178 +1,128 @@
-# 00 - Overview: what we're building and why
+# 00 - Overview: what Brace is and how it flows
 
-## 1. One-liner
+## 1. The problem, in CBRE's words
 
-**Lifeline connects fragmented city and property data into one live dependency map. It predicts
-how a disaster cascades from the power grid to individual homes and buildings, then acts:
-it contacts every affected State Farm customer through Photon, routes each one to the right help,
-and executes approved fixes for CBRE buildings before the failure spreads.**
+From our conversation with CBRE's engineers (paraphrased from the transcript):
+- They liked a map that shows **cost** as risk ("higher risk area… more red… identified the cost… looks good").
+- They want **actionable insights**: "showing upcoming disasters and all, but **as a business, how is it affecting me**."
+- They kept returning to **finance**: connect the disaster to money.
 
-## 2. The problem (from the three tracks)
+From the CBRE challenge statement: connect **fragmented real estate data** (facilities, HVAC, power, leases,
+utilities) to **predict cascading failures**, **quantify business impact**, and **execute solutions before disruptions
+spread**. Go **beyond passive dashboards**, with a **live-demoable working prototype**.
 
-| Track | What they asked for | Source |
+**Brace's one-line answer:** for every building in the portfolio, *what will this disaster cost us, why, and which
+action saves the most money per dollar, starting now?* One click executes it.
+
+## 2. Users
+
+| User | Where | Needs |
 |---|---|---|
-| **CBRE: The Invisible Network** | Connect *fragmented real estate data* to predict cascading operational failures, quantify business impact, or *execute direct solutions before disruptions spread*. Must move **beyond passive dashboards**. Top points need a **clear, live-demoable working prototype**. | CBRE challenge PDF |
-| **State Farm: The Worst Day, at Scale** | When a disaster hits thousands at once, use **AI** to identify those with the most urgent needs, coordinate assistance, and make sure **no one is overlooked**. | Ideas PDF (track card) |
-| **Photon** | Must integrate **Photon 2.0 / API** (iMessage, SMS, RCS, WhatsApp, Telegram, Email, voice). Judged on Vision, Craft, Depth, Traction, **real human-in-the-loop collaboration (not a demo reel of prompts)**, and *extensive use of Photon*. | Ideas PDF (track card) |
+| **CBRE portfolio manager** (primary) | Brace web app | Total dollar exposure, which buildings first, approve actions, reports for owners and tenants |
+| **On-site technician / building engineer** | Photon text | A clear task ("deploy flood barriers by 18:00"). Reply DONE / BLOCKED / photo |
+| **Tenant contact** | Photon text | Advance notice ("floor 1 closed tomorrow, move servers by 16:00"). Can reply with problems |
+| **Affected resident / State Farm customer** in the area | Photon text | "Where do I go?" Sent to the nearest **safe, open** help site with space |
 
-From the State Farm conversation (teammate notes, Ideas PDF):
-
-- They want a **fast way to connect to customers** and **direct them to the resources they need**.
-- Customers in a disaster aren't thinking about filing claims, so make it effortless.
-- **Prioritize high-priority cases without ignoring low-priority ones.**
-- Today **one team handles every kind of claim** (a broken window and a burned house go to the same team).
-- They have a lot of **home address / location data**, want **location-based resource allocation**,
-  run **mobile catastrophe claim sites** (for example adjusters at a stadium), and partner with Ting
-  (sensors that detect electrical faults early).
-- It **has to use AI**.
-
-## 3. The demo scenario: Texas winter storm, Dallas–Fort Worth
-
-Modeled on the February 2021 winter storm (Uri): extreme cold, then a generation shortfall, then
-rotating grid outages. Homes lose heat, pipes freeze and burst, water pumps lose power, and buildings
-run on generators with limited fuel. This is a textbook **cascade**, and it happened where HackUTD
-is held. All customer and building data is **synthetic**. Real public weather and disaster data is
-used where reachable (see `03-data-and-scenario.md`).
-
-## 4. Users
-
-| Persona | Where they use Lifeline | What they need |
-|---|---|---|
-| **Policyholder** (State Farm customer) | Photon text, iMessage or voice, plus the **help card** web page linked in texts | Be told what's happening, say what they need in plain words in any language, and be told exactly where to go |
-| **State Farm catastrophe coordinator** | **Command Center** web view | See every affected customer by priority and who hasn't been reached, and send adjusters and help |
-| **Field claims adjuster** | Photon texts (accept/pass) plus the **field view** PWA on their phone | Get the right cases for their specialty nearby, accept with one reply, and see the address and needs |
-| **CBRE facility / portfolio manager** | **Portfolio** web view | See which buildings fail next and what it costs, approve the AI action plan, and offer safe buildings as help sites |
-| **Demo operator** (us, on stage) | **Demo console** | Play the storm, control speed, impersonate simulated customers |
-
-## 5. End-to-end flow (the "one engine")
+## 3. The flow (what the product actually does)
 
 ```
-fragmented data in                    engine                                 actions out
-------------------                    ------                                 -----------
-weather/alerts (NWS)  ─┐
-grid + feeders         ├─> dependency graph ─> cascade + prediction ─┬─> State Farm: alert affected customers (Photon)
-water pump stations    │   (cascade)            "what fails next,     │     -> AI intake (quick replies or free text, any language)
-homes (policy data)    │                         and when"            │     -> priority score + contact deadline (triage)
-CBRE buildings: BMS,   │                                              │     -> route to nearest fitting help (resources)
-  leases, generators,  │                                              │     -> no reply: voice call -> unreached list
-  work orders         ─┘                                              │     -> adjuster accept/pass over Photon (dispatch)
-                                                                      └─> CBRE: action plan -> manager approves -> work orders
-                                                                            -> risk drops live on the map
-                                                                            -> safe buildings offered as help sites ──┐
-                                                                                                                       │
-                     State Farm routing sends customers to those CBRE-hosted sites  <──────────────────────────────────┘
+ 1. PICK A REAL DISASTER          2. SEE IT COMING                    3. KNOW THE COST
+ Scenario menu: Hurricane         Timeline: Forecast → Impact →       Each building: hazard reading
+ Harvey (Houston), Winter Storm   Recovery. Animated overlay:         (flood depth, wind, ice, fire),
+ Uri (Dallas), Hurricane Ian      blue water rising, white snow,      power cascade (substation down
+ (Fort Myers), Eaton Fire stretch wind swirl, orange fire             → generator hours), then $ damage
+                                                                      + $ downtime + $ tenant/SLA − insurance
+                                                                      = NET $ EXPOSURE. Map colors = $
+        │                                                                         │
+        ▼                                                                         ▼
+ 4. FIX-FIRST LIST                5. ONE-CLICK EXECUTE                6. CLOSE THE LOOP
+ Ranked actions across the        Approve → work orders created →     Technician replies DONE (or a
+ portfolio: "BLD-04 Houston:      Photon texts the on-site tech       photo) → map + $ update live.
+ flood barriers, $18k, saves      with the task + Photon notices      Reports: executive summary for
+ $410k (23x), act by -12h".       to affected tenants. Map risk       owners, tenant notice. Export
+ Late actions show as missed.     drops. "$ avoided" counter rises.   or print.
+
+ STATE FARM / COMMUNITY LAYER (same hazard engine)
+ Residents text the Photon number ("flooded, 2 kids, need somewhere dry") → AI reads the need →
+ Brace sends them to the nearest help site that is OPEN, SAFE in this phase (not flooded, has power) and has SPACE:
+ shelter, warming center, State Farm mobile claim site, hotel, or a CBRE building offered as a help site.
+ If that site becomes unsafe in a later phase, the person is re-routed with a new text.
 ```
 
-The **bridge between the tracks**: the cascade engine knows which CBRE buildings will *keep* power
-and heat. Those become warming centers and claim sites, and State Farm customers are routed to them.
-If a site is later predicted to fail, the people assigned there are automatically re-routed.
+## 4. Why each track wins
 
-## 6. Demo script (3 minutes, the build target)
+| Track | What they judge | Brace's answer |
+|---|---|---|
+| **CBRE (primary)** | Connect fragmented data, predict cascades, quantify impact, execute, beyond dashboards, live demo | One record per building joins hazard + utility + building systems + leases/tenants + insurance. Power cascade with generator countdown. Dollars per building. Fix-First with ROI. Approve → work orders + texts. Map updates live |
+| **Photon** | Real human-in-the-loop, extensive Photon use, craft, traction | Techs get tasks and reply DONE/BLOCKED/photo, which changes the map. Tenants get notices. Residents chat and get redirected. Optional: the manager approves a Fix-First item by replying YES |
+| **State Farm** | Find the most urgent needs, coordinate help, no one overlooked | Resident needs are classified by AI and routed only to *safe, open* sites with space. Re-routing when a site fails. Unrouted requests are listed so nobody is lost |
 
-Everything in MVP exists to make this script work live. Times are approximate.
+## 5. Demo script (3 minutes, the build target)
 
-1. **0:00 Hook.** "Feb 2021: millions of Texans lost power and heat, and nobody saw the cascade coming." (Check the exact figure before the pitch.) The map of DFW shows the
-   storm forecast. Lifeline has already sent **pre-storm safety texts** (drip faucets, charge phones).
-2. **0:20 The cascade.** Press Play. Temperatures drop and substation SUB-3 load-sheds. The map shows feeders going
-   dark, then homes losing heat. **Predicted** failures appear ahead of time: "Water pump PMP-2 fails in
-   1h 30m (tank runs dry)" and "BLD-7 data center: generator fuel runs out in 5h, $42k/h SLA exposure".
-3. **0:50 State Farm reaches everyone.** About 900 affected customers are alerted automatically. A **judge's real
-   phone** receives the Photon text. The judge replies in their own words (or in Spanish). The AI extracts
-   "no heat, 2 kids, pipe burst", assigns priority P1, and replies within seconds with **the nearest open
-   warming center**, its address, a directions link and a link to the **help card**.
-4. **1:30 No one overlooked.** The Command Center shows the queue sorted by priority, plus the
-   **Unreached** list: customers who didn't answer the text got an automated voice call, and the rest
-   are listed for a human callback. Low-priority cases climb as they wait, so none are forgotten.
-5. **1:50 Human in the loop.** A P1 burst-pipe case goes to the **water-damage specialist** adjuster
-   (not "one team for everything"). Their phone gets "Reply ACCEPT/PASS". They reply ACCEPT and
-   the case shows them en route.
-6. **2:10 CBRE acts.** The Portfolio view shows BLD-7's countdown and an AI action plan (refuel generator,
-   shed non-critical load). The manager clicks **Approve**, work orders are created, and the countdown
-   jumps from 5h to 29h. The risk and dollar exposure drop live. The convention center BLD-3 is predicted
-   to keep power: "Offer as warming center" is approved, and it **appears as a help site that State Farm
-   customers are now routed to**.
-7. **2:40 Impact.** KPIs: % of affected customers reached, median time to first contact, P1s resolved,
-   estimated insured loss, CBRE cost avoided. Close: "From grid failure to front door, before it spreads."
+1. **0:00 Hook.** "In 2017, Harvey flooded Houston. Every property manager knew it was coming. Few knew what it would
+   cost *them*, building by building, or what to do first." Open Brace: a big map, a portfolio of about 12 buildings across Texas and Florida.
+2. **0:20 Pick the disaster.** Scenario menu → *Hurricane Harvey – Houston*. Phase = **Forecast (−48h)**. The forecast
+   flood area pulses in light blue. Buildings recolor by **dollars at risk**. The header shows "Portfolio exposure $6.8M".
+3. **0:45 Why.** Click *Bayou Plaza*: predicted flood depth 3.1 ft above the first floor, substation down → generator 18h →
+   tenants down 21 days. Breakdown: damage $1.9M + downtime $640k + SLA $210k − insurance $1.1M = **net $1.65M**.
+4. **1:10 Fix-First.** Open Fix-First. Top item: *Bayou Plaza – flood barriers + move ground-floor equipment: cost $24k,
+   saves $980k (41×), act by −12h*. Click **Approve**.
+5. **1:30 Execute (Photon).** A teammate's real phone gets: "BRACE TASK WO-007 Bayou Plaza: deploy flood barriers at
+   south entrance by 18:00 Sat. Reply DONE, BLOCKED or send a photo." Tenant phone: "Notice from Bayou Plaza
+   management: ground floor closes 16:00 Sat…". The map ring turns from red to amber, and **$ avoided** counts up.
+6. **1:55 Impact phase.** Scrub the timeline to **Impact**. The blue water rises and spreads (animation). One building we didn't act on
+   goes deep red, while the protected one holds. The tech replies "DONE" with a photo, and the work order closes on screen.
+7. **2:20 Community (State Farm + Photon).** A judge texts the number: "our apartment flooded, 2 kids, need a dry
+   place". Within seconds: "Go to George R. Brown shelter, 1001 Avenida de las Americas, 4.2 mi, open, 310 spots left…"
+   One shelter shows a red ✕ because it's in the flood zone, and Brace skipped it on purpose. Then one of *our* buildings,
+   offered as a help site, appears as an option.
+8. **2:45 Switch disaster.** One click → *Winter Storm Uri – Dallas*. White snow animation. The cascade story changes
+   (substation → generator fuel → frozen pipes), and so do the Fix-First items. Close: "Same engine, any disaster: from forecast
+   to dollars to action."
 
-A recorded backup video of this exact script is a required deliverable (see `04-build-plan.md`).
-
-## 7. Scope
+## 6. Scope
 
 ### MVP (must work live)
-- Seeded DFW scenario: customers, homes, grid, pumps, CBRE buildings, resources, adjusters.
-- Sim clock with play, pause, speed and jump. A storm timeline drives outages.
-- Cascade: propagation through the dependency graph, buffers (generator fuel, home heat loss), and
-  **predicted** fail times 12 hours ahead, with a readable "why" chain.
-- Outreach: pre-storm advisory, impact alert, quick replies plus AI free-text intake (multilingual),
-  then the escalation **text → voice call → unreached list**.
-- Triage: priority score 0–100, tiers P1–P4, contact deadline per tier, wait-time aging, case lifecycle.
-- Resource routing: nearest open site with capacity whose building is predicted to stay up. Reserve a
-  slot, send address and directions, and re-route if a site goes down.
-- Dispatch: specialty and distance-matched adjuster, **ACCEPT/PASS over Photon**.
-- Portfolio: building risk and countdowns, AI action plans, approve leads to work orders and an updated
-  cascade, help-site offers that create State Farm resources.
-- Impact: dollar estimates and KPIs.
-- Frontend: Command Center, Portfolio, Demo console, customer help card PWA, adjuster field view PWA.
-- Photon live on at least 1–3 real team or judge phones. Everyone else is simulated.
+- 3 real-disaster presets (Harvey/Houston flood+wind, Uri/Dallas winter storm, Ian/Fort Myers surge+wind), each with
+  3 phases (Forecast, Impact, Recovery) and distinct animated overlays.
+- Portfolio of about 12 fictional buildings in those cities, with tenants, systems, utility links, insurance.
+- Impact engine: exposure → power cascade → dollars (damage, downtime, tenant/SLA, insurance, net).
+- Action catalog → per-building plans with ROI and act-by time. Fix-First list. Approve → work orders.
+- Photon: technician tasks + replies (DONE/BLOCKED/photo) that update work orders; tenant notices; resident redirect chat.
+  Simulator fallback for everything.
+- Resources (State Farm): seeded help sites per city, safety check from the hazard engine, routing + capacity, re-route.
+- Reports: executive summary + tenant notice (printable HTML).
+- UI: UTD-style layout (top buttons, left panel, big map on the right), timeline control, layer toggles.
 
-### Stretch (only after the demo script runs end to end)
-- Trained ML risk model (scikit-learn) calibrated on historical storm/claims data, replacing the
-  hand-tuned score weights (see `modules/triage.md` §ML).
-- Swift iOS adjuster app, or an iOS Shortcut "Get help" button that opens an iMessage to the Photon number.
-- Icy-road closures affecting routing ETAs.
-- Ting-style electrical-fault sensor feed as an extra cascade input.
-- Spanish/Vietnamese voice calls.
-- Photon channels beyond SMS/iMessage (WhatsApp, Email for CBRE managers).
+### Stretch (only after the demo runs end to end)
+- 4th preset: Eaton Fire (Altadena, Jan 2025) with an orange smoke/fire overlay.
+- "Ask Brace" natural-language box ("which Houston buildings lose the most if barriers fail?").
+- Manager approves Fix-First items by text (YES/NO).
+- Live NWS alerts feed showing real "upcoming disasters" (**VERIFY** network access).
+- What-if: toggle an action on/off and see the dollars before approving.
 
-### Explicitly out of scope (hackathon)
-- Authentication, roles, real PII, security hardening, encryption, audit, multi-tenant.
-- Production scale, persistence beyond the demo (in-memory store, reset per run).
-- Edge cases beyond what the demo exercises. Fail soft (log and keep going), don't over-engineer.
-- Real claim filing into State Farm systems, and real payments or vouchers.
+### Out of scope
+Auth, real CBRE data (synthetic portfolio until CBRE gives data), real work-order/CMMS integrations, insurance claim
+filing, fraud detection, security hardening, edge cases beyond the demo.
 
-## 8. Success criteria (how we know it's done)
+## 7. Success criteria
+1. The demo script runs start to finish in under 3:30, twice in a row, from `POST /api/demo/reset`.
+2. Switching scenario re-renders the overlay and recomputes every building's dollars in under 1 second.
+3. Approving a plan changes the map color, net exposure and $ avoided within 2 seconds, and sends the Photon texts.
+4. A real phone's technician reply "DONE" closes the work order on screen within 5 seconds.
+5. A resident text gets a safe, open, in-capacity site within 10 seconds, and never a site inside the hazard zone.
+6. It runs with no LLM key (template fallback) and no Photon (simulator).
 
-1. The demo script in §6 runs start to finish in under 3:30 from `POST /api/demo/reset`, twice in a row.
-2. A real phone receives a Photon alert, replies in free text, and gets a routed resource within 15 seconds.
-3. 100% of affected simulated customers end in a **visible** state (responded, called, or unreached). None are missing.
-4. Approving a CBRE plan visibly changes the prediction (countdown and $) within 2 seconds.
-5. The app runs from a fresh clone with the commands in `01-architecture.md`, even with no LLM key
-   (rules fallback) and no Photon (simulator).
+## 8. Honesty rules for the demo
+- Disasters are **real events with approximate, hand-drawn footprints**, labeled "illustrative, not official" on screen.
+- Buildings, tenants and dollar figures are **synthetic**. Formulas and constants are visible in `03-data-and-scenarios.md`.
+- Help-site names may be real public venues used as shelters in those events (**VERIFY** each one before the pitch).
+  Otherwise use generic names ("Convention Center Shelter").
 
-## 9. How each track's judging is hit
-
-| Criterion | Where it's satisfied |
-|---|---|
-| CBRE: connects fragmented data | Grid, water, BMS telemetry, leases, generator fuel and work orders unified in one graph (`cascade`, `portfolio`) |
-| CBRE: predicts cascades | Forward simulation with "fails in Xh" plus why-chains (`cascade`) |
-| CBRE: quantifies impact | SLA $/h exposure, insured loss, cost avoided (`impact`) |
-| CBRE: executes solutions, beyond dashboards | Approve, then work orders, then a re-computed cascade; help-site conversion (`portfolio`) |
-| State Farm: most urgent first | Priority score + tiers + deadlines (`triage`) |
-| State Farm: no one overlooked | Escalation ladder, unreached list, aging, 100% status coverage (`outreach`, `triage`) |
-| State Farm: coordinate assistance | Resource routing + capacity + specialty adjuster dispatch (`resources`, `dispatch`) |
-| State Farm: uses AI | Multilingual intake extraction, reply generation, action plans (`ai`) |
-| Photon: extensive use | Advisory, alerts, quick replies, free-text chat, voice calls, adjuster ACCEPT/PASS, help-card links (`messaging`, `outreach`, `dispatch`) |
-| Photon: human-in-the-loop | Adjusters accept/pass, customers co-decide (YES to reserve, or MORE), the coordinator overrides |
-| Photon: traction | Works over plain SMS with no app and weak data. The help card is installable (PWA) |
-
-## 10. Glossary
-
-- **Cascade:** a failure spreading along dependencies (substation, then feeder, then home heat, then pipes).
-- **Buffer:** time a node survives after losing a dependency (generator fuel hours, home heat-loss hours).
-- **Prediction:** the fail time computed by simulating ahead, shown *before* it happens.
-- **Case:** one customer's situation in the system (needs, priority, status, assignments).
-- **Tier / SLA:** P1–P4 bucket and the maximum time until first human-quality contact.
-- **Resource / help site:** claim site, warming center, shelter, hotel or vendor that a customer is routed to.
-- **Action plan:** AI-proposed CBRE fix. It only executes after human approval.
-- **Sim time:** scenario clock, `sim_minute` 0 = storm start. Runs faster than real time.
-
-## 11. Assumptions and open questions (confirm at the event)
-
-| # | Item | Default until confirmed |
+## 9. Open questions (confirm at the event)
+| # | Question | Default until answered |
 |---|---|---|
-| Q1 | **VERIFY** Photon 2.0 API: send, inbound webhooks, quick replies, voice/TTS | Adapter interface in `modules/messaging.md`. The first-hour spike task fills in the real calls |
-| Q2 | CBRE extra data (posted in their Discord after opening) | `scenario` loaders accept a swap-in file. The synthetic CBRE portfolio is used until then |
-| Q3 | Real State Farm catastrophe-site / resource data | Synthetic DFW sites at real public venues (for example stadium, convention center) |
-| Q4 | Which LLM key is used on demo day | `LLM_PROVIDER` env var. The rules fallback keeps the demo alive with no key |
-| Q5 | **VERIFY** NWS / OpenFEMA endpoints and fields | Cached JSON snapshot committed in `backend/data/`. Live fetch is optional |
-| Q6 | Dollar constants (avg burst-pipe claim etc.) | Illustrative constants in one file, labeled as estimates in the UI |
+| Q1 | **VERIFY** Photon 2.0 API (send, inbound webhook, media) | Adapter + simulator. Hour-1 spike task |
+| Q2 | Will CBRE share any sample building/lease data? | Synthetic portfolio, loader accepts a CSV swap-in |
+| Q3 | Which LLM key do we use on demo day? | `LLM_PROVIDER` env. Templates when none |
+| Q4 | Exact real-world facts quoted in the pitch | Teammate verifies each number in `03` before slides |

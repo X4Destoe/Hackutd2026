@@ -1,57 +1,45 @@
-# Lifeline PRD: reference pack for humans and AI agents
+# Brace PRD: reference pack for humans and AI agents
 
-**Lifeline** (working name) is one engine that predicts how a disaster cascades through a city's
-infrastructure, with two views on top of it:
+**Brace** (working name): *see the disaster coming, know what it will cost your business, act before it hits.*
 
-- **State Farm view:** finds every affected policyholder, contacts them through Photon (text, iMessage
-  or voice), and routes them to the help they need right now. Nobody is overlooked.
-- **CBRE view:** predicts which commercial buildings fail next and what that costs, executes
-  approved fixes, and turns safe buildings into help sites for State Farm customers.
+A CBRE portfolio manager opens a map of their buildings. A real-world disaster (a flood, a hurricane, a winter
+storm) plays across it with a visual overlay. Every building is colored by **dollars at risk**. Brace answers the
+question CBRE asked us: **"as a business, how is this affecting me, and what do I do about it?"** It does that with a
+**Fix-First list** of actions, each justified by money saved per dollar spent. Approving an action sends tasks to
+on-site staff and notices to tenants by text (Photon). People affected in the area are **redirected to the right
+help** (shelters, State Farm claim sites, warming centers), and that includes CBRE buildings offered as help sites.
 
 ## How to read this (AI agents: follow this exactly)
 
-Read **only** these, in order:
-
-1. `00-overview.md`: what we're building, why, the demo story, and scope. Everyone reads it once per task.
-2. `02-contracts.md`: every shared type, API route, event and ID format. Everyone reads it.
-   **If code and this file disagree, this file wins.**
-3. `modules/<your-module>.md`: your module only. It lists exactly what you own, what you
-   consume, what you must expose, and how to prove it works.
+Every agent reads, in order:
+1. `00-overview.md`: the product, the flow, the demo script, scope.
+2. `02-contracts.md`: every shared type, route and event. **If code and this file disagree, this file wins.**
+3. `modules/<your-module>.md`: the one your task's `goal:` line names.
 
 Read the rest only when your task says so:
 
 | File | Read it when |
 |---|---|
-| `01-architecture.md` | You touch app wiring, the repo layout, env vars, run commands or deploy |
-| `03-data-and-scenario.md` | You work on seed data, the storm timeline, or the simulated crowd |
-| `04-build-plan.md` | You plan or reassign work (humans, the planning agent) |
+| `01-architecture.md` | You touch wiring, layout, env vars, run commands |
+| `03-data-and-scenarios.md` | You touch scenarios, the portfolio seed, money formulas, the action catalog, resources |
+| `04-ui-spec.md` | You build any frontend piece |
+| `05-build-plan.md` | You plan or reassign work |
 | `plan.md` | Machine-readable task list for `./comms plan` (comms repo) |
-| `modules/*.md` (others) | Never. Read the other module's `INTERFACE.md` in code instead |
 
 ## Module index
 
-| Module file | Side | One-line job |
+| Module | Side | Job |
 |---|---|---|
-| `modules/core.md` | backend | Shared schemas, in-memory store, event bus, sim clock, app wiring |
-| `modules/scenario.md` | backend | Seed data loaders, storm timeline player, simulated crowd |
-| `modules/cascade.md` | backend | Dependency graph and failure propagation, plus *predicted* failures |
-| `modules/ai.md` | backend | Provider-agnostic LLM gateway (Claude, OpenAI, Gemini, or rules) |
-| `modules/messaging.md` | backend | Photon adapter, simulator channel, inbound webhook, voice |
-| `modules/outreach.md` | backend | Who to alert, when; text, then call, then unreached list; AI intake chat |
-| `modules/triage.md` | backend | Priority score, tiers, contact deadlines (SLAs), aging, case lifecycle |
-| `modules/resources.md` | backend | Help sites, nearest-fit routing, capacity reservation, help-site re-routing |
-| `modules/dispatch.md` | backend | Claims adjuster matching and accept/pass over Photon |
-| `modules/portfolio.md` | backend | CBRE buildings, action plans, work orders, help-site offers |
-| `modules/impact.md` | backend | Dollar impact: insured loss, SLA exposure, cost avoided, KPIs |
-| `modules/web-shell.md` | frontend | App shell, routing, API client, live events hook, design tokens, PWA |
-| `modules/command-center.md` | frontend | State Farm operations view |
-| `modules/portfolio-view.md` | frontend | CBRE view |
-| `modules/mobile-pwa.md` | frontend | Customer help card + adjuster field view (phone, installable) |
-| `modules/demo-console.md` | frontend | Scenario controls, phone simulator, live event log |
+| `modules/core.md` | backend | Shared schemas, in-memory store, event stream, app wiring |
+| `modules/scenarios.md` | backend | Real-disaster presets, phases and timeline, hazard overlays, portfolio seed |
+| `modules/impact.md` | backend | Hazard exposure per building, power cascade, **dollar impact** |
+| `modules/actions.md` | backend | Action catalog, plans with ROI, **Fix-First** ranking, approve → work orders |
+| `modules/ai.md` | backend | Provider-agnostic LLM gateway (Claude/OpenAI/Gemini) with template fallback |
+| `modules/messaging.md` | backend | Photon adapter + simulator: technician tasks, tenant notices, resident chats |
+| `modules/resources.md` | backend | State Farm piece: help sites, safety from the hazard engine, redirecting people |
+| `modules/reports.md` | backend | Executive summary + tenant notice, printable |
+| `modules/web-shell.md` | frontend | UTD-style layout, API client, live events, design tokens |
+| `modules/map.md` | frontend | MapLibre map, risk-colored buildings, **animated hazard overlays**, timeline |
+| `modules/panel.md` | frontend | Left panel: overview, Fix-First, building detail, work orders, resources, reports |
 
-## Status
-
-`DRAFT`. The team reviews it in TASK-001. Then `02-contracts.md` changes to `Status: FROZEN`,
-and from then on changes need a line in the comms repo's `docs/DECISIONS.md`.
-Items marked **VERIFY** could not be confirmed while writing (no network access to those docs).
-Each one has a first-hour task in `plan.md`.
+Status: `DRAFT` until TASK-001 freezes `02-contracts.md`. Items marked **VERIFY** need a real check in hour 1.

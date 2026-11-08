@@ -1,318 +1,255 @@
-# Lifeline build plan for ./comms plan (run from the comms repo):
+# Brace build plan for ./comms plan (run from the comms repo):
 #   ./comms plan ../Hackutd2026/docs/prd/plan.md --dry-run   then without --dry-run
-# Keys are local. depends may name keys here or existing TASK ids (TASK-001 = PRD review/freeze, TASK-002 = skeleton).
-# Each task's detail lives in docs/prd/modules/<module>.md. The goal line says which file and which section.
+# depends may name keys here or existing TASK ids (TASK-001 = PRD review/freeze, TASK-002 = backend skeleton/CI).
+# Each task's detail is in docs/prd/modules/<module>.md (named in goal).
 
 ## photon-spike: Photon 2.0 spike - real text round trip and API notes
 priority: p1
 size: M
 skills: api, backend
 files: backend/spikes/photon/
-accept: a teammate phone receives a text sent by backend/spikes/photon/smoke.py and its reply is printed via the tunnel; PHOTON_NOTES.md answers every VERIFY item in modules/messaging.md
-goal: modules/messaging.md "Photon integration" box. Start immediately, no dependencies. Ping the team with findings.
+accept: a teammate phone receives a text from backend/spikes/photon/smoke.py and its reply (with a photo) is printed via the tunnel; PHOTON_NOTES.md answers every VERIFY item
+goal: modules/messaging.md Photon integration box. Start immediately.
 
-## core-contracts: Shared schemas, enums and ids from the contracts
+## core-contracts: Shared schemas, enums and ids
 priority: p1
 size: M
 skills: backend, python
 files: backend/app/shared/schemas.py, backend/app/shared/enums.py, backend/app/shared/ids.py, backend/app/shared/__init__.py
 depends: TASK-001, TASK-002
-accept: pytest backend/app/shared passes; every model and enum in 02-contracts.md exists with identical names
-goal: modules/core.md schemas.py, enums.py, ids.py
+accept: every model and enum in 02-contracts.md exists with identical names; python -c "import app.shared.schemas" works
+goal: modules/core.md schemas, enums, ids
 
-## core-runtime: Store, event bus, sim clock and app wiring
+## core-runtime: Store, event bus with SSE, config and app wiring
 priority: p1
 size: M
 skills: backend, python, architecture
-files: backend/app/shared/store.py, backend/app/shared/events.py, backend/app/shared/clock.py, backend/app/shared/config.py, backend/app/main.py, backend/app/shared/tests/
+files: backend/app/shared/store.py, backend/app/shared/events.py, backend/app/shared/config.py, backend/app/main.py, backend/app/shared/tests/
 depends: core-contracts
-accept: uvicorn app.main:app starts; GET /api/health ok; GET /api/events streams pings; clock advance_to tests pass
-goal: modules/core.md store, events, clock, main.py (auto-mount routers, tick order, /api/_contracts)
+accept: uvicorn app.main:app starts; /api/health ok; /api/events streams pings; /openapi.json lists all schemas; pytest backend/app/shared passes
+goal: modules/core.md store, events, config, main.py
 
-## seed-data: Deterministic seed generator and committed seed JSON
+## portfolio-seed: Twelve-building portfolio, utilities and parties
 priority: p1
 size: M
 skills: data, python
-files: backend/data/generate_seed.py, backend/data/seed/
+files: backend/data/portfolio.json, backend/data/utilities.json, backend/data/parties.json
 depends: core-contracts
-accept: python -m data.generate_seed writes every file in 03 section 2 and a second run is byte-identical; all records validate against schemas
-goal: 03-data-and-scenario.md sections 1-7 and 9 (reply_templates.json)
+accept: all records validate against schemas; 12 buildings at plausible coordinates in Houston, Dallas and Fort Myers per 03 section 2
+goal: 03-data-and-scenarios.md section 2
 
-## scenario-timeline: Uri DFW timeline and public data snapshots
+## action-catalog: Action catalog JSON
 priority: p1
 size: S
 skills: data
-files: backend/data/scenarios/, backend/data/public/
-depends: TASK-001
-accept: uri_dfw.json matches 03 section 10; NWS/FEMA snapshot JSON present (verified live, or labeled illustrative)
-goal: 03-data-and-scenario.md section 10 and the VERIFY note in section 2
+files: backend/data/actions.json
+depends: core-contracts
+accept: the 13 templates from 03 section 4 validate as ActionTemplate with task_text and tenant_notice_text where relevant
+goal: 03-data-and-scenarios.md section 4
 
-## scenario-module: Scenario loader, timeline player and demo routes
+## harvey-scenario: Overlay generator and the Harvey Houston scenario
+priority: p1
+size: M
+skills: data, python
+files: backend/data/make_overlays.py, backend/data/anchors/harvey_houston.json, backend/data/scenarios/harvey_houston.json
+depends: core-contracts
+accept: python -m data.make_overlays harvey_houston writes 7 steps with flood_water, wind_swirl and forecast_cone overlays that follow the real bayous on the basemap
+goal: 03-data-and-scenarios.md section 1 and modules/scenarios.md data work
+
+## scenarios-module: Scenario loading, timeline, hazard lookup and routes
 priority: p1
 size: M
 skills: backend, python
-files: backend/app/modules/scenario/
-depends: core-runtime, seed-data, scenario-timeline
-accept: POST /api/demo/reset gives seed counts and sim_minute -120; jump to 100 emits ADVISORY_BROADCAST, GRID_EMERGENCY, LOAD_SHED SUB-3 in order
-goal: modules/scenario.md behavior items 2, 3 and 5 (the crowd is a separate task)
+files: backend/app/modules/scenarios/
+depends: core-runtime, portfolio-seed, harvey-scenario
+accept: POST /api/scenarios/harvey_houston/load then POST /api/timeline hour 0 emits timeline.changed; hazard_at at Bayou Plaza gives about 3 ft above its first floor
+goal: modules/scenarios.md interface and acceptance
 
-## cascade-graph: Dependency graph, propagation and home thermal model
-priority: p1
-size: M
-skills: backend, python, data
-files: backend/app/modules/cascade/
-depends: core-runtime, seed-data
-accept: load-shed SUB-3 affects every SUB-3 home (customer.affected count equals seed); AND/OR group test passes; thermal test 3.1h
-goal: modules/cascade.md graph semantics, event handling, home_status, building_outlook, apply_effect
-
-## cascade-predict: Prediction pass, why-chains and what-if
-priority: p1
-size: M
-skills: backend, python, data
-files: backend/app/modules/cascade/predict.py, backend/app/modules/cascade/chains.py, backend/app/modules/cascade/tests/test_predict.py
-depends: cascade-graph
-accept: BLD-07 predicted near minute 390 with chain ending SYS-BLD-07-GEN, BLD-07; refuel effect pushes it about 24h; predicted pre-alerts emitted
-goal: modules/cascade.md prediction pass, chains, predict_with, routes
-
-## ai-gateway: Provider-agnostic LLM gateway with rules fallback
+## ai-gateway: Provider-agnostic LLM gateway with template fallback
 priority: p1
 size: M
 skills: ai-integration, python
 files: backend/app/modules/ai/
 depends: core-contracts
-accept: pytest backend/app/modules/ai passes with LLM_PROVIDER=none (en, es intake cases, compose length and facts); provider timeout falls back
-goal: modules/ai.md (all). Pick current model ids from provider docs in one dict.
+accept: pytest backend/app/modules/ai passes with LLM_PROVIDER=none (need classification en and es, compose length and facts, report template)
+goal: modules/ai.md
 
-## messaging-core: Messaging interface, SimChannel, inbound handling and routes
+## impact-engine: Exposure, power cascade and money model
 priority: p1
 size: M
-skills: backend, api, python
+skills: backend, python, data
+files: backend/app/modules/impact/
+depends: scenarios-module, action-catalog
+accept: pytest backend/app/modules/impact passes the acceptance list in modules/impact.md; the waterfall always balances
+goal: modules/impact.md and 03-data-and-scenarios.md section 3
+
+## actions-plans: Plans with ROI, act-by, missed plans and Fix-First
+priority: p1
+size: M
+skills: backend, python
+files: backend/app/modules/actions/
+depends: impact-engine, ai-gateway
+accept: Harvey at -24 Bayou Plaza plan has FLOOD_BARRIERS with ROI above 10 in Fix-First top 3; stepping to 0 marks Energy Corridor Tower missed
+goal: modules/actions.md plan building and Fix-First
+
+## messaging-core: Messaging interface, simulator, inbound routing and routes
+priority: p1
+size: M
+skills: backend, api
 files: backend/app/modules/messaging/
 depends: core-runtime
-accept: sim send stores and emits message.sent; inbound_sim calls the party handler and emits message.received; GET /api/messages returns the thread
-goal: modules/messaging.md everything except PhotonChannel
+accept: sim send stores and emits; simulate-message from an unknown number creates a RESIDENT party and reaches the resident handler
+goal: modules/messaging.md except PhotonChannel
 
-## photon-channel: PhotonChannel implementation and webhook parsing
+## actions-execute: Approve to work orders, task and tenant texts, technician replies
+priority: p1
+size: M
+skills: backend, python
+files: backend/app/modules/actions/execute.py, backend/app/modules/actions/tests/test_execute.py
+depends: actions-plans, messaging-core
+accept: approving the Bayou Plaza plan creates work orders, sends task and tenant messages, lowers its net exposure; a simulated DONE reply closes the work order
+goal: modules/actions.md approve and technician replies
+
+## photon-channel: PhotonChannel and webhook parsing
 priority: p1
 size: M
 skills: api, backend
 files: backend/app/modules/messaging/photon.py, backend/app/modules/messaging/tests/test_photon.py
 depends: messaging-core, photon-spike
-accept: with MESSAGING_MODE=photon a DEMO_PHONES customer receives an alert and the reply reaches the outreach handler within 5s; webhook parse unit test uses a recorded payload
-goal: modules/messaging.md Photon integration items 4 and the fallbacks
+accept: MESSAGING_MODE=photon sends a real task to a DEMO_PHONES technician and their DONE reply closes the work order within 5s; parse test uses a recorded payload
+goal: modules/messaging.md Photon integration items 4 and fallbacks
 
-## triage-core: Case lifecycle, priority score, tiers, deadlines and aging
-priority: p1
-size: M
-skills: backend, python
-files: backend/app/modules/triage/
-depends: core-runtime, cascade-graph
-accept: pytest backend/app/modules/triage passes (P1 medical case, aging P4 to P3, deadline breach and clear, ordering)
-goal: modules/triage.md (all except the ML stretch)
+## resources-seed: Help sites per city
+priority: p2
+size: S
+skills: data
+files: backend/data/resources.json
+depends: core-contracts
+accept: about 5 sites per city per 03 section 5 with utility links, including one deliberately inside each hazard zone; VERIFY notes on real venue names
+goal: 03-data-and-scenarios.md section 5
 
-## outreach-ladder: Advisory, impact alerts and text-call-unreached escalation
-priority: p1
-size: M
-skills: backend, python
-files: backend/app/modules/outreach/
-depends: triage-core, messaging-core, ai-gateway
-accept: jump to 100 in sim mode gives every SUB-3 home a case and an alert; a silent customer is called at +30 and unreached at +60; advisories batch without slow ticks
-goal: modules/outreach.md flow steps 1-4 and 6, routes
-
-## outreach-intake: Reply handling with quick replies and AI intake
-priority: p1
-size: M
-skills: backend, ai-integration
-files: backend/app/modules/outreach/intake.py, backend/app/modules/outreach/tests/test_intake.py
-depends: outreach-ladder
-accept: reply "no heat 2 kids pipe burst" makes the case responded, tier P2 or higher, and one follow-up at most; SAFE, HELP and STOP keywords behave as specified
-goal: modules/outreach.md flow step 5
-
-## resources-routing: Help-site matching, reservations, route messages and help card
-priority: p1
+## resources-router: Safe help-site routing and re-routing for residents
+priority: p2
 size: M
 skills: backend, python, api
 files: backend/app/modules/resources/
-depends: triage-core, cascade-predict, messaging-core, ai-gateway
-accept: heat case routed to the nearest safe open site with capacity; capacity never exceeded; GET /api/help/{token} returns a HelpCard
-goal: modules/resources.md matching, register_resource, help card, routes
+depends: impact-engine, messaging-core, ai-gateway, resources-seed
+accept: the acceptance list in modules/resources.md passes (unsafe site never chosen, spots reserved, CBRE help site usable, reroute texts)
+goal: modules/resources.md
 
-## resources-reroute: Site safety and automatic re-routing
-priority: p2
-size: S
-skills: backend, python
-files: backend/app/modules/resources/safety.py, backend/app/modules/resources/tests/test_reroute.py
-depends: resources-routing
-accept: load-shedding a site feeder moves every active reservation there and sends each a change-of-plan message; SITE_OPEN opens the stadium claim site
-goal: modules/resources.md site safety and re-routing
-
-## scenario-crowd: Simulated crowd replies for customers and adjusters
+## uri-ian-scenarios: Winter Storm Uri Dallas and Hurricane Ian Fort Myers scenarios
 priority: p2
 size: M
-skills: backend, python, data
-files: backend/app/modules/scenario/crowd.py, backend/app/modules/scenario/tests/test_crowd.py
-depends: scenario-module, messaging-core, cascade-graph
-accept: seeded run gives about 65/15/20 percent reply-to-text, reply-after-call and never; replies match each home_status; adjusters accept about 80 percent
-goal: modules/scenario.md behavior item 4 and 03-data-and-scenario.md section 9
+skills: data, python
+files: backend/data/anchors/uri_dallas.json, backend/data/anchors/ian_fort_myers.json, backend/data/scenarios/uri_dallas.json, backend/data/scenarios/ian_fort_myers.json
+depends: harvey-scenario
+accept: both scenarios load with snow_ice and surge_water plus wind_swirl overlays; Lone Star Data Center net exposure about 1 to 2 million dollars without action
+goal: 03-data-and-scenarios.md section 1 and the story column in section 2
 
-## dispatch-adjusters: Specialist matching and ACCEPT/PASS over Photon
+## reports-module: Executive summary and tenant notice with printable HTML
 priority: p2
 size: M
-skills: backend, api
-files: backend/app/modules/dispatch/
-depends: triage-core, messaging-core, ai-gateway
-accept: burst-pipe P1 goes to the nearest water specialist; PASS and expiry re-offer; ACCEPT by text or field button assigns and messages the customer
-goal: modules/dispatch.md (all)
+skills: backend, docs
+files: backend/app/modules/reports/
+depends: actions-execute, resources-router
+accept: with LLM_PROVIDER=none both report kinds render and totals match /api/portfolio/summary; /html prints cleanly
+goal: modules/reports.md
 
-## portfolio-plans: Building risk, countdowns, exposure and AI action plans
-priority: p2
-size: M
-skills: backend, ai-integration
-files: backend/app/modules/portfolio/
-depends: cascade-predict, ai-gateway
-accept: after SUB-3 load-shed BLD-07 has an extend-runtime plan with about 300 min countdown and 42k per hour exposure; BLD-03 gets a host offer; no duplicate plans
-goal: modules/portfolio.md building risk, action catalog, routes
-
-## portfolio-execute: Approve to work orders, cascade effects and host sites
-priority: p2
-size: M
-skills: backend, python
-files: backend/app/modules/portfolio/execute.py, backend/app/modules/portfolio/tests/test_execute.py
-depends: portfolio-plans, resources-routing
-accept: approving the BLD-07 plan moves its countdown by 24h or more in one call and creates work orders; approving the BLD-03 host offer creates a cbre resource
-goal: modules/portfolio.md approve and reject
-
-## impact-kpis: KPIs, claim estimates and impact breakdown
-priority: p2
-size: M
-skills: backend, data
-files: backend/app/modules/impact/
-depends: triage-core
-accept: at sim minute 600 every KPI is non-null; approving a plan raises cbre_avoided_cents; GET /api/impact lists assumptions
-goal: modules/impact.md (all)
-
-## web-scaffold: Vite React app, routes, desktop shell and PWA config
+## web-shell: Vite React app, UTD-style layout, tokens and UI primitives
 priority: p1
-size: M
-skills: frontend, typescript
-files: frontend/package.json, frontend/vite.config.ts, frontend/index.html, frontend/tailwind.config.ts, frontend/tsconfig.json, frontend/src/main.tsx, frontend/src/App.tsx, frontend/public/
-depends: TASK-001
-accept: npm run dev serves every route in modules/web-shell.md with placeholders; /api proxied; npm run build passes; installable manifest
-goal: modules/web-shell.md routes, desktop shell, PWA, Vite config
-
-## web-data: Typed API client, query hooks and live events hook
-priority: p1
-size: M
-skills: frontend, typescript
-files: frontend/src/shared/api.ts, frontend/src/shared/queries.ts, frontend/src/shared/useEvents.ts, frontend/src/shared/format.ts, frontend/src/shared/api-types.ts
-depends: web-scaffold, core-runtime
-accept: npm run gen:api generates types; every route in 02-contracts section 4 has a wrapper; SSE invalidation works and reconnects
-goal: modules/web-shell.md provides list (api, queries, useEvents, format)
-
-## web-ui-map: Design tokens, UI primitives and base map layers
-priority: p1
-size: M
-skills: frontend, ui-design
-files: frontend/src/shared/ui/, frontend/src/shared/map/, frontend/src/shared/tokens.css
-depends: web-scaffold
-accept: storybook-style demo page or test route shows tier and state colors, shadcn primitives and BaseMap with points, outage and site layers over DFW
-goal: modules/web-shell.md tokens, ui, map
-
-## design-mockups: Screen designs for the four main views
-priority: p2
-size: M
-skills: ui-design
-files: design/
-depends: TASK-001
-accept: mockups (Figma export or static HTML) exist for Command Center, Portfolio, Help card and Field view, following the layouts in their module files
-goal: Use design plugins if available. Reference only; React is the product.
-
-## cc-map-queue: Command Center layout, KPI bar, queue tabs and map
-priority: p1
-size: M
-skills: frontend, typescript
-files: frontend/src/modules/command-center/
-depends: web-data, web-ui-map
-accept: renders at sim minute 600 with hundreds of cases without lag; queue tabs work; clicking a row flies the map; combined mode shows CBRE buildings
-goal: modules/command-center.md panels 1-3
-
-## cc-case-drawer: Case drawer with conversation, reasons and actions
-priority: p1
-size: M
-skills: frontend, typescript
-files: frontend/src/modules/command-center/drawer/
-depends: cc-map-queue
-accept: all five drawer actions call the right endpoints; a live reply appears within 2s; the score breakdown shows why this priority
-goal: modules/command-center.md panel 4 and the demo interactions
-
-## portfolio-view: CBRE portfolio view with cascade chain and approvals
-priority: p2
 size: M
 skills: frontend, typescript, ui-design
-files: frontend/src/modules/portfolio-view/
-depends: web-data, web-ui-map
-accept: BLD-07 on top with a live countdown and chain; Approve updates the countdown within 2s via SSE; host offer approval toast links to combined view
-goal: modules/portfolio-view.md (all)
+files: frontend/package.json, frontend/vite.config.ts, frontend/index.html, frontend/tailwind.config.ts, frontend/tsconfig.json, frontend/src/main.tsx, frontend/src/App.tsx, frontend/src/shared/ui/, frontend/src/shared/tokens.css, frontend/src/shared/format.ts, frontend/src/shared/ui-store.ts
+depends: TASK-001
+accept: npm run dev shows top bar, 400px left panel and map area with placeholders; npm run build passes
+goal: modules/web-shell.md layout, tokens, ui, ui-store and 04-ui-spec.md section 1
 
-## mobile-help-card: Customer help card (installable)
+## web-data: Typed API client, query hooks and live events
+priority: p1
+size: M
+skills: frontend, typescript
+files: frontend/src/shared/api.ts, frontend/src/shared/queries.ts, frontend/src/shared/useEvents.ts, frontend/src/shared/api-types.ts
+depends: web-shell, core-runtime
+accept: npm run gen:api works; every route in 02-contracts section 4 has a wrapper; SSE invalidation refreshes data and reconnects
+goal: modules/web-shell.md provides list
+
+## map-base: Map, risk-colored buildings, flood overlay, power, timeline control
+priority: p1
+size: M
+skills: frontend, typescript
+files: frontend/src/modules/map/
+depends: web-data
+accept: Harvey shows animated flood water and buildings colored by net exposure; the vertical timeline steps -48 to +7d and colors update within 1s
+goal: modules/map.md MapView, BuildingLayer, PowerLayer, flood_water, TimelineControl, MapTools, Legend
+
+## map-overlays: Snow, surge, wind, forecast cone and help-site layers
 priority: p2
 size: M
-skills: frontend, mobile, typescript
-files: frontend/src/modules/mobile-pwa/help/
-depends: web-data, web-ui-map
-accept: /h/{token} renders at 360px in en, es and vi; updates within about 2s on re-route; Add to Home Screen gives a standalone app
-goal: modules/mobile-pwa.md help card
+skills: frontend, ui-design
+files: frontend/src/modules/map/overlays/
+depends: map-base
+accept: the three scenarios show three visibly different animated hazards at 60fps; help sites show unsafe markers and referral arcs
+goal: modules/map.md HazardLayers (non-flood styles), HelpLayer, WorkOrderBadges
 
-## mobile-field-view: Adjuster field view (installable)
-priority: p2
-size: S
-skills: frontend, mobile
-files: frontend/src/modules/mobile-pwa/field/
-depends: web-data, web-ui-map
-accept: /field/{id} shows pending offers and accepted cases; Accept equals replying ACCEPT by text
-goal: modules/mobile-pwa.md field view
+## panel-core: Left panel shell, hero card, overview and building detail
+priority: p1
+size: M
+skills: frontend, typescript, ui-design
+files: frontend/src/modules/panel/
+depends: web-data
+accept: Overview shows KPIs and Fix-First top 5; building detail shows data-source chips, why chain, money waterfall and an Approve button that works
+goal: modules/panel.md structure items 1-5 (overview, buildings, building)
 
-## demo-console: Demo console with controls, phone simulator and event log
+## panel-actions: Fix-First and Work Orders views
+priority: p1
+size: M
+skills: frontend, typescript
+files: frontend/src/modules/panel/views/actions/
+depends: panel-core
+accept: Fix-First cards show cost, saves, ROI and act-by countdown with Approve; missed plans show would-have-saved; work orders show status and photo thumbnails
+goal: modules/panel.md fixfirst and workorders views
+
+## panel-community: Help Sites, Reports and Messages views with phone simulator
 priority: p2
 size: M
 skills: frontend, typescript
-files: frontend/src/modules/demo-console/
-depends: web-data, web-ui-map
-accept: from Reset every demo beat can be reached from this page; simulated replies reach the Command Center within 2s
-goal: modules/demo-console.md (all)
+files: frontend/src/modules/panel/views/community/
+depends: panel-core
+accept: phone simulator messages create referrals or work-order updates visible within 2s; reports open printable; help sites show capacity and unsafe status
+goal: modules/panel.md help, reports and messages views
 
-## e2e-smoke: End-to-end smoke test and integration guide
+## e2e-smoke: End-to-end backend smoke test and integration guide
 priority: p1
 size: M
 skills: integration, testing
 files: backend/tests_e2e/, docs/INTEGRATION.md
-depends: TASK-002, scenario-crowd, outreach-intake, resources-reroute, dispatch-adjusters, portfolio-execute, impact-kpis
-accept: pytest backend/tests_e2e runs reset, jump to 600, and asserts no affected customer is missing a visible status, BLD-07 plan exists, KPIs non-null; INTEGRATION.md has the 60-second manual check
-goal: 00-overview.md section 8 success criteria 1, 3, 4, 5
+depends: TASK-002, actions-execute, resources-router, reports-module, uri-ian-scenarios
+accept: pytest backend/tests_e2e loads each scenario, steps every hour, approves the top Fix-First plan, routes a resident, generates both reports, with no errors and a balanced waterfall
+goal: 00-overview.md section 7 criteria 1-3, 5, 6
 
-## demo-tuning: Tune the scenario so every demo beat lands
+## demo-tuning: Tune data so every demo beat lands
 priority: p1
 size: M
 skills: integration, data
-files: backend/data/scenarios/uri_dfw.json, docs/DEMO.md
-depends: e2e-smoke, cc-case-drawer, portfolio-view, demo-console, mobile-help-card
-accept: the 00-overview section 6 script runs from reset in under 3:30 twice in a row; DEMO.md lists the exact clicks and jump points
-goal: 00-overview.md section 6
+files: backend/data/scenarios/, backend/data/portfolio.json, docs/DEMO.md
+depends: e2e-smoke, map-overlays, panel-actions, panel-community
+accept: the 00-overview section 5 script runs from reset in under 3:30 twice; DEMO.md lists every click and expected number
+goal: 00-overview.md section 5
 
-## live-phone-rehearsal: Rehearse with real phones over Photon
+## photon-rehearsal: Rehearse live with real phones
 priority: p1
 size: S
 skills: testing, api
 files: docs/REHEARSAL.md
-depends: demo-tuning, photon-channel, mobile-field-view
-accept: a judge-style phone gets the alert, replies in Spanish, is routed within 15s, and an adjuster phone ACCEPTs; tunnel and dashboard steps written down
-goal: 00-overview.md section 8 criterion 2
+depends: demo-tuning, photon-channel
+accept: technician phone gets a task and DONE plus photo closes it on screen; a judge-style phone gets redirected to a safe site; tunnel and dashboard steps documented
+goal: 00-overview.md section 7 criteria 4 and 5
 
-## pitch-and-video: Pitch, README demo section and backup video
+## pitch-and-video: Pitch deck notes, README and backup video
 priority: p2
 size: M
 skills: docs
 files: docs/PITCH.md, README.md
-depends: live-phone-rehearsal
-accept: README has one-command run, demo script and architecture; PITCH.md maps each track's criteria to demo moments; backup video link recorded
-goal: 00-overview.md sections 6 and 9, 04-build-plan.md section 6
+depends: photon-rehearsal
+accept: README has run steps, the demo flow and architecture; PITCH.md maps each track's criteria to demo moments with verified real-world facts; backup video link recorded
+goal: 00-overview.md sections 4, 5 and 8
