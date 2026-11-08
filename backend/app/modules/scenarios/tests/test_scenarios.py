@@ -121,3 +121,11 @@ def test_hazard_formulas():
     assert hazard.hazard_at(a, 29.5, -94.9, 0)["flood_depth_ft"] == 0  # beyond the half-width
     assert hazard.hazard_at(a, 29.5, -95.0, 48, present=True)["flood_depth_ft"] == 3
     assert hazard.hazard_at(a, 29.5, -95.0, 48)["flood_depth_ft"] == 6
+
+
+def test_timeline_steps_without_geometry(client):
+    client.post("/api/scenarios/harvey_houston/load")
+    steps = client.get("/api/timeline").json()
+    assert [s["hour"] for s in steps] == HOURS
+    assert all(s["narrative"] and s["label"] and "overlays" not in s for s in steps)
+    assert steps[3]["phase"] == "impact" and steps[3]["label"].startswith("0h")
