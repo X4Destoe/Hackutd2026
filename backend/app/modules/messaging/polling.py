@@ -38,12 +38,19 @@ def _iso(epoch: float) -> str:
 
 
 def _epoch(value) -> float | None:
+    """Timezone-aware ISO time -> epoch seconds; None for missing, malformed or naive (no timezone) values."""
     if not isinstance(value, str):
         return None
     try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp()
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError:
         return None
+    return parsed.timestamp() if parsed.tzinfo is not None else None
+
+
+def allowed_phones(config) -> set[str]:
+    """Only phones mapped in DEMO_PHONES (+E164:party_id) may drive the app over real Photon."""
+    return {pair.strip().rpartition(":")[0] for pair in config.demo_phones.split(",") if ":" in pair}
 
 
 def inbound(message, config) -> tuple[str, str, list[str]] | None:
@@ -61,8 +68,8 @@ def inbound(message, config) -> tuple[str, str, list[str]] | None:
     if space.get("kind") != "direct" or sender.get("kind") not in (None, "human"):
         return None
     phone = sender.get("handle")
-    if not isinstance(phone, str) or not E164.fullmatch(phone):
-        return None
+    if not isinstance(phone, str) or not E164.fullmatch(phone) or phone not in allowed_phones(config):
+        return None  # unmapped senders never create a party or reach a handler
     if content.get("type") in IGNORED_CONTENT:
         return None
     text = content.get("text", "")
@@ -106,8 +113,8 @@ class PhotonPoller:
         from app.modules import messaging
         parsed = inbound(message, self.config)
         created = _epoch(message.get("createdAt")) if isinstance(message, dict) else None
-        if parsed is None or (created is not None and created < self.started_at):
-            return 0
+        if parsed is None or created is None or created < self.started_at:
+            return 0  # unknown-age messages could be old history: never replay them
         mid = message["id"]
         if mid in self._seen:
             return 0
@@ -150,8 +157,9 @@ class PhotonPoller:
                 self.error = f"Photon reply polling failed: {exc}"
                 wait = min(wait * 2, 30.0)  # back off while Photon is unreachable or refusing; never give up
                 log.warning("Photon reply polling failed; retrying in %.0fs", wait)
-            except Exception:  # noqa: BLE001 - one bad message must not stop replies for the whole demo
-                self.error = "Photon reply polling hit an unexpected error; see the backend log"
-                log.exception("Photon reply polling failed unexpectedly")
+            except Exception as exc:  # noqa: BLE001 - one bad message must not stop replies for the whole demo
+                self.error = "Photon reply polling hit an unexpected error"
+                # Constant text + exception type only: exception strings could carry message text or credentials.
+                log.warning("Photon reply polling failed unexpectedly (%s)", type(exc).__name__)
                 wait = min(wait * 2, 30.0)
             self._stop.wait(wait)
