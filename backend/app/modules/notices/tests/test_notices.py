@@ -86,3 +86,31 @@ def test_photon_acceptance_and_verified_customer_reply(client, monkeypatch):
     headers = {'X-Spectrum-Event':'message.received','X-Spectrum-Timestamp':timestamp,'X-Spectrum-Signature':'v0='+signature,'X-Spectrum-Webhook-Id':'tenant-delivery-unique'}
     assert client.post('/api/webhooks/photon', content=raw, headers=headers).status_code == 200
     assert any(m.party_id == party_id and m.direction == 'inbound' for m in store.messages.list())
+
+
+@pytest.mark.parametrize('change', ['reset', 'timeline', 'mode'])
+def test_context_change_after_first_attempt_cancels_remaining_recipients(client, monkeypatch, change):
+    from app.modules import scenarios
+    body = payload()
+    building = store.buildings.require(body['building_id'])
+    body['tenant_ids'] = [tenant.id for tenant in building.tenants]
+    assert len(body['tenant_ids']) > 1
+    original = messaging.send
+    calls = []
+    def send_then_change(*args, **kwargs):
+        calls.append(args[0])
+        result = original(*args, **kwargs)
+        if change == 'reset':
+            scenarios.load('uri_dallas')
+        elif change == 'timeline':
+            scenarios.set_hour(0)
+        else:
+            monkeypatch.setattr(settings, 'messaging_mode', 'photon')
+        return result
+    monkeypatch.setattr(messaging, 'send', send_then_change)
+    response = client.post('/api/customer-notices', json=body)
+    assert response.status_code == 409
+    assert 'Remaining recipients were cancelled' in response.json()['detail']
+    assert len(calls) == 1
+    if change == 'reset':
+        assert store.messages.list() == []

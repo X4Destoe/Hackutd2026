@@ -60,7 +60,15 @@ def dispatch(body: NoticeRequest):
         # Record each attempt before continuing. A failed/unknown send is never retried automatically.
         record = {'fingerprint': fingerprint, 'ids': []}
         history[body.request_id] = record
+        def check_context():
+            current = scenarios.current()
+            if (store.state.get('customer_notice_requests') is not history or
+                current.scenario_id != body.scenario_id or current.step_hour != body.step_hour or
+                messaging.status().mode != body.mode):
+                raise HTTPException(409, 'Demo context changed during dispatch. Remaining recipients were cancelled; an already-started delivery may have an unknown outcome. Check Texts before preparing another notice.')
         for party_id in contacts:
+            check_context()
             message = messaging.send(party_id, f'Operation Storm | {building.name}\n{text}', 'tenant_notice')
             record['ids'].append(message.id)
+            check_context()
         return {'messages': [store.messages.require(mid) for mid in record['ids']], 'duplicate': False}
