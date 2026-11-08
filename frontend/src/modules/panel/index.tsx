@@ -25,6 +25,8 @@ import { useUIStore, type Layer } from "../../shared/ui-store";
 import { hours, money, phaseColor } from "../../shared/format";
 import { Button } from "../../shared/ui";
 import Overview from "./views/Overview";
+import FixFirst from "./views/actions/FixFirst";
+import WorkOrders from "./views/actions/WorkOrders";
 import Buildings from "./views/Buildings";
 import BuildingDetail from "./views/BuildingDetail";
 import "./panel.css";
@@ -64,13 +66,6 @@ export default function Panel({ onClose }: { onClose?: () => void }) {
   useEffect(() => {
     setSearch("");
   }, [state.data?.scenario_id]);
-  const titles = {
-    fixfirst: "Fix-First",
-    workorders: "Work Orders",
-    help: "Help Sites",
-    reports: "Reports",
-    messages: "Texts",
-  };
   return (
     <>
       <div
@@ -228,13 +223,10 @@ export default function Panel({ onClose }: { onClose?: () => void }) {
           <Reports />
         ) : panelView === "messages" ? (
           <Messages />
+        ) : panelView === "fixfirst" ? (
+          <FixFirst />
         ) : (
-          <>
-            <h2>{titles[panelView]}</h2>
-            <p className="panel-empty">
-              This view will be available when its response module connects.
-            </p>
-          </>
+          <WorkOrders />
         )}
       </section>
       <footer className="panel-footer">
