@@ -33,7 +33,7 @@ Use [DEMO.md](DEMO.md) for the three-track story, [PITCH.md](PITCH.md) for accur
 - Circled information icons explain financial and hazard terms on hover, keyboard focus, and tap. Help-site load failures can be retried; only open sites with places expose directions.
 - Missing/stale live inputs display Unknown; automated live site routing remains disabled without verified power.
 
-Validation: 211 backend tests, nine serial browser checks, and the production build pass. Focused browser checks also verify glossary interactions/mobile bounds and recovery from failed site/referral requests. A clean lockfile installation includes the declared Playwright dependency.
+Validation: 211 backend tests, nine serial browser checks, and the production build pass. Focused browser checks also verify glossary interactions/mobile bounds and recovery from failed site/referral requests. A clean lockfile installation includes the declared Playwright dependency. The final recorded walkthrough, including glossary explanations and the in-app restart, passes in 60 seconds; the encoded backup is 59 seconds. Restart cancellation, request failure, retry, and cleared records are covered by the expanded navigation check.
 
 ## External work still required
 
