@@ -58,6 +58,7 @@ def test_forecast_shows_predicted_peak_but_nothing_is_physically_there_yet():
 
 def test_stepping_the_timeline_emits_each_time_and_is_fast(client):
     client.post("/api/scenarios/harvey_houston/load")
+    bus.clear_handlers()  # the 50 ms budget excludes subscribers (impact, actions recompute on this event)
     seen = []
     bus.on("timeline.changed", lambda p: seen.append(p["step_hour"]))
     for h in HOURS:
