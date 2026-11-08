@@ -1,5 +1,6 @@
 import { useResources, useReferrals } from "../../../../shared/queries";
 import { Badge, Progress } from "../../../../shared/ui";
+import HelpSiteActivation from "./HelpSiteActivation";
 export default function HelpSites({ city }: { city?: string }) {
   const sites = useResources(city);
   const referrals = useReferrals();
@@ -16,6 +17,9 @@ export default function HelpSites({ city }: { city?: string }) {
         {city ?? "Current scenario"} · Capacity and safety from the response
         service
       </p>
+      {!!ordered.filter(r => r.status === "unrouted").length && <p className="attention-label" role="status">
+        {ordered.filter(r => r.status === "unrouted").reduce((sum, r) => sum + r.people, 0)} people awaiting a placement. Coordinator follow-up required.
+      </p>}
       {sites.isPending ? (
         <p role="status">Loading help sites…</p>
       ) : sites.isError ? (
@@ -112,6 +116,7 @@ export default function HelpSites({ city }: { city?: string }) {
           ))}
         </ul>
       )}
+      <HelpSiteActivation city={city} />
     </div>
   );
 }

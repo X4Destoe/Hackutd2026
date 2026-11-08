@@ -119,3 +119,9 @@
   display: inline-block;
   margin: 4px 8px 4px 0;
 }
+.help-activation-section { border-top: 2px solid #d8e5db; margin-top: 24px; padding-top: 8px; }
+.help-activation { border-left: 3px solid #1f7a45; background: #f6faf6; }
+.activation-channel { color: #52665a; font-size: 10px; padding: 8px 10px; background: #eaf2eb; }
+.activation-task { display: grid; gap: 4px; border-top: 1px solid var(--border); padding: 10px 0; margin-top: 10px; font-size: 11px; }
+.activation-task span { color: var(--muted); font-size: 10px; }
+.help-activation .button { margin: 6px 0; }
