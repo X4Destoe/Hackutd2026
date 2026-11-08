@@ -16,29 +16,29 @@ Runtime sending uses `Spectrum({projectId, projectSecret, providers:[imessage.co
 
 ## Local commands
 
-From `backend/spikes/photon`:
+Use Node 22.9 or newer (Node 24 recommended). From `backend/spikes/photon`:
 
 ```sh
 npm ci
 npm run build
 npm test
-/workspace/storm-venv/bin/python -m unittest discover -s tests -v
+../../.venv/bin/python -m unittest discover -s tests -v
 npm start
 ```
 
-Node 24 reads `../../.env` if present. The bridge binds **127.0.0.1:8787** only. `GET /health` reports configuration presence, not provider connectivity. `POST /send` accepts JSON `{phone, text}` and returns `{status:"accepted", message_id}` on SDK acknowledgement, **not delivery**. Invalid bodies return 400; unconfigured 503; unmapped recipient 403; concurrent send 409; SDK failure 502. A 15-second timeout returns 504 with outcome unknown and keeps the underlying send slot occupied until completion. No automatic send retries. This does not provide durable idempotency: after failure/timeout check provider status before any manual retry.
+`npm start` reads `../../.env` if present using Node’s `--env-file-if-exists` option (requires Node 22.9+). The Python examples use the backend virtual environment created during setup; if yours lives elsewhere, substitute its Python executable. The bridge binds **127.0.0.1:8787** only. `GET /health` reports configuration presence, not provider connectivity. `POST /send` accepts JSON `{phone, text}` and returns `{status:"accepted", message_id}` on SDK acknowledgement, **not delivery**. Invalid bodies return 400; unconfigured 503; unmapped recipient 403; concurrent send 409; SDK failure 502. A 15-second timeout returns 504 with outcome unknown and keeps the underlying send slot occupied until completion. No automatic send retries. This does not provide durable idempotency: after failure/timeout check provider status before any manual retry.
 
 Explicit real-send probe, once an authorized recipient and credentials are supplied:
 
 ```sh
-/workspace/storm-venv/bin/python send.py --phone <mapped-teammate-phone> --text 'Operation Storm test: reply DONE and a photo'
+../../.venv/bin/python send.py --phone <mapped-teammate-phone> --text 'Operation Storm test: reply DONE and a photo'
 ```
 
 No example phone is sent automatically. Outbound media_url is currently rejected (400); inbound photo replies are supported by the signed-envelope verifier. A constrained attachment-upload path belongs in TASK-022 rather than unrestricted SDK URL fetching.
 
 ## Inbound native webhook
 
-Run `/workspace/storm-venv/bin/python webhook.py` with the webhook signing secret configured. It binds **127.0.0.1:8788**, route `POST /api/webhooks/photon`. Expose only this receiver through the team's approved tunnel, then register that HTTPS URL in the Spectrum dashboard/management API. Tunnel/provisioning was not performed in this spike.
+Run `../../.venv/bin/python webhook.py` with the webhook signing secret configured. It binds **127.0.0.1:8788**, route `POST /api/webhooks/photon`. Expose only this receiver through the team's approved tunnel, then register that HTTPS URL in the Spectrum dashboard/management API. Tunnel/provisioning was not performed in this spike.
 
 Native envelope shape from SDK definitions:
 
