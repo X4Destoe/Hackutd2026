@@ -108,3 +108,39 @@ def test_media_never_adds_unsafe_url(client):
     plan=approve(client);order=store.workorders.list(plan_id=plan['id'])[0]
     actions.apply_task_reply(order.party_id,f'ACCEPTED {order.id}',['javascript:alert(1)','https://example.com/photo.jpg','https://example.com/photo.jpg'])
     assert store.workorders.require(order.id).photo_urls==['https://example.com/photo.jpg']
+
+
+def test_one_combined_notice_per_tenant_contains_all_approved_asks(client):
+    plan=approve(client)
+    from app.modules.actions import catalog
+    building=store.buildings.require('BLD-HOU-01')
+    expected=[catalog[action['code']].tenant_notice_text for action in plan['actions'] if catalog[action['code']].tenant_notice_text]
+    notices=[m for m in store.messages.list() if m.kind.value=='tenant_notice']
+    contacts={t.contact_party_id or t.id for t in building.tenants}
+    assert len(notices)==len(contacts)
+    assert {m.party_id for m in notices}==contacts
+    for message in notices:
+        assert all(ask in message.body for ask in expected)
+    assert all('relative to impact' not in order.text for order in store.workorders.list(plan_id=plan['id']))
+
+
+def test_deadline_is_plain_language_without_invented_clock(monkeypatch):
+    from app.modules.actions.execute import deadline_label
+    monkeypatch.delenv('DEMO_IMPACT_AT',raising=False)
+    assert deadline_label(-12,'Houston')=='12 hours before impact'
+    assert deadline_label(0,'Dallas')=='at impact'
+    assert deadline_label(48,'Fort Myers')=='48 hours after impact'
+
+
+def test_configured_clock_uses_site_timezone(monkeypatch):
+    from app.modules.actions.execute import deadline_label
+    monkeypatch.setenv('DEMO_IMPACT_AT','2026-11-08T12:00:00Z')
+    assert deadline_label(-12,'Houston')=='by Sat Nov 07 at 18:00 CST (12 hours before impact)'
+    assert deadline_label(-12,'Fort Myers')=='by Sat Nov 07 at 19:00 EST (12 hours before impact)'
+
+
+@pytest.mark.parametrize('value',['not a date','2026-11-08T12:00:00'])
+def test_invalid_or_naive_clock_does_not_invent_timezone(monkeypatch,value):
+    from app.modules.actions.execute import deadline_label
+    monkeypatch.setenv('DEMO_IMPACT_AT',value)
+    assert deadline_label(-12,'Houston')=='12 hours before impact'
