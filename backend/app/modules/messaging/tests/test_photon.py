@@ -65,6 +65,9 @@ def test_bridge_responses(cfg):
     def bridge(status, body):
         return httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(status, json=body)))
     assert photon.PhotonChannel(bridge(200, {"status": "accepted", "message_id": "ph-1"})).send_text("+1", "hi", []) == "ph-1"
+    for malformed in ({}, [], {"status": "failed"}):
+        with pytest.raises(photon.PhotonError, match="acceptance"):
+            photon.PhotonChannel(bridge(200, malformed)).send_text("+1", "hi", [])
     with pytest.raises(photon.PhotonError, match="403.*DEMO_PHONES"):
         photon.PhotonChannel(bridge(403, {"error": "Recipient is not listed in DEMO_PHONES"})).send_text("+1", "hi", [])
     with pytest.raises(photon.PhotonError, match="not supported"):
@@ -121,3 +124,33 @@ def test_a_resident_who_texts_the_photon_line_gets_photon_replies(live):
     assert party.demo_live is True
     msg = messaging.send(party.id, "test reply", "redirect")
     assert msg.channel == "photon"
+
+
+@pytest.mark.parametrize("payload", [[], None, {"event": "message.received", "message": []},
+    {"event": "message.received", "message": {"sender": [], "content": {}}},
+    {"event": "message.received", "message": {"sender": {"phone": "+17135550177"}, "content": []}},
+    {"event": "message.received", "message": {"sender": {"phone": "+17135550177"}, "content": {"type": "text", "text": {}}}}])
+def test_signed_malformed_structures_return400_not500(live, payload):
+    raw = json.dumps(payload).encode()
+    stamp = str(int(time.time()))
+    signature = "v0=" + hmac.new(SECRET.encode(), b"v0:" + stamp.encode() + b":" + raw, hashlib.sha256).hexdigest()
+    headers = {"X-Spectrum-Timestamp": stamp, "X-Spectrum-Signature": signature, "X-Spectrum-Event": "message.received"}
+    assert live.post("/api/webhooks/photon", content=raw, headers=headers).status_code == 400
+
+
+def test_signed_body_without_message_id_cannot_replay_by_changing_delivery_header(live):
+    payload = envelope(live.phone, "review-only")
+    payload["message"].pop("id")
+    before = len(store.messages.list())
+    raw, headers = signed(payload, delivery="fallback-one")
+    assert live.post("/api/webhooks/photon", content=raw, headers=headers).json()["ok"]
+    headers["X-Spectrum-Webhook-Id"] = "fallback-two"
+    assert live.post("/api/webhooks/photon", content=raw, headers=headers).json()["duplicate"] is True
+    assert len(store.messages.list()) == before + 1
+
+
+def test_delivery_and_signed_message_id_use_separate_dedupe_namespaces(live):
+    first, h1 = signed(envelope(live.phone, "first", mid="signed-first"), delivery="same-text")
+    second, h2 = signed(envelope(live.phone, "second", mid="same-text"), delivery="delivery-second")
+    assert live.post("/api/webhooks/photon", content=first, headers=h1).json()["ok"]
+    assert live.post("/api/webhooks/photon", content=second, headers=h2).json().get("duplicate") is not True

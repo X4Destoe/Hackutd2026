@@ -28,3 +28,5 @@ Routes: `GET /api/messages?party_id=`, `GET /api/messaging/status`, `POST /api/d
 via the loopback Node bridge (`photon.PhotonChannel`, `POST {PHOTON_BRIDGE_URL}/send`). The bridge only texts numbers in `DEMO_PHONES`
 (403 otherwise: the message is stored `failed`), so add judges' phones to `DEMO_PHONES` before the demo. Outbound photos are not supported yet. Credentials
 `SPECTRUM_PROJECT_ID`, `SPECTRUM_PROJECT_SECRET`, `SPECTRUM_WEBHOOK_SECRET` live in `backend/.env` only.
+
+Webhook boundary guarantees: a verified non-object or malformed message/sender/content produces400, not500. Delivery and signed-message IDs use separate deduplication namespaces; if the signed body lacks a message ID, a SHA-256 of the exact body is the fallback identity, so changing an unsigned delivery header cannot replay that same body. Deduplication remains process-local and bounded to the existing last1000 keys, not durable exactly-once delivery. A200 bridge response must explicitly acknowledge status=accepted before the app records a send; acknowledgement is not proof of handset delivery.

@@ -7,6 +7,7 @@ Sends never raise: a channel failure is stored on the message and `status().last
 from __future__ import annotations
 
 import json
+import hashlib
 import logging
 import re
 import threading
@@ -283,7 +284,9 @@ def accept_photon_webhook(raw: bytes, headers: dict) -> dict:
         message_id = str((json.loads(raw).get("message") or {}).get("id") or "")
     except ValueError:
         message_id = ""
-    keys = [k for k in (lower.get("x-spectrum-webhook-id", ""), message_id) if k]
+    delivery_id = lower.get("x-spectrum-webhook-id", "")
+    keys = ([f"delivery:{delivery_id}"] if delivery_id else []) + (
+        [f"message:{message_id}"] if message_id else ["body:" + hashlib.sha256(raw).hexdigest()])
     with _lock:
         if any(k in _seen_webhook_ids for k in keys):
             return {"ok": True, "duplicate": True}

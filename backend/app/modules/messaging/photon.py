@@ -87,22 +87,42 @@ class PhotonChannel:
             except ValueError:
                 detail = ""
             raise PhotonError(f"Photon bridge refused the send ({r.status_code}){': ' + detail if detail else ''}")
-        return str(r.json().get("message_id", ""))
+        try:
+            acknowledgement = r.json()
+        except ValueError as exc:
+            raise PhotonError("Photon bridge returned an invalid acknowledgement") from exc
+        if not isinstance(acknowledgement, dict) or acknowledgement.get("status") != "accepted":
+            raise PhotonError("Photon bridge did not confirm acceptance")
+        return str(acknowledgement.get("message_id", ""))
 
     def parse_inbound(self, raw: bytes, headers: dict[str, str]) -> tuple[str, str, list[str]] | None:
         """Verified native envelope -> (sender phone, text, media urls). Raises PermissionError on a bad signature."""
         if not verify(raw, headers, self.config.spectrum_webhook_secret):
             raise PermissionError("invalid Spectrum signature or timestamp")
         payload = json.loads(raw)
+        if not isinstance(payload, dict):
+            raise ValueError("Webhook body must be an object")
         event = payload.get("event")
         if {k.lower(): v for k, v in headers.items()}.get("x-spectrum-event") != event:
             raise PermissionError("event header does not match the signed body")
         if event != "message.received":
             return None
-        message = payload.get("message") or {}
-        sender = message.get("sender") or {}
+        message = payload.get("message")
+        if not isinstance(message, dict):
+            raise ValueError("Webhook message must be an object")
+        if message.get("id") is not None and not isinstance(message["id"], str):
+            raise ValueError("Webhook message identity must be a string")
+        sender = message.get("sender")
+        if not isinstance(sender, dict):
+            raise ValueError("Webhook sender must be an object")
         phone = sender.get("phone") or sender.get("handle") or sender.get("id") or ""
-        content = message.get("content") or {}
+        if not isinstance(phone, str):
+            raise ValueError("Webhook sender handle must be a string")
+        content = message.get("content")
+        if not isinstance(content, dict):
+            raise ValueError("Webhook content must be an object")
         text = content.get("text", "") if content.get("type") == "text" else (content.get("text") or content.get("caption") or "")
+        if not isinstance(text, str):
+            raise ValueError("Webhook text must be a string")
         media = [] if content.get("type") == "text" else _urls(content)
         return (str(phone), str(text), media) if phone else None
