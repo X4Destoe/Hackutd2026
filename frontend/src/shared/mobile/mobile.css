@@ -1,0 +1,71 @@
+.desktop-simulation-tools { display: flex; align-items: center; gap: 8px; }
+.mobile-navigation, .mobile-panel-heading, .mobile-install, .mobile-context, .mobile-connection { display: none; }
+.mobile-install-steps { padding-left: 22px; font-size: 14px; line-height: 1.8; margin: 16px 0; }
+@media (max-width: 900px), (max-width: 1024px) and (pointer: coarse) {
+  .app-shell { padding-top: env(safe-area-inset-top); height: 100dvh; background: #e4f3e6; }
+  .app-shell .top-bar { padding: 8px max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left)); gap: 6px; flex-shrink: 0; }
+  .app-shell .brand { flex: 1; min-width: 0; }
+  .app-shell .brand strong { font-size: 16px; }
+  .app-shell .brand small { font-size: 11px; }
+  .app-shell .brand > svg { width: 30px; height: 30px; }
+  .app-shell .top-bar > nav, .app-shell .top-bar > .portfolio-totals, .app-shell .top-bar > .drawer-toggle, .app-shell .desktop-simulation-tools { display: none; }
+  .app-shell .scenario-label { width: 100%; order: 4; margin-top: 4px; }
+  .app-shell .scenario-label select { min-height: 44px; width: 100%; font-size: 16px; padding: 8px; }
+  .app-shell .mobile-install { display: block; }
+  .app-shell .mobile-install .button { min-width: 44px; min-height: 44px; }
+  .app-shell .mobile-context { display: flex; justify-content: space-between; gap: 8px; background: #fff; border-bottom: 1px solid var(--border); padding: 8px max(12px, env(safe-area-inset-left)); font-size: 11px; flex-shrink: 0; }
+  .mobile-context strong { display: block; font-size: 15px; font-variant-numeric: tabular-nums; }
+  .mobile-context > div:last-child { text-align: right; color: var(--muted); }
+  .app-shell .mobile-connection { display: block; padding: 8px 12px; background: #fff0df; color: #763c16; font-size: 12px; line-height: 1.4; flex-shrink: 0; }
+  .app-shell .mobile-navigation { display: grid; grid-template-columns: repeat(4, 1fr); flex-shrink: 0; padding: 4px env(safe-area-inset-right) max(4px, env(safe-area-inset-bottom)) env(safe-area-inset-left); border-top: 1px solid #c7d6cb; background: #fff; z-index: 22; }
+  .mobile-navigation button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 58px; padding: 6px 2px; border: 0; border-top: 3px solid transparent; color: #5a6c61; background: #fff; font-size: 11px; }
+  .mobile-navigation button[aria-pressed=true] { color: #145634; background: #edf6ee; border-top-color: #17603a; font-weight: 600; }
+  .app-shell .workspace { min-height: 0; }
+  .app-shell .left-panel { width: 100%; inset: 0; border: 0; box-shadow: none; overscroll-behavior-y: contain; }
+  .app-shell .drawer-backdrop { display: none; }
+  .app-shell .mobile-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: #fff; flex-shrink: 0; }
+  .mobile-panel-heading .button { min-height: 44px; }
+  .app-shell .left-panel .panel-hero, .app-shell .left-panel .panel-footer, .app-shell .left-panel .drawer-close, .app-shell .left-panel .visual-guide { display: none; }
+  .app-shell .left-panel[data-view=fixfirst] .panel-tabs, .app-shell .left-panel[data-view=workorders] .panel-tabs, .app-shell .left-panel[data-view=help] .panel-tabs,
+  .app-shell .left-panel:not([data-view=overview]) .layer-section { display: none; }
+  .app-shell .left-panel .panel-content { padding: 16px; }
+  .app-shell .left-panel .card { padding: 16px; }
+  .app-shell .left-panel .panel-content p, .app-shell .left-panel .panel-caption, .app-shell .left-panel .community-meta, .app-shell .left-panel .panel-facts dt { font-size: 13px; }
+  .app-shell .left-panel .panel-facts dd { font-size: 16px; }
+  .app-shell .left-panel .button, .app-shell .left-panel .response-building, .app-shell .left-panel .site-contact-actions a { min-height: 44px; font-size: 14px; }
+  .app-shell .left-panel input, .app-shell .left-panel select, .app-shell .left-panel textarea { font-size: 16px; }
+  .app-shell .left-panel input[type=checkbox] { width: 22px; height: 22px; }
+  .app-shell .left-panel .layer-row { min-height: 48px; }
+  .app-shell .layer-row:has(.layer-messages), .app-shell .emergency-notice, .app-shell .activity-messages { display: none; }
+  .app-shell .left-panel[data-view=messages] .panel-content { display: none; }
+  .app-shell[data-mobile-panel=true] .map-slot { visibility: hidden; }
+  .app-shell .map-slot .map-activity { display: none; }
+  .app-shell .map-slot .storm-response-card { display: none; }
+  .app-shell .map-slot .storm-timeline { flex-direction: row; top: auto; bottom: 30px; left: 8px; right: 8px; max-width: calc(100% - 16px); overflow-x: auto; overscroll-behavior-x: contain; }
+  .app-shell .map-slot .storm-timeline button { min-width: 68px; min-height: 48px; flex-shrink: 0; padding: 7px 8px; border-left-width: 0; border-top: 3px solid; }
+  .app-shell .map-slot .storm-timeline-arrow { display: none; }
+  .app-shell .map-slot .storm-timeline button strong { font-size: 14px; }
+  .app-shell .map-slot .storm-scenario-strip { left: 8px; right: 60px; top: 8px; max-width: none; padding: 8px; gap: 8px; }
+  .app-shell .map-slot .storm-live-status { top: 8px; left: 8px; width: calc(100% - 68px); max-height: 130px; }
+  .app-shell .map-slot .storm-map-tools { right: 8px; top: 60px; }
+  .app-shell .map-slot .storm-map-tools button { width: 44px; height: 44px; }
+  .app-shell .map-slot .map-layer-button { right: 8px; top: 8px; min-width: 44px; min-height: 44px; }
+  .app-shell .map-slot .storm-legend { display: none; }
+  .app-shell .map-slot .mobile-key-button { position: absolute; bottom: 96px; right: 8px; z-index: 6; min-width: 44px; min-height: 44px; }
+  .app-shell[data-mobile-legend=true] .map-slot .storm-legend { display: block; left: 8px; right: 60px; bottom: 96px; max-height: calc(100% - 110px); min-width: 0; overflow-y: auto; font-size: 12px; }
+  .app-shell .storm-live-status summary { min-height: 44px; padding-top: 10px; }
+
+  .app-shell .map-slot .storm-building-button { min-width: 44px; min-height: 44px; }
+  .app-shell .map-slot .activity-pin { min-width: 44px; min-height: 44px; }
+  .app-shell .map-slot .timeline-error { top: 62px; left: 8px; right: 60px; max-width: none; }
+  .app-shell .map-slot .map-note { left: 8px; bottom: 4px; max-width: calc(100% - 16px); padding: 4px; font-size: 8px; pointer-events: none; }
+  .app-shell .map-slot .storm-local-note { display: none; }
+  .app-shell .map-slot .maplibregl-ctrl-bottom-right { bottom: 85px; font-size: 8px; }
+}
+@media (max-width: 1024px) and (max-height: 500px) {
+  .app-shell .top-bar { flex-wrap: nowrap; }
+  .app-shell .scenario-label { order: initial; width: 44%; margin-top: 0; }
+  .app-shell .mobile-context { padding-top: 3px; padding-bottom: 3px; }
+  .app-shell .mobile-context strong { display: inline; margin-right: 8px; }
+  .app-shell .mobile-navigation button { min-height: 44px; flex-direction: row; }
+}
