@@ -128,7 +128,7 @@ class PhotonPoller:
             messaging._seen_webhook_ids.append(key)
             del messaging._seen_webhook_ids[:-1000]
         phone, text, media = parsed
-        party = messaging.party_for_phone(phone)
+        party = messaging.party_for_message(phone, text)  # one phone may play several people
         if not party.demo_live:  # they reached us over Photon, so replies go back over Photon
             party = store.parties.put(party.model_copy(update={"demo_live": True}))
         messaging.receive(party, text, media)
