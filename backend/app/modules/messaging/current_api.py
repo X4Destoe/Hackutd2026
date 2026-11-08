@@ -14,6 +14,16 @@ from urllib.parse import quote
 
 import httpx
 
+from .photon import PhotonError
+
+SHARED_SETUP = "Text the Photon agent number from this phone first, and add this phone under iMessage > senders in app.beta.photon.codes."
+
+
+class PhotonAPIError(PhotonError):
+    def __init__(self, status: int):
+        self.status = status
+        super().__init__(f"Photon API refused the request ({status}); no automatic retry")
+
 ORIGIN = "https://api.photon.codes"
 API_VERSION = "2026-07-01"
 E164 = re.compile(r"\+[1-9]\d{7,14}\Z")
@@ -100,7 +110,7 @@ class CurrentPhoton:
             # Never serialize provider errors: they may contain credentials or message contents.
             raise PhotonError("Photon API unreachable; send outcome is unknown. Do not retry automatically." if suffix == "/messages" else "Photon API unreachable before message send.") from exc
         if response.status_code not in [200, 201, 202]:
-            raise PhotonError(f"Photon API refused the request ({response.status_code}); no automatic retry")
+            raise PhotonAPIError(response.status_code)
         try:
             data = response.json()
         except ValueError as exc:
@@ -109,8 +119,7 @@ class CurrentPhoton:
             raise PhotonError("Photon API returned an invalid response")
         return response.status_code, data
 
-    def sender(self) -> str:
-        from .photon import PhotonError
+    def agents(self) -> dict[str, dict]:
         if self.config.photon_sender_id:
             _, user = self.request("GET", "/users/" + quote(self.config.photon_sender_id, safe=""))
             users = [user]
@@ -125,30 +134,75 @@ class CurrentPhoton:
                 if not token:
                     break
             if token:
-                raise PhotonError("Set PHOTON_SENDER_ID to select a sending line explicitly")
-        owned = [u for u in users if isinstance(u, dict) and u.get("projectId") == self.config.photon_project_id
-                 and u.get("platform") == self.config.photon_platform
-                 and isinstance(u.get("details"), dict) and u["details"].get("resourceId") and isinstance(u.get("id"), str)]
-        if len(owned) != 1:
-            raise PhotonError("Configure PHOTON_SENDER_ID for one project-owned sending line; no line was provisioned automatically")
-        return owned[0]["id"]
+                raise PhotonError("Set PHOTON_SENDER_ID to select a sending identity explicitly")
+        # Shared Agents have no resourceId: Photon enforces the assignment and inbound-first policy.
+        return {u["id"]: u for u in users if isinstance(u, dict) and u.get("projectId") == self.config.photon_project_id
+                and u.get("platform") == self.config.photon_platform and isinstance(u.get("id"), str) and u["id"]
+                and isinstance(u.get("details"), dict) and (u["details"].get("resourceId") or u["details"].get("type") == "shared")}
+
+    def sender(self) -> str:
+        agents = self.agents()
+        if len(agents) != 1:
+            raise PhotonError("Configure PHOTON_SENDER_ID for one available sending identity; no line was provisioned automatically")
+        return next(iter(agents))
+
+    def conversation(self, phone: str, recipient: str, agents: dict[str, dict]) -> tuple[str, str] | None:
+        token, matches = None, []
+        for _ in range(10):
+            _, page = self.request("GET", "/spaces", params={"platform": self.config.photon_platform, "participantHandle": phone,
+                "pageSize": 100, **({"pageToken": token} if token else {})})
+            if not isinstance(page.get("items"), list):
+                raise PhotonError("Photon conversation lookup returned an invalid response")
+            for space in page["items"]:
+                if not isinstance(space, dict) or space.get("projectId") != self.config.photon_project_id or space.get("platform") != self.config.photon_platform or space.get("kind") != "direct":
+                    continue
+                participants = space.get("participantIds")
+                if not isinstance(participants, list) or len(participants) != 2 or not all(isinstance(p, str) for p in participants) or recipient not in participants:
+                    continue
+                other = next((p for p in participants if p != recipient), None)
+                if other in agents and isinstance(space.get("id"), str) and space["id"]:
+                    matches.append((other, space["id"]))
+            token = page.get("nextPageToken")
+            if not token:
+                break
+        if token:
+            raise PhotonError("Conversation lookup exceeded its page limit; select a sender explicitly")
+        if len({m[0] for m in matches}) > 1:
+            raise PhotonError("More than one sending identity has a conversation with this recipient; set PHOTON_SENDER_ID")
+        return matches[0] if matches else None
 
     def send(self, phone: str, text: str) -> str:
-        from .photon import PhotonError
         allowed = {pair.strip().rpartition(":")[0] for pair in self.config.demo_phones.split(",") if ":" in pair}
         if not E164.fullmatch(phone) or phone not in allowed:
             raise PhotonError("Recipient is not listed in DEMO_PHONES")
         if not text.strip() or len(text) > 2000:
             raise PhotonError("Photon text must contain 1–2000 characters")
-        sender = self.sender()
-        key = str(uuid.uuid4())
+        agents = self.agents()
+        if not agents:
+            raise PhotonError("No available Photon Agent identity was found. " + SHARED_SETUP)
         _, recipient = self.request("POST", "/users", body={"platform": self.config.photon_platform, "handle": phone})
-        if recipient.get("projectId") != self.config.photon_project_id or recipient.get("platform") != self.config.photon_platform or recipient.get("handle") != phone or not isinstance(recipient.get("id"), str):
+        if recipient.get("projectId") != self.config.photon_project_id or recipient.get("platform") != self.config.photon_platform or recipient.get("handle") != phone or not isinstance(recipient.get("id"), str) or not recipient["id"]:
             raise PhotonError("Photon recipient identity was not confirmed")
-        _, space = self.request("POST", "/spaces", body={"platform": self.config.photon_platform, "participantIds": [sender, recipient["id"]]}, idempotency=key + "-space")
-        if space.get("projectId") != self.config.photon_project_id or space.get("platform") != self.config.photon_platform or space.get("kind") != "direct" or not isinstance(space.get("participantIds"), list) or not {sender, recipient["id"]}.issubset(space["participantIds"]) or not isinstance(space.get("id"), str):
-            raise PhotonError("Photon conversation identity was not confirmed")
-        status, message = self.request("POST", "/messages", body={"senderId": sender, "spaceId": space["id"], "content": {"type": "text", "format": "plain", "text": text}}, idempotency=key + "-message")
+        existing = self.conversation(phone, recipient["id"], agents)
+        key = str(uuid.uuid4())
+        if existing:
+            sender, space_id = existing
+        else:
+            if len(agents) != 1:
+                raise PhotonError("Set PHOTON_SENDER_ID to select one sending identity")
+            sender = next(iter(agents))
+            if agents[sender]["details"].get("type") == "shared":
+                raise PhotonError(SHARED_SETUP)
+            try:
+                _, space = self.request("POST", "/spaces", body={"platform": self.config.photon_platform, "participantIds": [sender, recipient["id"]]}, idempotency=key + "-space")
+            except PhotonAPIError as exc:
+                if exc.status in [403, 404, 422]:
+                    raise PhotonError(SHARED_SETUP) from None
+                raise
+            if space.get("projectId") != self.config.photon_project_id or space.get("platform") != self.config.photon_platform or space.get("kind") != "direct" or not isinstance(space.get("participantIds"), list) or not all(isinstance(p, str) for p in space["participantIds"]) or not {sender, recipient["id"]}.issubset(space["participantIds"]) or not isinstance(space.get("id"), str) or not space["id"]:
+                raise PhotonError("Photon conversation identity was not confirmed")
+            space_id = space["id"]
+        status, message = self.request("POST", "/messages", body={"senderId": sender, "spaceId": space_id, "content": {"type": "text", "format": "plain", "text": text}}, idempotency=key + "-message")
         if status != 202 or message.get("projectId") != self.config.photon_project_id or message.get("status") not in ["dispatched", "accepted", "delivered"] or not isinstance(message.get("id"), str) or not message["id"]:
             raise PhotonError("Photon did not acknowledge the message; delivery is not confirmed")
         return message["id"]

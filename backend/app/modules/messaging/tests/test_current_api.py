@@ -56,6 +56,8 @@ def transport(cfg, change=None, failure=None):
         elif suffix == '/users':
             assert json.loads(req.content)=={'platform':'imessage','handle':PHONE}
             data={'id':'user-1','projectId':PROJECT,'platform':'imessage','handle':PHONE};code=201
+        elif suffix == '/spaces' and req.method == 'GET':
+            data={'items':[]};code=200
         elif suffix == '/spaces':
             assert json.loads(req.content)['participantIds']==['agent-1','user-1']
             assert req.headers['idempotency-key']
@@ -73,7 +75,7 @@ def transport(cfg, change=None, failure=None):
 def test_current_send_uses_documented_auth_identities_and_ack(cfg):
     client, requests=transport(cfg)
     assert photon.PhotonChannel(client, cfg).send_text(PHONE,'hello',[])=='message-out'
-    assert len(requests)==4
+    assert len(requests)==5
     assert KEY not in repr(cfg)
 
 
@@ -92,7 +94,7 @@ def test_invalid_acknowledgements_cannot_claim_success(cfg,status,payload):
     client, requests=transport(cfg,lambda suffix,code,data:(status,payload) if suffix=='/messages' else (code,data))
     with pytest.raises(photon.PhotonError,match='acknowledge'):
         photon.PhotonChannel(client,cfg).send_text(PHONE,'hello',[])
-    assert len(requests)==4
+    assert len(requests)==5
 
 
 def test_http_refusal_and_error_bodies_do_not_leak_secrets_or_retry(cfg):
@@ -201,3 +203,78 @@ def test_sender_discovery_uses_owned_resource_not_an_invented_kind_enum(cfg):
         return code,data
     client,_=transport(cfg,native_kind)
     assert photon.PhotonChannel(client,cfg).send_text(PHONE,'hello',[])=='message-out'
+
+
+def test_signed_manager_to_technician_to_claims_current_api_loop(cfg,monkeypatch):
+    """Full public webhook -> app workflow -> current Photon API, with provider I/O mocked."""
+    manager, resident = '+12145550126', '+12145550127'
+    mapping=manager+':MGR-01,'+PHONE+':TECH-HOU-01,'+resident+':RESIDENT-0127'
+    cfg.demo_phones=mapping; cfg.photon_claims_alert_phone=PHONE
+    monkeypatch.setattr(settings,'messaging_mode','photon')
+    monkeypatch.setattr(settings,'demo_phones',mapping)
+    sends=[]
+    def provider(self,method,suffix,*,body=None,params=None,idempotency=None):
+        if suffix=='/users' and method=='GET':
+            return 200,{'items':[{'id':'agent-1','projectId':PROJECT,'platform':'imessage','details':{'resourceId':'line-1'}}]}
+        if suffix=='/users':
+            return 201,{'id':'peer-'+body['handle'][-4:],'projectId':PROJECT,'platform':'imessage','handle':body['handle']}
+        if suffix=='/spaces' and method=='GET':
+            return 200,{'items':[]}
+        if suffix=='/spaces':
+            return 201,{'id':'space-'+body['participantIds'][1],'projectId':PROJECT,'platform':'imessage','kind':'direct','participantIds':body['participantIds']}
+        assert suffix=='/messages' and method=='POST'
+        sends.append(body)
+        return 202,{'id':'accepted-'+str(len(sends)),'projectId':PROJECT,'status':'dispatched'}
+    monkeypatch.setattr(current_api.CurrentPhoton,'request',provider)
+    with TestClient(create_app()) as client:
+        payload=event('YES PLAN-001',mid='full-manager');payload['data']['object']['sentBy']['handle']=manager
+        raw,headers=signed(payload,identity='full-manager-delivery')
+        assert client.post('/api/webhooks/photon',content=raw,headers=headers).status_code==200
+        deadline=time.monotonic()+3
+        while time.monotonic()<deadline:
+            tasks=store.workorders.list()
+            if tasks and all(t.status=='sent' for t in tasks):break
+            time.sleep(.01)
+        assert tasks and all(t.status=='sent' for t in tasks)
+        raw,headers=signed(event('DONE '+tasks[0].id,mid='full-tech'),identity='full-tech-delivery')
+        assert client.post('/api/webhooks/photon',content=raw,headers=headers).status_code==200
+        assert store.workorders.require(tasks[0].id).status=='done'
+        payload=event('I need to file an insurance claim',mid='full-claim');payload['data']['object']['sentBy']['handle']=resident
+        raw,headers=signed(payload,identity='full-claim-delivery')
+        assert client.post('/api/webhooks/photon',content=raw,headers=headers).status_code==200
+        assert any('claims-assistance request' in s['content']['text'] for s in sends)
+        count=len(sends)
+        assert client.post('/api/webhooks/photon',content=raw,headers=headers).json()['duplicate']
+        assert len(sends)==count
+        assert any(m.channel=='photon' and m.status=='sent' for m in store.messages.list())
+
+
+@pytest.mark.parametrize('shared',[False,True])
+def test_existing_direct_space_is_reused_for_dedicated_or_shared_agent(cfg,shared):
+    def existing(suffix,code,data):
+        if shared and suffix=='/users' and 'items' in data:
+            data['items'][0]['details']={'type':'shared'}
+        if suffix=='/spaces' and 'items' in data:
+            data['items']=[{'id':'space-1','projectId':PROJECT,'platform':'imessage','kind':'direct','participantIds':['user-1','agent-1']}]
+        return code,data
+    client,requests=transport(cfg,existing)
+    assert photon.PhotonChannel(client,cfg).send_text(PHONE,'hello',[])=='message-out'
+    assert not any(r.method=='POST' and r.url.path.endswith('/spaces') for r in requests)
+
+
+def test_shared_without_existing_space_gives_assignment_inbound_guidance(cfg):
+    def shared(suffix,code,data):
+        if suffix=='/users' and 'items' in data:data['items'][0]['details']={'type':'shared'}
+        return code,data
+    client,requests=transport(cfg,shared)
+    with pytest.raises(photon.PhotonError,match='Text the Photon agent number'):
+        photon.PhotonChannel(client,cfg).send_text(PHONE,'hello',[])
+    assert not any(r.url.path.endswith('/messages') for r in requests)
+
+
+@pytest.mark.parametrize('code',[403,404,422])
+def test_space_creation_refusal_has_actionable_setup_message(cfg,code):
+    client,requests=transport(cfg,lambda suffix,status,data:(code,{}) if suffix=='/spaces' and 'items' not in data else (status,data))
+    with pytest.raises(photon.PhotonError,match='iMessage > senders'):
+        photon.PhotonChannel(client,cfg).send_text(PHONE,'hello',[])
+    assert not any(r.url.path.endswith('/messages') for r in requests)
