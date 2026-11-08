@@ -461,7 +461,9 @@ export default function MapView() {
         </span>
         <div>
           <strong>
-            {state.data?.scenario_id === "live"
+            {state.data?.scenario_id.startsWith("custom_")
+              ? "Custom simulation · hypothetical effects"
+              : state.data?.scenario_id.startsWith("live")
               ? "Live inputs · modeled impact"
               : "Historical scenario · simulated impact"}
           </strong>
