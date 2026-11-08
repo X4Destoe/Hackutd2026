@@ -26,7 +26,7 @@ export default function LiveStatus({ city }: { city?: string }) {
     }, refetchInterval: 60_000 });
   if (!active) return null;
   const sources = [["alerts", "NWS alerts"], [`forecast:${cityName}`, "NWS forecast"], [`gauges:${cityName}`, "USGS gauges"]];
-  const unknown = !status.data || sources.some(([key]) => fetched(status.data.feeds?.[key]).unknown);
+  const unknown = status.isError || !status.data || sources.some(([key]) => fetched(status.data.feeds?.[key]).unknown);
   return <section className={`storm-live-status ${unknown ? "live-unknown" : ""}`} aria-label="Live data quality" data-quality={unknown ? "unknown" : "available"}>
     <strong>Live inputs · modeled effects</strong>
     <p>{status.isPending ? "Checking sources…" : status.isError ? "Source status unavailable" : unknown ? "Some inputs are stale or unknown" : "Source fetches are current"}</p>
