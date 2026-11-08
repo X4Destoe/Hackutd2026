@@ -16,17 +16,15 @@ npm run build
 Run the backend on port8000 and Vite on5173 using README instructions, with `MESSAGING_MODE=sim`. Then from the repository root:
 
 ```sh
-node frontend/e2e/site-controls-smoke.cjs
-node frontend/e2e/execution-smoke.cjs
-node frontend/e2e/action-screens-smoke.cjs
-node frontend/e2e/community-activation-smoke.cjs
-node frontend/e2e/message-followup-smoke.cjs
-node frontend/e2e/hazard-motion-smoke.cjs
-node frontend/e2e/live-status-smoke.cjs
-node frontend/e2e/simulation-smoke.cjs
+cd frontend
+npm run test:e2e:install  # once, if Chromium is not already installed
+npm run test:e2e
+# List checks or run one when investigating a failure:
+npm run test:e2e -- --list
+npm run test:e2e -- simulation
 ```
 
-The browser scripts require Playwright and Chromium; set `CHROMIUM_PATH` if needed and `STORM_URL` for a different local origin. They reset demo state, so run them sequentially on an isolated instance. Scripts that mutate state verify simulator mode first. The live-status test uses explicit browser fixtures plus a local SSE server; it does not claim a real weather observation. Message-followup uses an explicit provider-failure fixture. Other workflow assertions use the real application API.
+Playwright is pinned as a frontend development dependency. The runner verifies simulator mode before starting, selects installed Chromium, stops on the first failed check, and prevents concurrent runners against the same origin. It does not start the servers. The browser scripts require Chromium; set `CHROMIUM_PATH` if needed and `STORM_URL` for a different local origin. They reset demo state, so run them sequentially on an isolated instance. Scripts that mutate state verify simulator mode first. The live-status test uses explicit browser fixtures plus a local SSE server; it does not claim a real weather observation. Message-followup uses an explicit provider-failure fixture. Other workflow assertions use the real application API.
 
 The backend integration gate loads all three historical scenarios, approves and completes tasks, routes a resident, steps every timeline hour, checks financial arithmetic and capacity/safety, and generates printable reports. It also repeats custom reset and verifies unknown live inputs cannot produce financial reports or automated help-site offers.
 
