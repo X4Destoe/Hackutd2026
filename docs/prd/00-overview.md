@@ -1,4 +1,4 @@
-# 00 - Overview: what Brace is and how it flows
+# 00 - Overview: what Operation Storm is and how it flows
 
 ## 1. The problem, in CBRE's words
 
@@ -11,14 +11,14 @@ From the CBRE challenge statement: connect **fragmented real estate data** (faci
 utilities) to **predict cascading failures**, **quantify business impact**, and **execute solutions before disruptions
 spread**. Go **beyond passive dashboards**, with a **live-demoable working prototype**.
 
-**Brace's one-line answer:** for every building in the portfolio, *what will this disaster cost us, why, and which
+**Operation Storm's one-line answer:** for every building in the portfolio, *what will this disaster cost us, why, and which
 action saves the most money per dollar, starting now?* One click executes it.
 
 ## 2. Users
 
 | User | Where | Needs |
 |---|---|---|
-| **CBRE portfolio manager** (primary) | Brace web app | Total dollar exposure, which buildings first, approve actions, reports for owners and tenants |
+| **CBRE portfolio manager** (primary) | Operation Storm web app | Total dollar exposure, which buildings first, approve actions, reports for owners and tenants |
 | **On-site technician / building engineer** | Photon text | A clear task ("deploy flood barriers by 18:00"). Reply DONE / BLOCKED / photo |
 | **Tenant contact** | Photon text | Advance notice ("floor 1 closed tomorrow, move servers by 16:00"). Can reply with problems |
 | **Affected resident / State Farm customer** in the area | Photon text | "Where do I go?" Sent to the nearest **safe, open** help site with space |
@@ -44,14 +44,14 @@ action saves the most money per dollar, starting now?* One click executes it.
 
  STATE FARM / COMMUNITY LAYER (same hazard engine)
  Residents text the Photon number ("flooded, 2 kids, need somewhere dry") → AI reads the need →
- Brace sends them to the nearest help site that is OPEN, SAFE in this phase (not flooded, has power) and has SPACE:
+ Operation Storm sends them to the nearest help site that is OPEN, SAFE in this phase (not flooded, has power) and has SPACE:
  shelter, warming center, State Farm mobile claim site, hotel, or a CBRE building offered as a help site.
  If that site becomes unsafe in a later phase, the person is re-routed with a new text.
 ```
 
 ## 4. Why each track wins
 
-| Track | What they judge | Brace's answer |
+| Track | What they judge | Operation Storm's answer |
 |---|---|---|
 | **CBRE (primary)** | Connect fragmented data, predict cascades, quantify impact, execute, beyond dashboards, live demo | One record per building joins hazard + utility + building systems + leases/tenants + insurance. Power cascade with generator countdown. Dollars per building. Fix-First with ROI. Approve → work orders + texts. Map updates live |
 | **Photon** | Real human-in-the-loop, extensive Photon use, craft, traction | Techs get tasks and reply DONE/BLOCKED/photo, which changes the map. Tenants get notices. Residents chat and get redirected. Optional: the manager approves a Fix-First item by replying YES |
@@ -60,7 +60,7 @@ action saves the most money per dollar, starting now?* One click executes it.
 ## 5. Demo script (3 minutes, the build target)
 
 1. **0:00 Hook.** "In 2017, Harvey flooded Houston. Every property manager knew it was coming. Few knew what it would
-   cost *them*, building by building, or what to do first." Open Brace: a big map, a portfolio of about 12 buildings across Texas and Florida.
+   cost *them*, building by building, or what to do first." Open Operation Storm: a big map, a portfolio of about 12 buildings across Texas and Florida.
 2. **0:20 Pick the disaster.** Scenario menu → *Hurricane Harvey – Houston*. Phase = **Forecast (−48h)**. The forecast
    flood area pulses in light blue. Buildings recolor by **dollars at risk**. The header shows "Portfolio exposure $6.8M".
 3. **0:45 Why.** Click *Bayou Plaza*: predicted flood depth 3.1 ft above the first floor, substation down → generator 18h →
@@ -74,7 +74,7 @@ action saves the most money per dollar, starting now?* One click executes it.
    goes deep red, while the protected one holds. The tech replies "DONE" with a photo, and the work order closes on screen.
 7. **2:20 Community (State Farm + Photon).** A judge texts the number: "our apartment flooded, 2 kids, need a dry
    place". Within seconds: "Go to George R. Brown shelter, 1001 Avenida de las Americas, 4.2 mi, open, 310 spots left…"
-   One shelter shows a red ✕ because it's in the flood zone, and Brace skipped it on purpose. Then one of *our* buildings,
+   One shelter shows a red ✕ because it's in the flood zone, and Operation Storm skipped it on purpose. Then one of *our* buildings,
    offered as a help site, appears as an option.
 8. **2:45 Switch disaster.** One click → *Winter Storm Uri – Dallas*. White snow animation. The cascade story changes
    (substation → generator fuel → frozen pipes), and so do the Fix-First items. Close: "Same engine, any disaster: from forecast
@@ -96,7 +96,7 @@ action saves the most money per dollar, starting now?* One click executes it.
 
 ### Stretch (only after the demo runs end to end)
 - 4th preset: Eaton Fire (Altadena, Jan 2025) with an orange smoke/fire overlay.
-- "Ask Brace" natural-language box ("which Houston buildings lose the most if barriers fail?").
+- "Ask Operation Storm" natural-language box ("which Houston buildings lose the most if barriers fail?").
 - Manager approves Fix-First items by text (YES/NO).
 - Live NWS alerts feed showing real "upcoming disasters" (**VERIFY** network access).
 - What-if: toggle an action on/off and see the dollars before approving.

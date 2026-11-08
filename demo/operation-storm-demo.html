@@ -208,12 +208,19 @@ table.t { width: 100%; border-collapse: collapse; font-size: 12.5px; } table.t t
 .lrow .ic { width: 24px; height: 24px; }
 .lhead { align-items: center; border-bottom: 1px solid var(--line-2); padding-bottom: 6px; }
 .hero { min-height: 214px; }
+
+/* blurred city background behind the hero, text kept readable */
+.hero { overflow: hidden; background-image: none !important; }
+.hero .hbg { position: absolute; inset: -16px; background-size: cover, cover; background-position: center, center 85%; filter: blur(3.5px) saturate(1.15); transform: scale(1.04); z-index: 0; }
+.hero::before { z-index: 1; background: linear-gradient(180deg, rgba(8,20,14,.18) 0%, rgba(8,20,14,.30) 50%, rgba(8,20,14,.78) 100%); }
+.hero > *:not(.hbg) { position: relative; z-index: 2; }
+.hero h2, .hero .sub, .hero .narr { text-shadow: 0 1px 4px rgba(0,0,0,.75), 0 0 12px rgba(0,0,0,.35); }
 </style>
 </head>
 <body>
   <header id="top">
     <div class="logo">
-      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" fill="#1f7a45"/><path d="M7 20h18M10 14h12M13 8h6" stroke="#fff" stroke-width="2.4"/><path d="M16 24v4" stroke="#bfe6c9" stroke-width="2.4"/></svg>
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" fill="#1f7a45"/><rect x="6" y="7" width="20" height="3.2" fill="#fff"/><rect x="9" y="12.6" width="14" height="3.2" fill="#fff"/><rect x="12" y="18.2" width="8" height="3.2" fill="#fff"/><rect x="14.5" y="23.8" width="3" height="3.2" fill="#fff"/></svg>
       <div><b>Operation Storm</b><small>Portfolio disaster impact</small></div>
     </div>
     <select id="scenario" class="tsel" title="Disaster scenario"></select>
@@ -362,7 +369,7 @@ window.BRACE_DATA = (function () {
 
   const scenarios = {
     harvey_houston: {
-      id: "harvey_houston", name: "Hurricane Harvey", city: "Houston", realEvent: "Hurricane Harvey · Aug 25–30, 2017",
+      id: "harvey_houston", photo: "assets/houston.jpg", name: "Hurricane Harvey", city: "Houston", realEvent: "Hurricane Harvey · Aug 25–30, 2017",
       center: [-95.47, 29.75], zoom: 10.3, kind: "flood",
       narrative: {
         "-48": "Forecast: Harvey expected to stall over Houston. NWS warns of catastrophic, life-threatening rainfall.",
@@ -387,7 +394,7 @@ window.BRACE_DATA = (function () {
         "UTL-HOU-SUB5": { name: "NW Houston substation", c: [-95.545, 29.852], out: 72 } },
     },
     uri_dallas: {
-      id: "uri_dallas", name: "Winter Storm Uri", city: "Dallas", realEvent: "Winter Storm Uri · Feb 13–17, 2021",
+      id: "uri_dallas", photo: "assets/dallas.jpg", name: "Winter Storm Uri", city: "Dallas", realEvent: "Winter Storm Uri · Feb 13–17, 2021",
       center: [-96.82, 32.84], zoom: 10.4, kind: "winter",
       narrative: {
         "-48": "Forecast: arctic outbreak. Single-digit temperatures and ice expected across North Texas.",
@@ -407,7 +414,7 @@ window.BRACE_DATA = (function () {
         "UTL-DAL-SUB4": { name: "Lakewood substation", c: [-96.752, 32.822], out: 50 } },
     },
     ian_fort_myers: {
-      id: "ian_fort_myers", name: "Hurricane Ian", city: "Fort Myers", realEvent: "Hurricane Ian · Sep 28, 2022",
+      id: "ian_fort_myers", photo: "assets/fort-myers.jpg", name: "Hurricane Ian", city: "Fort Myers", realEvent: "Hurricane Ian · Sep 28, 2022",
       center: [-81.88, 26.55], zoom: 10.2, kind: "surge",
       narrative: {
         "-48": "Forecast: Ian rapidly intensifying. Track shifts toward Southwest Florida.",
@@ -1012,14 +1019,26 @@ window.BRACE_MODEL = (function () {
   // ---------- panel ----------
   function hero() {
     const s = S(), ph = step().phase, T = totals();
-    const img = `assets/${s.id}.jpg`;
     $("#hero").className = "hero " + s.kind;
-    $("#hero").style.backgroundImage = `url("${img}")`;
-    $("#hero").innerHTML = `<div class="hsearch"><span>${icon("map-pin", 16)}</span><input id="q" placeholder="Search by building, tenant or city" value="${(st.q || "").replace(/"/g, "&quot;")}"></div>
+    $("#hero").style.backgroundImage = "";
+    $("#hero").innerHTML = `<div class="hbg" style="background-image:url('${s.photo}'),url('${skyline(s.city, s.kind)}')"></div><div class="hsearch"><span>${icon("map-pin", 16)}</span><input id="q" placeholder="Search by building, tenant or city" value="${(st.q || "").replace(/"/g, "&quot;")}"></div>
       <div class="hbody"><span class="phase" style="background:${PHASE[ph]}">${ph} · ${step().label}</span>
       <h2>${s.name} · ${s.city}</h2><div class="sub">${s.realEvent}</div><div class="narr">${s.narrative[String(H())]}</div></div>
       <div class="htabs"><button data-view="overview">Overview</button><button data-view="buildings">Buildings</button><button data-view="help">Help</button></div>`;
     $("#t-net").textContent = fmt(T.net); $("#t-avoided").textContent = fmt(T.avoided);
+  }
+  // Drawn skyline used until a real city photo is added to demo/assets/ (photo layer sits on top when present).
+  function skyline(city, kind) {
+    const sky = { flood: ["#3d6c94", "#9cbfd8"], winter: ["#7d93a8", "#dbe6ef"], surge: ["#2f6a86", "#a8d0de"] }[kind];
+    const B = (x, w, h, c = "#0f2230") => `<rect x="${x}" y="${300 - h}" width="${w}" height="${h}" fill="${c}"/>`;
+    let city_ = "";
+    if (city === "Houston") city_ = [[40, 50, 120], [95, 38, 170], [138, 60, 230], [204, 34, 150], [244, 52, 265], [302, 40, 190], [348, 70, 140], [424, 44, 210], [474, 60, 120], [540, 40, 90]].map(([x, w, h]) => B(x, w, h)).join("") + B(262, 16, 290);
+    else if (city === "Dallas") city_ = [[30, 60, 110], [96, 44, 190], [146, 70, 150], [222, 40, 240], [268, 58, 175], [332, 46, 215], [384, 64, 130], [456, 50, 160], [512, 70, 100]].map(([x, w, h]) => B(x, w, h)).join("") +
+      `<rect x="586" y="120" width="6" height="180" fill="#0f2230"/><circle cx="589" cy="112" r="20" fill="#0f2230"/>`;
+    else city_ = [[20, 70, 60], [96, 54, 85], [156, 80, 70], [242, 46, 110], [294, 70, 75], [370, 58, 95], [434, 90, 55], [530, 60, 80]].map(([x, w, h]) => B(x, w, h)).join("") +
+      `<rect x="0" y="282" width="640" height="18" fill="#2c6f8c"/>` + [70, 210, 480, 600].map((x) => `<rect x="${x}" y="215" width="5" height="70" fill="#0f2230"/><rect x="${x - 16}" y="210" width="37" height="7" fill="#0f2230"/>`).join("");
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 300" preserveAspectRatio="xMidYMax slice"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset="1" stop-color="${sky[1]}"/></linearGradient></defs><rect width="640" height="300" fill="url(#g)"/>${city_}</svg>`;
+    return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
   }
   function layersUI() {
     const T = totals();

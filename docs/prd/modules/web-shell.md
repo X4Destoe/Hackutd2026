@@ -1,6 +1,6 @@
 # Module: web-shell (`frontend/` scaffolding + `frontend/src/shared/` + `App.tsx`)
 
-**Skills:** frontend, typescript, ui-design · **Read also:** `04-ui-spec.md` §1 and §4, `01-architecture.md`
+**Skills:** frontend, typescript, ui-design · **Read also:** `04-ui-spec.md` (esp. §5 final visual decisions), visual reference `demo/`; `04` §1 and §4, `01-architecture.md`
 
 ## Job
 The frame everything sits in, so `map` and `panel` can be built in parallel: the Vite app, the **UTD-style layout**

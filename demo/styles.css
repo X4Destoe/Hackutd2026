@@ -201,3 +201,10 @@ table.t { width: 100%; border-collapse: collapse; font-size: 12.5px; } table.t t
 .lrow .ic { width: 24px; height: 24px; }
 .lhead { align-items: center; border-bottom: 1px solid var(--line-2); padding-bottom: 6px; }
 .hero { min-height: 214px; }
+
+/* blurred city background behind the hero, text kept readable */
+.hero { overflow: hidden; background-image: none !important; }
+.hero .hbg { position: absolute; inset: -16px; background-size: cover, cover; background-position: center, center 85%; filter: blur(3.5px) saturate(1.15); transform: scale(1.04); z-index: 0; }
+.hero::before { z-index: 1; background: linear-gradient(180deg, rgba(8,20,14,.18) 0%, rgba(8,20,14,.30) 50%, rgba(8,20,14,.78) 100%); }
+.hero > *:not(.hbg) { position: relative; z-index: 2; }
+.hero h2, .hero .sub, .hero .narr { text-shadow: 0 1px 4px rgba(0,0,0,.75), 0 0 12px rgba(0,0,0,.35); }

@@ -1,6 +1,6 @@
 # Module: map (`frontend/src/modules/map/`)
 
-**Skills:** frontend, typescript, ui-design · **Read also:** `04-ui-spec.md` §1 and §3 · **Uses:** web-shell `shared/*`
+**Skills:** frontend, typescript, ui-design · **Read also:** `04-ui-spec.md` (esp. §5 final visual decisions), visual reference `demo/`; `04` §1 and §3 · **Uses:** web-shell `shared/*`
 
 ## Job
 The big interactive map on the right: risk-colored buildings, **animated hazard overlays** that make the disaster

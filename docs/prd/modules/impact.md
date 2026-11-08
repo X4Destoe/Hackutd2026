@@ -1,6 +1,6 @@
 # Module: impact (`backend/app/modules/impact/`)
 
-**Skills:** backend, python, data · **Read also:** `03-data-and-scenarios.md` §3 (implement it exactly)
+**Skills:** backend, python, data · **Read also:** `03-data-and-scenarios.md` (reference implementation: `demo/model.js`), §3 (implement it exactly)
 
 ## Job
 The CBRE core: **for every building, what will this disaster cost the business, and why.** Joins the fragmented data

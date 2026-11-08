@@ -1,13 +1,18 @@
-# Brace PRD: reference pack for humans and AI agents
+# Operation Storm PRD: reference pack for humans and AI agents
 
-**Brace** (working name): *see the disaster coming, know what it will cost your business, act before it hits.*
+**Operation Storm**: *see the disaster coming, know what it will cost your business, act before it hits.*
 
 A CBRE portfolio manager opens a map of their buildings. A real-world disaster (a flood, a hurricane, a winter
-storm) plays across it with a visual overlay. Every building is colored by **dollars at risk**. Brace answers the
+storm) plays across it with a visual overlay. Every building is colored by **dollars at risk**. Operation Storm answers the
 question CBRE asked us: **"as a business, how is this affecting me, and what do I do about it?"** It does that with a
 **Fix-First list** of actions, each justified by money saved per dollar spent. Approving an action sends tasks to
 on-site staff and notices to tenants by text (Photon). People affected in the area are **redirected to the right
 help** (shelters, State Farm claim sites, warming centers), and that includes CBRE buildings offered as help sites.
+
+**See it first:** `demo/` in this repo is a clickable prototype of the whole flow (open `demo/operation-storm-demo.html`).
+It is the **visual and behavioral reference**: match its look, layout and interactions. `demo/model.js` implements the
+money formulas in `03` and is a good reference for the `impact` and `actions` modules. Don't copy the demo's code
+structure, though. The real build is FastAPI + React per `01-architecture.md`.
 
 ## How to read this (AI agents: follow this exactly)
 

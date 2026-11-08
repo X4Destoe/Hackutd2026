@@ -1,4 +1,4 @@
-# Brace build plan for ./comms plan (run from the comms repo):
+# Operation Storm build plan for ./comms plan (run from the comms repo):
 #   ./comms plan ../Hackutd2026/docs/prd/plan.md --dry-run   then without --dry-run
 # depends may name keys here or existing TASK ids (TASK-001 = PRD review/freeze, TASK-002 = backend skeleton/CI).
 # Each task's detail is in docs/prd/modules/<module>.md (named in goal).

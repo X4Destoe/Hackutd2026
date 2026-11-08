@@ -2,6 +2,8 @@
 
 **What we're building:** Lifeline. The full spec is in [`docs/prd/`](docs/prd/README.md). Read `docs/prd/README.md` first.
 It tells you exactly which files to read for your task (the overview, the contracts, and your one module file).
+To see what we're building, open `demo/operation-storm-demo.html` (clickable prototype = visual reference).
+Ignore `docs/archive/` (superseded plans).
 
 AI agents: all coordination (who you are, what work is assigned to you, messages)
 lives in the separate comms repo, cloned next to this one:

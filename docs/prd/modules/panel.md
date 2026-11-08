@@ -1,6 +1,6 @@
 # Module: panel (`frontend/src/modules/panel/`)
 
-**Skills:** frontend, typescript, ui-design · **Read also:** `04-ui-spec.md` §1–2, `00-overview.md` §5 · **Uses:** web-shell `shared/*`
+**Skills:** frontend, typescript, ui-design · **Read also:** `04-ui-spec.md` (esp. §5 final visual decisions), visual reference `demo/`; `04` §1–2, `00-overview.md` §5 · **Uses:** web-shell `shared/*`
 
 ## Job
 Everything in the 400px left panel: search, the scenario hero card, tabs, layer toggles, and the content views (Overview,

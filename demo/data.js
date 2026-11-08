@@ -16,7 +16,7 @@ window.BRACE_DATA = (function () {
 
   const scenarios = {
     harvey_houston: {
-      id: "harvey_houston", name: "Hurricane Harvey", city: "Houston", realEvent: "Hurricane Harvey · Aug 25–30, 2017",
+      id: "harvey_houston", photo: "assets/houston.jpg", name: "Hurricane Harvey", city: "Houston", realEvent: "Hurricane Harvey · Aug 25–30, 2017",
       center: [-95.47, 29.75], zoom: 10.3, kind: "flood",
       narrative: {
         "-48": "Forecast: Harvey expected to stall over Houston. NWS warns of catastrophic, life-threatening rainfall.",
@@ -41,7 +41,7 @@ window.BRACE_DATA = (function () {
         "UTL-HOU-SUB5": { name: "NW Houston substation", c: [-95.545, 29.852], out: 72 } },
     },
     uri_dallas: {
-      id: "uri_dallas", name: "Winter Storm Uri", city: "Dallas", realEvent: "Winter Storm Uri · Feb 13–17, 2021",
+      id: "uri_dallas", photo: "assets/dallas.jpg", name: "Winter Storm Uri", city: "Dallas", realEvent: "Winter Storm Uri · Feb 13–17, 2021",
       center: [-96.82, 32.84], zoom: 10.4, kind: "winter",
       narrative: {
         "-48": "Forecast: arctic outbreak. Single-digit temperatures and ice expected across North Texas.",
@@ -61,7 +61,7 @@ window.BRACE_DATA = (function () {
         "UTL-DAL-SUB4": { name: "Lakewood substation", c: [-96.752, 32.822], out: 50 } },
     },
     ian_fort_myers: {
-      id: "ian_fort_myers", name: "Hurricane Ian", city: "Fort Myers", realEvent: "Hurricane Ian · Sep 28, 2022",
+      id: "ian_fort_myers", photo: "assets/fort-myers.jpg", name: "Hurricane Ian", city: "Fort Myers", realEvent: "Hurricane Ian · Sep 28, 2022",
       center: [-81.88, 26.55], zoom: 10.2, kind: "surge",
       narrative: {
         "-48": "Forecast: Ian rapidly intensifying. Track shifts toward Southwest Florida.",

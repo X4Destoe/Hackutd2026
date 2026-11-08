@@ -1,5 +1,7 @@
 # 04 - UI spec (layout modeled on the UTD campus map)
 
+**Visual reference: `demo/` (open `demo/operation-storm-demo.html`). When this text and the demo disagree on looks, the demo wins.**
+
 Reference: the UTD interactive campus map. We copy its **structure**, not its colors: action buttons along the top,
 a left panel with search, a hero card, tabs and toggleable category rows, and a large interactive map filling the right side,
 with a vertical control on the map's left edge and map tools on its right edge.
@@ -74,3 +76,21 @@ with a vertical control on the map's left edge and map tools on its right edge.
 Neutral, professional, not UTD colors: dark slate top bar, white panel, accent teal (CBRE-ish green-teal is fine)
 for primary buttons. Dollar figures use tabular numerals. Risk colors as above. Font: Inter/system. shadcn components.
 Every number has a unit. Every chart has a label. A judge must understand any screen in 10 seconds without narration.
+
+## 5. Final visual decisions (from the team, 2026-11-08). These override §4
+
+| Element | Decision |
+|---|---|
+| Name | **Operation Storm** · tagline "Portfolio disaster impact" |
+| Logo | Green square (#1f7a45) with 4 white stacked boxes narrowing downward like a tornado funnel. Exact SVG in `demo/index.html` (`.logo .mark`) |
+| Corners | **Square everywhere.** No rounded rectangles: buttons, cards, inputs, map controls, markers, badges |
+| Font | System stack, Apple-like: `-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif`. Weights 400/500/600 only. Slight negative letter-spacing on headings |
+| Icons | **Lucide** line icons (ISC license, `lucide-react` in the real build). **No emoji anywhere** in the UI or in texts |
+| Top bar | Light green (#e4f3e6) with a bottom border. Solid dark-green rectangular buttons (#17603a, white text, icon + label): Fix-First, Work Orders, Help Sites, Texts, Reports. Scenario dropdown (white). Net exposure / Avoided on the right |
+| Left panel | White, 380px. **Header = blurred photo of the scenario's city** (`assets/<city>.jpg`, falls back to a drawn skyline) with a dark gradient and text shadow so text stays readable. Search box on the photo. Phase tag, scenario title, date, narrative. Big tabs along the bottom: Overview · Buildings · Help |
+| Category rows | UTD-style: colored square icon · label · chevron · square checkbox, plus "SELECT ALL / CLEAR". Layers: Hazard overlay, Buildings by $ at risk, Power grid, Help sites and residents, Work orders |
+| Footer | Dark green strip (#0f3f26) with the product name |
+| Map | Detailed vector basemap (OpenFreeMap "Liberty"), 3D tilt button. Offline backdrop (approximate highways + Gulf) when tiles fail |
+| HOUR control | White floor-selector-style column on the map's left edge, phase-colored left edge per step, selected step dark green |
+| Markers | Buildings = **squares** sized by value, colored by net exposure, white label "Name · $X". Substations = small squares (red, blinking when down). Help sites = square pins with a letter (S/W/C/H/+), struck through when unsafe |
+| Notifications | One toast per user action (e.g. "Plan approved, 5 tasks texted"). Every individual text lives in the Texts view |

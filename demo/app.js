@@ -274,14 +274,26 @@
   // ---------- panel ----------
   function hero() {
     const s = S(), ph = step().phase, T = totals();
-    const img = `assets/${s.id}.jpg`;
     $("#hero").className = "hero " + s.kind;
-    $("#hero").style.backgroundImage = `url("${img}")`;
-    $("#hero").innerHTML = `<div class="hsearch"><span>${icon("map-pin", 16)}</span><input id="q" placeholder="Search by building, tenant or city" value="${(st.q || "").replace(/"/g, "&quot;")}"></div>
+    $("#hero").style.backgroundImage = "";
+    $("#hero").innerHTML = `<div class="hbg" style="background-image:url('${s.photo}'),url('${skyline(s.city, s.kind)}')"></div><div class="hsearch"><span>${icon("map-pin", 16)}</span><input id="q" placeholder="Search by building, tenant or city" value="${(st.q || "").replace(/"/g, "&quot;")}"></div>
       <div class="hbody"><span class="phase" style="background:${PHASE[ph]}">${ph} · ${step().label}</span>
       <h2>${s.name} · ${s.city}</h2><div class="sub">${s.realEvent}</div><div class="narr">${s.narrative[String(H())]}</div></div>
       <div class="htabs"><button data-view="overview">Overview</button><button data-view="buildings">Buildings</button><button data-view="help">Help</button></div>`;
     $("#t-net").textContent = fmt(T.net); $("#t-avoided").textContent = fmt(T.avoided);
+  }
+  // Drawn skyline used until a real city photo is added to demo/assets/ (photo layer sits on top when present).
+  function skyline(city, kind) {
+    const sky = { flood: ["#3d6c94", "#9cbfd8"], winter: ["#7d93a8", "#dbe6ef"], surge: ["#2f6a86", "#a8d0de"] }[kind];
+    const B = (x, w, h, c = "#0f2230") => `<rect x="${x}" y="${300 - h}" width="${w}" height="${h}" fill="${c}"/>`;
+    let city_ = "";
+    if (city === "Houston") city_ = [[40, 50, 120], [95, 38, 170], [138, 60, 230], [204, 34, 150], [244, 52, 265], [302, 40, 190], [348, 70, 140], [424, 44, 210], [474, 60, 120], [540, 40, 90]].map(([x, w, h]) => B(x, w, h)).join("") + B(262, 16, 290);
+    else if (city === "Dallas") city_ = [[30, 60, 110], [96, 44, 190], [146, 70, 150], [222, 40, 240], [268, 58, 175], [332, 46, 215], [384, 64, 130], [456, 50, 160], [512, 70, 100]].map(([x, w, h]) => B(x, w, h)).join("") +
+      `<rect x="586" y="120" width="6" height="180" fill="#0f2230"/><circle cx="589" cy="112" r="20" fill="#0f2230"/>`;
+    else city_ = [[20, 70, 60], [96, 54, 85], [156, 80, 70], [242, 46, 110], [294, 70, 75], [370, 58, 95], [434, 90, 55], [530, 60, 80]].map(([x, w, h]) => B(x, w, h)).join("") +
+      `<rect x="0" y="282" width="640" height="18" fill="#2c6f8c"/>` + [70, 210, 480, 600].map((x) => `<rect x="${x}" y="215" width="5" height="70" fill="#0f2230"/><rect x="${x - 16}" y="210" width="37" height="7" fill="#0f2230"/>`).join("");
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 300" preserveAspectRatio="xMidYMax slice"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset="1" stop-color="${sky[1]}"/></linearGradient></defs><rect width="640" height="300" fill="url(#g)"/>${city_}</svg>`;
+    return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
   }
   function layersUI() {
     const T = totals();

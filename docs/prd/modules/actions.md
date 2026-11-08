@@ -1,6 +1,6 @@
 # Module: actions (`backend/app/modules/actions/` + `backend/data/actions.json`)
 
-**Skills:** backend, python · **Read also:** `03-data-and-scenarios.md` §4
+**Skills:** backend, python · **Read also:** `03-data-and-scenarios.md` (reference implementation: `demo/model.js`), §4
 
 ## Job
 Turn dollars into **decisions CBRE can execute**: build per-building plans from the action catalog with cost, money saved,
