@@ -25,20 +25,29 @@ router  # POST /api/webhooks/photon, GET /api/messages, GET /api/messaging/statu
 - Sends are async tasks. Failures mark the message `failed` with an error and never raise into callers.
 - `POST /api/demo/simulate-message {phone|party_id, text, media_url?}` injects an inbound message (for the demo phone simulator).
 
-## Photon integration (**VERIFY everything here in hour 1**: plan task `photon-spike`)
-The Photon 2.0 docs could not be read while writing this PRD. The spike must:
-1. Create the project in the Photon dashboard (photon.codes/beta), enable SMS + iMessage.
-2. Record in `PHOTON_NOTES.md`: auth, base URL/SDK, send call, inbound webhook payload and registration, media (photos) in and out,
-   delivery status, rate limits.
-3. Prove a round trip to a teammate's phone through the cloudflared tunnel (`backend/spikes/photon/smoke.py`).
-4. Then implement `PhotonChannel` behind:
+## Photon integration (verified 2026-11-08 by the TASK-010 spike; details in `backend/spikes/photon/PHOTON_NOTES.md`)
+Photon's product is now **Spectrum**. Facts that shape the code:
+- **Sending is only possible through the TypeScript SDK `spectrum-ts`** (pinned 12.15.0). The HTTP API at `https://spectrum.photon.codes`
+  (Basic auth `projectId:projectSecret`) manages projects/webhooks/lines; it cannot send. So messaging talks to a small **Node
+  photon-bridge** on loopback: `POST http://127.0.0.1:8787/send {phone, text}` -> `{status: "accepted", message_id}` (acknowledged,
+  not delivered). Only numbers in `DEMO_PHONES` can be texted. Outbound photos are not supported yet.
+- **Credentials:** `SPECTRUM_PROJECT_ID`, `SPECTRUM_PROJECT_SECRET` (SDK), `SPECTRUM_WEBHOOK_SECRET` (inbound), optional `SPECTRUM_SENDER`.
+  They live in `backend/.env` (git-ignored) on the demo laptop. Never in chat, comms or git. An iMessage line must be provisioned at
+  app.photon.codes. `PHOTON_API_KEY` / `PHOTON_SENDER` in `.env.example` are obsolete.
+- **Inbound:** native webhook `POST /api/webhooks/photon` with headers `X-Spectrum-Event`, `X-Spectrum-Signature: v0=<hex>`,
+  `X-Spectrum-Timestamp`, `X-Spectrum-Webhook-Id`. Verify HMAC-SHA256 over the exact bytes `v0:<timestamp>:<rawBody>` (constant time,
+  ±300 s), then parse. Delivery is at-least-once: dedupe on the webhook id and on `(event, message.id)`. Payload
+  `{event: "message.received", message: {id, space, sender, content: {type, text | attachment}}}`; capture a real photo reply before
+  finalizing media parsing. Expose the receiver through the tunnel (cloudflared) and register that URL in the dashboard.
+- **Not verified yet:** a real round trip (needs credentials + a provisioned line), exact runtime hosts used by the SDK.
+
+`PhotonChannel` (TASK-022) keeps this protocol so `SimChannel` and Photon stay swappable:
 ```python
 class Channel(Protocol):
-    def send_text(self, to: str, body: str, media_urls: list[str]) -> str   # provider id
+    def send_text(self, to: str, body: str, media_urls: list[str]) -> str   # provider id (bridge message_id)
     def parse_inbound(self, payload: dict, headers: dict) -> tuple[str, str, list[str]] | None   # (from_phone, text, media)
 ```
-Fallbacks: if webhooks are unreliable, poll the Photon API if possible. If Photon is down on stage, `MESSAGING_MODE=sim` plus the panel's
-phone simulator.
+Fallback on stage: `MESSAGING_MODE=sim` plus the panel's phone simulator (always works, no network).
 
 ## Acceptance
 - Sim: `send()` stores the message and emits `message.sent`. Simulated inbound reaches the right handler by party type.
